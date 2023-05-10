@@ -3,12 +3,18 @@
   "version": "0.0.0-development",
   "description": "In-memory Nostr relay.",
   "scripts": {
+    "clean": "rimraf ./dist && mkdir dist",
+    "build": "npm run clean; tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/jimbojw/memorelay.git"
   },
+  "files": [
+    "./src/**/*"
+  ],
+  "types": "./dist/index.d.ts",
   "keywords": [
     "nostr",
     "relay"
@@ -22,6 +28,8 @@
   "devDependencies": {
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
-    "semantic-release": "21.0.2"
+    "rimraf": "5.0.0",
+    "semantic-release": "21.0.2",
+    "typescript": "5.0.4"
   }
 }
