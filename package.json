@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/jimbojw/memorelay/issues"
   },
-  "homepage": "https://github.com/jimbojw/memorelay#readme"
+  "homepage": "https://github.com/jimbojw/memorelay#readme",
+  "devDependencies": {
+    "semantic-release": "21.0.2"
+  }
 }
