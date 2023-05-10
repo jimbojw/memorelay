@@ -9,6 +9,11 @@
     "type": "git",
     "url": "https://github.com/jimbojw/memorelay.git"
   },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
   "keywords": [
     "nostr",
     "relay"
