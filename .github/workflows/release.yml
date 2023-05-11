@@ -28,11 +28,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "lts/*"
+          node-version: 'lts/*'
       - name: Install dependencies
         run: npm clean-install
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test
       - name: Build
         run: npm run build
       - name: Release
