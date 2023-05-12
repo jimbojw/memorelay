@@ -5,16 +5,28 @@
  * @fileoverview Main entry point for Memorelay library.
  */
 
+import { InternalError } from './internal-error';
+import { Subscription } from './subscription';
 import { verifyEvent } from './verify-event';
+import { verifyFilters } from './verify-filters';
 
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
-import { verifyFilters } from './verify-filters';
 
 export class Memorelay {
   /**
    * Map of events keyed by id known to this memorelay instance.
    */
   private readonly eventsMap = new Map<string, NostrEvent>();
+
+  /**
+   * Counter to keep track of the next subscription id to use.
+   */
+  private nextSubscriptionId = 0;
+
+  /**
+   * Map of subscriptions.
+   */
+  private readonly subscriptionsMap = new Map<number, Subscription>();
 
   /**
    * Returns whether the provided event is in memory.
@@ -36,6 +48,18 @@ export class Memorelay {
       return false;
     }
     this.eventsMap.set(event.id, event);
+    for (const [, { callbackFn, filters, subscriptionId }] of this
+      .subscriptionsMap) {
+      queueMicrotask(() => {
+        if (!this.subscriptionsMap.has(subscriptionId)) {
+          // Short-circuit if this subscription has been removed.
+          return;
+        }
+        if (!filters || filters.length < 1 || matchFilters(filters, event)) {
+          callbackFn(event);
+        }
+      });
+    }
     return true;
   }
 
@@ -68,5 +92,50 @@ export class Memorelay {
       }
     }
     return matchingEvents;
+  }
+
+  /**
+   * Subscribe to events matching the optional filters list. Only newly added
+   * events AFTER the subscription is made will trigger the callback function.
+   * @param callbackFn Function to invoke when events are added that match
+   * the filter(s).
+   * @param filters Optional list of filters to match. If omitted or empty, then
+   * all added events will trigger the callback.
+   * @returns Unique subscription index number to be used with unsubscribe.
+   */
+  subscribe(
+    callbackFn: (event: NostrEvent) => void,
+    filters?: Filter[]
+  ): number {
+    filters && verifyFilters(filters);
+    const subscriptionId = this.nextSubscriptionId++;
+    if (this.subscriptionsMap.has(subscriptionId)) {
+      throw new InternalError('subscription id conflict');
+    }
+    this.subscriptionsMap.set(subscriptionId, {
+      callbackFn,
+      filters,
+      subscriptionId,
+    });
+    return subscriptionId;
+  }
+
+  /**
+   * Unsubscribe from the previously established subscription. If there was no
+   * such subscription with the provided id, then false is returned.
+   * @param subscriptionId Unique subscription id number previously returned by
+   * a call to subscribe().
+   * @returns Whether the subscription was removed.
+   * @throws RangeError if the provided subscription id is invalid.
+   */
+  unsubscribe(subscriptionId: number): boolean {
+    if (!Number.isInteger(subscriptionId)) {
+      throw new RangeError('invalid subscription id');
+    }
+    if (!this.subscriptionsMap.has(subscriptionId)) {
+      return false;
+    }
+    this.subscriptionsMap.delete(subscriptionId);
+    return true;
   }
 }

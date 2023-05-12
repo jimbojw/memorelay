@@ -64,6 +64,111 @@ describe('Memorelay', () => {
         memorelay.addEvent(EXAMPLE_SIGNED_EVENT.id as unknown as NostrEvent);
       }).toThrow(BadEventError);
     });
+
+    it('should invoke callback of unfiltered subscriptions', async () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      memorelay.subscribe(callbackFn);
+
+      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      // Same execution thread, should not have been invoked yet.
+      expect(invocations).toEqual([]);
+
+      // Awaiting a promise should put us after the queued invocation.
+      await Promise.resolve();
+
+      // Now the callback function should have been invoked.
+      expect(invocations).toEqual([{ event: EXAMPLE_SIGNED_EVENT }]);
+
+      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      await Promise.resolve();
+
+      expect(invocations).toEqual([
+        { event: EXAMPLE_SIGNED_EVENT },
+        { event: ALTERNATIVE_SIGNED_EVENT },
+      ]);
+    });
+
+    it('should NOT invoke callback for late subscription', async () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      // Add subscription strictly after the event was added.
+      memorelay.subscribe(callbackFn);
+
+      // Same execution thread, should not have been invoked yet.
+      expect(invocations).toEqual([]);
+
+      // Awaiting a promise should put us after the queued invocation.
+      await Promise.resolve();
+
+      // Now the callback function should STILL not have been invoked.
+      expect(invocations).toEqual([]);
+    });
+
+    it('should invoke callback only if subscription filter matches', async () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      memorelay.subscribe(callbackFn, [{ ids: ['8e'] }]);
+
+      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      await Promise.resolve();
+
+      // Callback function should NOT be invoked for 'f9' event.
+      expect(invocations).toEqual([]);
+
+      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      await Promise.resolve();
+
+      // Callback function SHOULD be invoked for '8e' event.
+      expect(invocations).toEqual([{ event: ALTERNATIVE_SIGNED_EVENT }]);
+    });
+
+    it('should NOT invoke callback if subscription is removed', async () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const subscriptionId = memorelay.subscribe(callbackFn);
+
+      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      expect(invocations).toEqual([]);
+
+      // Remove the subscription. Still same execution thread.
+      memorelay.unsubscribe(subscriptionId);
+
+      expect(invocations).toEqual([]);
+
+      await Promise.resolve();
+
+      // Callback function should STILL not have been invoked, since the
+      // subscription was removed before the invocation could have happened.
+      expect(invocations).toEqual([]);
+    });
   });
 
   describe('hasEvent', () => {
@@ -146,6 +251,105 @@ describe('Memorelay', () => {
           { kinds: [1] },
         ]);
       }).toThrow('unexpected filter field');
+    });
+  });
+
+  describe('subscribe', () => {
+    it('should return a subscriptionId for a new subscription', () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const subscriptionId = memorelay.subscribe(callbackFn);
+
+      expect(Number.isInteger(subscriptionId)).toBe(true);
+      expect(invocations).toEqual([]);
+    });
+
+    it('should return a different subscriptionId each time', () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const firstSubscriptionId = memorelay.subscribe(callbackFn);
+      const secondSubscriptionId = memorelay.subscribe(callbackFn);
+
+      expect(Number.isInteger(firstSubscriptionId)).toBe(true);
+      expect(Number.isInteger(secondSubscriptionId)).toBe(true);
+      expect(firstSubscriptionId === secondSubscriptionId).toBe(false);
+      expect(invocations).toEqual([]);
+    });
+
+    it('should throw if an invalid filter is passed', () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const invalidFilter = {
+        UNEXPECETED_FIELD: 'UNEXPECTED_VALUE',
+      } as unknown as Filter;
+
+      let subscriptionId: number | undefined = undefined;
+
+      expect(() => {
+        subscriptionId = memorelay.subscribe(callbackFn, [invalidFilter]);
+      }).toThrow('unexpected filter field');
+
+      expect(subscriptionId).toBeUndefined();
+    });
+  });
+
+  describe('unsubscribe', () => {
+    it('should return false when there are no subscriptions', () => {
+      const memorelay = new Memorelay();
+      expect(memorelay.unsubscribe(0)).toBe(false);
+      expect(memorelay.unsubscribe(1)).toBe(false);
+    });
+
+    it('should return true when there is a matching subscription', () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const subscriptionId = memorelay.subscribe(callbackFn);
+
+      expect(memorelay.unsubscribe(subscriptionId)).toBe(true);
+      expect(invocations).toEqual([]);
+    });
+
+    it('should return false for an already removed subscription', () => {
+      const memorelay = new Memorelay();
+
+      const invocations: { event: NostrEvent }[] = [];
+      const callbackFn = (event: NostrEvent) => {
+        invocations.push({ event });
+      };
+
+      const subscriptionId = memorelay.subscribe(callbackFn);
+
+      memorelay.unsubscribe(subscriptionId);
+
+      expect(memorelay.unsubscribe(subscriptionId)).toBe(false);
+      expect(invocations).toEqual([]);
+    });
+
+    it('should throw if the subscription id is invalid', () => {
+      const memorelay = new Memorelay();
+      expect(() => {
+        memorelay.unsubscribe('NOT_A_NUMBER' as unknown as number);
+      }).toThrow(RangeError);
     });
   });
 });
