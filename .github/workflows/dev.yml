@@ -1,4 +1,5 @@
 # Dev workflow. Performs checks but does NOT release.
+# Intended to be run on any pushed development branch.
 
 name: Dev branch checks
 
@@ -6,6 +7,7 @@ on:
   push:
     branches:
       - dev
+      - '*-dev-*'
 
 jobs:
   check:
