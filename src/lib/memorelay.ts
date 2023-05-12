@@ -5,4 +5,6 @@
  * @fileoverview Main entry point for Memorelay library.
  */
 
-export * from "./lib/memorelay";
+export class Memorelay {
+  // TODO(jimbo): Implement class to do something.
+}

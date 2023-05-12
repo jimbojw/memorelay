@@ -1,0 +1,14 @@
+# Release from main branch workflow.
+
+name: Main branch check and release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    uses: ./.github/workflows/release.yml
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

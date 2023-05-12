@@ -1,0 +1,12 @@
+# Dev workflow. Performs checks but does NOT release.
+
+name: Dev branch checks
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  check:
+    uses: ./.github/workflows/checks.yml
