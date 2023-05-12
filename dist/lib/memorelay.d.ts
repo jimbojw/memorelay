@@ -4,7 +4,7 @@
 /**
  * @fileoverview Main entry point for Memorelay library.
  */
-import { Event as NostrEvent } from 'nostr-tools';
+import { Filter, Event as NostrEvent } from 'nostr-tools';
 export declare class Memorelay {
     /**
      * Map of events keyed by id known to this memorelay instance.
@@ -28,4 +28,12 @@ export declare class Memorelay {
      * @returns Whether the event was deleted.
      */
     deleteEvent(event: NostrEvent): boolean;
+    /**
+     * Find and return all events which match the provided array of filters. If
+     * the filters array is not provided, or if it is an empty array, then no
+     * criteria are enforced and all events will match.
+     * @param filters Optional array of Filter objects to test.
+     * @returns An array of matching events.
+     */
+    matchFilters(filters?: Filter[]): NostrEvent[];
 }

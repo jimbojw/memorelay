@@ -1,3 +1,12 @@
+# [1.2.0](https://github.com/jimbojw/memorelay/compare/v1.1.0...v1.2.0) (2023-05-12)
+
+
+### Features
+
+* Implementing matchFilters() method and related tests. ([9a31a2c](https://github.com/jimbojw/memorelay/commit/9a31a2c4c2440403d61bc4a8b1763359f75ff60a))
+* Implementing verifyFilter() utility function and related types and tests. ([3c84eeb](https://github.com/jimbojw/memorelay/commit/3c84eeb32cb0ffbb562f11bb3cd4b156c8c27377))
+* Incorporating verifyFilters() into Memorelay:matchFilters() behavior. ([cf49124](https://github.com/jimbojw/memorelay/commit/cf4912409b6d804ef0f8a6d6b28df0e320e391cd))
+
 # [1.1.0](https://github.com/jimbojw/memorelay/compare/v1.0.0...v1.1.0) (2023-05-12)
 
 
