@@ -4,5 +4,4 @@
 /**
  * @fileoverview Main entry point for Memorelay library.
  */
-export declare class Memorelay {
-}
+export * from "./lib/memorelay";
