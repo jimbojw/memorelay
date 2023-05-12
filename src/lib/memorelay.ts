@@ -7,7 +7,7 @@
 
 import { verifyEvent } from './verify-event';
 
-import { Event as NostrEvent } from 'nostr-tools';
+import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
 
 export class Memorelay {
   /**
@@ -49,5 +49,22 @@ export class Memorelay {
     }
     this.eventsMap.delete(event.id);
     return true;
+  }
+
+  /**
+   * Find and return all events which match the provided array of filters. If
+   * the filters array is not provided, or if it is an empty array, then no
+   * criteria are enforced and all events will match.
+   * @param filters Optional array of Filter objects to test.
+   * @returns An array of matching events.
+   */
+  matchFilters(filters?: Filter[]): NostrEvent[] {
+    const matchingEvents: NostrEvent[] = [];
+    for (const [, event] of this.eventsMap) {
+      if (!filters || filters.length < 1 || matchFilters(filters, event)) {
+        matchingEvents.push(event);
+      }
+    }
+    return matchingEvents;
   }
 }
