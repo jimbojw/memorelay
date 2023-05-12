@@ -8,6 +8,7 @@
 import { verifyEvent } from './verify-event';
 
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
+import { verifyFilters } from './verify-filters';
 
 export class Memorelay {
   /**
@@ -59,6 +60,7 @@ export class Memorelay {
    * @returns An array of matching events.
    */
   matchFilters(filters?: Filter[]): NostrEvent[] {
+    filters && verifyFilters(filters);
     const matchingEvents: NostrEvent[] = [];
     for (const [, event] of this.eventsMap) {
       if (!filters || filters.length < 1 || matchFilters(filters, event)) {

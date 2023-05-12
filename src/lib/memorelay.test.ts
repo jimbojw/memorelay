@@ -7,7 +7,7 @@
 
 import { Memorelay } from './memorelay';
 
-import { Event as NostrEvent } from 'nostr-tools';
+import { Filter, Event as NostrEvent } from 'nostr-tools';
 import { BadEventError } from './verify-event';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
@@ -128,6 +128,24 @@ describe('Memorelay', () => {
         ALTERNATIVE_SIGNED_EVENT,
       ]);
       expect(memorelay.matchFilters([{ ids: ['XX'] }])).toEqual([]);
+    });
+
+    it('should throw if a filter is invalid', () => {
+      const memorelay = new Memorelay();
+
+      expect(() => {
+        memorelay.matchFilters([
+          { INVALID_KEY: ['UNEXPECTED VALUE'] } as unknown as Filter,
+        ]);
+      }).toThrow('unexpected filter field');
+
+      expect(() => {
+        memorelay.matchFilters([
+          {},
+          { INVALID_KEY: ['UNEXPECTED VALUE'] } as unknown as Filter,
+          { kinds: [1] },
+        ]);
+      }).toThrow('unexpected filter field');
     });
   });
 });
