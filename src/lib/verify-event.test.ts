@@ -111,7 +111,7 @@ describe('verifyEvent()', () => {
           '6140478c9ae12f1d0b540e7c57806649327a91b040b07f7ba3dedc357cab0da5',
         sig: 'INCORRECT_SIGNATURE', // sig: 'c84d6e0db72b1b93f7ef95a03ad73519679966d007f030fe3e82fe66e199aa10278da0806109895b62c11f516dff986a59041461c6e26e600fa0f75f4948d8bd',
         tags: [],
-      } as unknown as NostrEvent);
+      });
     }).toThrow('bad signature');
   });
 });
