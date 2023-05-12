@@ -1,6 +1,6 @@
 {
   "name": "memorelay",
-  "version": "0.0.0-development",
+  "version": "1.2.0",
   "description": "In-memory Nostr relay.",
   "scripts": {
     "clean": "rimraf ./dist && mkdir dist",
