@@ -1,6 +1,6 @@
 # Dev workflow. Performs checks but does NOT release.
 
-name: Dev
+name: Dev branch checks
 
 on:
   push:
