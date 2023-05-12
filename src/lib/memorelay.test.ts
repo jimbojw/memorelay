@@ -8,6 +8,7 @@
 import { Memorelay } from './memorelay';
 
 import { Event as NostrEvent } from 'nostr-tools';
+import { BadEventError } from './verify-event';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
   content: 'BRB, turning on the miners',
@@ -37,6 +38,21 @@ describe('Memorelay', () => {
       const memorelay = new Memorelay();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       expect(memorelay.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+    });
+
+    it('should throw when adding an invalid event object', () => {
+      const memorelay = new Memorelay();
+      expect(() => {
+        memorelay.addEvent({} as NostrEvent);
+      }).toThrow(BadEventError);
+
+      expect(() => {
+        memorelay.addEvent(undefined as unknown as NostrEvent);
+      }).toThrow(BadEventError);
+
+      expect(() => {
+        memorelay.addEvent(EXAMPLE_SIGNED_EVENT.id as unknown as NostrEvent);
+      }).toThrow(BadEventError);
     });
   });
 

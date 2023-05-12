@@ -5,6 +5,8 @@
  * @fileoverview Main entry point for Memorelay library.
  */
 
+import { verifyEvent } from './verify-event';
+
 import { Event as NostrEvent } from 'nostr-tools';
 
 export class Memorelay {
@@ -25,8 +27,10 @@ export class Memorelay {
    * Add the given event to the events map and return whether successful.
    * @param event The event to add.
    * @returns Whether the event was added.
+   * @throws BadEventError if the incoming object is not a valid, signed event.
    */
   addEvent(event: NostrEvent): boolean {
+    verifyEvent(event);
     if (this.hasEvent(event)) {
       return false;
     }
