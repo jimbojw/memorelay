@@ -5,11 +5,12 @@
  * @fileoverview Tests for the MemorelayServer class.
  */
 
-import { LogEntry } from 'winston';
+import { createExpectingLogger } from './create-expecting-logger';
 import { MemorelayServer } from './memorelay-server';
 
-import { createLogger } from 'winston';
-import { createExpectingLogger } from './create-expecting-logger';
+import { createLogger, LogEntry } from 'winston';
+import { IncomingMessage } from 'http';
+import { WebSocket } from 'ws';
 
 describe('MemorelayServer', () => {
   it('should be a constructor function', () => {
@@ -114,6 +115,32 @@ describe('MemorelayServer', () => {
       await server.stop();
 
       expect(await server.stop()).toBe(false);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+    });
+  });
+
+  describe('connect', () => {
+    it('should accept a connecting WebSocket', async () => {
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%d|%s) %s' },
+      ];
+
+      const ws = new WebSocket(null);
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const server = new MemorelayServer(3000, fakeLogger);
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      server.connect(ws, fakeMessage);
 
       const actualLogs = await actualLogsPromise;
 

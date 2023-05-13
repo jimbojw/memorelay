@@ -25,6 +25,7 @@ export function createExpectingLogger(invocations = 0): {
   });
   const actualLogs: LogEntry[] = [];
   const fakeLogger = {
+    child: () => fakeLogger,
     log: (level: string, message: string) => {
       actualLogs.push({ level, message });
       if (actualLogs.length >= invocations) {
