@@ -33,3 +33,8 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
+      - name: Check license headers
+        uses: viperproject/check-license-header@v2
+        with:
+          config: './.github/license-check/license-config.json'
+          strict: true
