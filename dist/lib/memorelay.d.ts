@@ -11,6 +11,14 @@ export declare class Memorelay {
      */
     private readonly eventsMap;
     /**
+     * Counter to keep track of the next subscription id to use.
+     */
+    private nextSubscriptionId;
+    /**
+     * Map of subscriptions.
+     */
+    private readonly subscriptionsMap;
+    /**
      * Returns whether the provided event is in memory.
      * @param event The event to check.
      */
@@ -36,4 +44,23 @@ export declare class Memorelay {
      * @returns An array of matching events.
      */
     matchFilters(filters?: Filter[]): NostrEvent[];
+    /**
+     * Subscribe to events matching the optional filters list. Only newly added
+     * events AFTER the subscription is made will trigger the callback function.
+     * @param callbackFn Function to invoke when events are added that match
+     * the filter(s).
+     * @param filters Optional list of filters to match. If omitted or empty, then
+     * all added events will trigger the callback.
+     * @returns Unique subscription index number to be used with unsubscribe.
+     */
+    subscribe(callbackFn: (event: NostrEvent) => void, filters?: Filter[]): number;
+    /**
+     * Unsubscribe from the previously established subscription. If there was no
+     * such subscription with the provided id, then false is returned.
+     * @param subscriptionId Unique subscription id number previously returned by
+     * a call to subscribe().
+     * @returns Whether the subscription was removed.
+     * @throws RangeError if the provided subscription id is invalid.
+     */
+    unsubscribe(subscriptionId: number): boolean;
 }

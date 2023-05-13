@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/jimbojw/memorelay/compare/v1.2.0...v1.3.0) (2023-05-13)
+
+
+### Features
+
+* Implementing subscriptions for Memorelay class plus related types and tests. ([7a230c9](https://github.com/jimbojw/memorelay/commit/7a230c9c01195a58a76a89bc57d3202f2841f225))
+
 # [1.2.0](https://github.com/jimbojw/memorelay/compare/v1.1.0...v1.2.0) (2023-05-12)
 
 
