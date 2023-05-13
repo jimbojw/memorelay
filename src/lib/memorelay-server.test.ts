@@ -125,7 +125,7 @@ describe('MemorelayServer', () => {
   describe('connect', () => {
     it('should accept a connecting WebSocket', async () => {
       const expectedLogs: LogEntry[] = [
-        { level: 'http', message: 'OPEN (%d|%s) %s' },
+        { level: 'http', message: 'OPEN (%s) %s' },
       ];
 
       const ws = new WebSocket(null);

@@ -98,19 +98,14 @@ export class MemorelayServer {
       throw new Error('websocket is already connected');
     }
 
-    const subscriber = new Subscriber(webSocket);
+    const subscriber = new Subscriber(webSocket, incomingMessage, this.logger);
     this.subscribers.set(webSocket, subscriber);
 
-    const { headers, url: path } = incomingMessage;
-    const secWebsocketKey = headers['sec-websocket-key'];
-    const url = `${headers.host ?? ''}${path ?? '/'}`;
-
-    const childLogger = this.logger.child({
-      secWebsocketKey,
-      url,
+    webSocket.on('close', () => {
+      if (!this.subscribers.has(webSocket)) {
+        throw new InternalError('close event received for missing websocket');
+      }
+      this.subscribers.delete(webSocket);
     });
-
-    childLogger.log('http', 'OPEN (%d|%s) %s', 0, secWebsocketKey, url);
-    // TODO(jimbo): Initialize the connection.
   }
 }
