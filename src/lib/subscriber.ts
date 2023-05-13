@@ -30,9 +30,17 @@ export class Subscriber {
     });
 
     this.webSocket.on('message', (data: Buffer) => {
-      if (!(data instanceof Buffer)) {
-        throw new Error('unexpected message data type');
-      }
+      this.handleMessage(data);
     });
+  }
+
+  /**
+   * Handle an incoming WebSocket message.
+   * @param data Buffer of incoming message data.
+   */
+  handleMessage(data: Buffer) {
+    if (!(data instanceof Buffer)) {
+      throw new Error('unexpected message data type');
+    }
   }
 }

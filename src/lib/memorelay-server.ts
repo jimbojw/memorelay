@@ -6,11 +6,11 @@
  */
 
 import { InternalError } from './internal-error';
+import { Subscriber } from './subscriber';
 
 import { Logger } from 'winston';
 import { WebSocket, WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
-import { Subscriber } from './subscriber';
 
 export class MemorelayServer {
   private webSocketServer?: WebSocketServer;
@@ -91,9 +91,10 @@ export class MemorelayServer {
    * the WebSocketServer's 'connection' event handler.
    * @param webSocket The WebSocket client that has connected.
    * @param incomingMessage The incoming http request.
+   * @returns The connected Subscriber object.
    * @throws If the webSocket is already connected.
    */
-  connect(webSocket: WebSocket, incomingMessage: IncomingMessage) {
+  connect(webSocket: WebSocket, incomingMessage: IncomingMessage): Subscriber {
     if (this.subscribers.has(webSocket)) {
       throw new Error('websocket is already connected');
     }
@@ -107,5 +108,7 @@ export class MemorelayServer {
       }
       this.subscribers.delete(webSocket);
     });
+
+    return subscriber;
   }
 }

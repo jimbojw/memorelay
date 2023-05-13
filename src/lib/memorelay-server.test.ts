@@ -7,6 +7,7 @@
 
 import { createExpectingLogger } from './create-expecting-logger';
 import { MemorelayServer } from './memorelay-server';
+import { Subscriber } from './subscriber';
 
 import { createLogger, LogEntry } from 'winston';
 import { IncomingMessage } from 'http';
@@ -123,28 +124,15 @@ describe('MemorelayServer', () => {
   });
 
   describe('connect', () => {
-    it('should accept a connecting WebSocket', async () => {
-      const expectedLogs: LogEntry[] = [
-        { level: 'http', message: 'OPEN (%s) %s' },
-      ];
-
-      const ws = new WebSocket(null);
-
-      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
-        expectedLogs.length
-      );
-
+    it('should accept a connecting WebSocket', () => {
+      const webSocket = new WebSocket(null);
+      const { fakeLogger } = createExpectingLogger(0);
       const server = new MemorelayServer(3000, fakeLogger);
-
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-
-      server.connect(ws, fakeMessage);
-
-      const actualLogs = await actualLogsPromise;
-
-      expect(actualLogs).toEqual(expectedLogs);
+      const subscriber = server.connect(webSocket, fakeMessage);
+      expect(subscriber instanceof Subscriber).toBe(true);
     });
   });
 });
