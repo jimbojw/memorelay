@@ -11,6 +11,7 @@ import { Subscriber } from './subscriber';
 import { LogEntry } from 'winston';
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
+import { BadMessageError } from './bad-message-error';
 
 describe('Subscriber', () => {
   it('should be a constructor function', () => {
@@ -136,6 +137,75 @@ describe('Subscriber', () => {
           Buffer.from('NESTED_BUFFER', 'utf-8'),
         ] as unknown as Buffer);
       }).toThrow('unexpected message data type');
+    });
+
+    it('should log an error when not a Nostr message', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentData: string[] = [];
+      webSocket.send = (sentData: string) => {
+        webSocketSentData.push(sentData);
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'verbose', message: 'bad msg: unrecognized event type' },
+      ];
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+
+      subscriber.handleMessage(
+        Buffer.from(JSON.stringify(['BAD_MESSAGE_TYPE']), 'utf-8')
+      );
+
+      expect(webSocketSentData).toEqual([
+        JSON.stringify(['NOTICE', 'ERROR: bad msg: unrecognized event type']),
+      ]);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+    });
+
+    it('should log a message when a Nostr message is received', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentData: string[] = [];
+      webSocket.send = (sentData: string) => {
+        webSocketSentData.push(sentData);
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'silly', message: 'MESSAGE (CLOSE)' },
+      ];
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+
+      subscriber.handleMessage(
+        Buffer.from(JSON.stringify(['CLOSE', '1']), 'utf-8')
+      );
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentData).toEqual([]);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
     });
   });
 });

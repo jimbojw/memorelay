@@ -8,6 +8,7 @@
 import { IncomingMessage } from 'http';
 import { Logger } from 'winston';
 import { WebSocket } from 'ws';
+import { ClientMessage, bufferToMessage } from './buffer-to-message';
 
 export class Subscriber {
   constructor(
@@ -36,11 +37,24 @@ export class Subscriber {
 
   /**
    * Handle an incoming WebSocket message.
-   * @param data Buffer of incoming message data.
+   * @param payloadDataBuffer Buffer of incoming message data.
    */
-  handleMessage(data: Buffer) {
-    if (!(data instanceof Buffer)) {
+  handleMessage(payloadDataBuffer: Buffer) {
+    if (!(payloadDataBuffer instanceof Buffer)) {
       throw new Error('unexpected message data type');
     }
+
+    let clientMessage: ClientMessage;
+    try {
+      clientMessage = bufferToMessage(payloadDataBuffer);
+    } catch (err) {
+      const errorMessage = (err as Error).message;
+      this.logger.log('verbose', `${errorMessage}`);
+      this.webSocket.send(JSON.stringify(['NOTICE', `ERROR: ${errorMessage}`]));
+      return;
+    }
+
+    const messageType = clientMessage[0];
+    this.logger.log('silly', `MESSAGE (${messageType})`);
   }
 }
