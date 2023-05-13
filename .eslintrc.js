@@ -1,10 +1,13 @@
 /**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * @fileoverview Configuration for ESLint.
  */
 
 const skipWords = `
-dotenv ecma fileoverview lang jsx memorelay msg nostr printf pubkey readonly req
-sig tsconfig tsx unparseable utf ws wss
+dotenv ecma fileoverview lang jsx memorelay microtask msg nostr printf pubkey
+readonly req sig tsconfig tsx unparseable utf ws wss
 `.match(/\w+/g);
 
 module.exports = {
