@@ -5,7 +5,8 @@
  * @fileoverview Tests for the bufferToMessage() function.
  */
 
-import { ReqMessage, bufferToMessage } from './buffer-to-message';
+import { bufferToMessage } from './buffer-to-message';
+import { ReqMessage } from './message-types';
 
 // An identifier that exceeds the 32-byte (64 char) expected length.
 const LONG_ID = Array(65).fill('f').join('');

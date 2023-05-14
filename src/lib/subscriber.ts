@@ -8,13 +8,21 @@
 import { IncomingMessage } from 'http';
 import { Logger } from 'winston';
 import { WebSocket } from 'ws';
-import { ClientMessage, bufferToMessage } from './buffer-to-message';
+import { bufferToMessage } from './buffer-to-message';
+import {
+  ClientMessage,
+  CloseMessage,
+  EventMessage,
+  ReqMessage,
+} from './message-types';
+import { Memorelay } from './memorelay';
 
 export class Subscriber {
   constructor(
     private readonly webSocket: WebSocket,
     private readonly incomingMessage: IncomingMessage,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly memorelay: Memorelay
   ) {
     const { headers, url: path } = incomingMessage;
     const secWebsocketKey = headers['sec-websocket-key'];
@@ -56,5 +64,44 @@ export class Subscriber {
 
     const messageType = clientMessage[0];
     this.logger.log('silly', `MESSAGE (${messageType})`);
+
+    if (messageType === 'EVENT') {
+      this.handleEventMessage(clientMessage);
+      return;
+    }
+
+    if (messageType === 'REQ') {
+      this.handleReqMessage(clientMessage);
+      return;
+    }
+
+    if (messageType === 'CLOSE') {
+      this.handleCloseMessage(clientMessage);
+      return;
+    }
+  }
+
+  /**
+   * Handle an incoming EVENT message.
+   * @param eventMessage Incoming EVENT message to handle.
+   */
+  handleEventMessage(eventMessage: EventMessage) {
+    this.memorelay.addEvent(eventMessage[1]);
+  }
+
+  /**
+   * Handle an incoming REQ message.
+   * @param reqMessage Incoming REQ message to handle.
+   */
+  handleReqMessage(reqMessage: ReqMessage) {
+    // TODO(jimbo): Implement request message handler.
+  }
+
+  /**
+   * Handle an incoming CLOSE message.
+   * @param closeMessage Incoming CLOSE message to handle.
+   */
+  handleCloseMessage(closeMessage: CloseMessage) {
+    // TODO(jimbo): Implement close message handler.
   }
 }

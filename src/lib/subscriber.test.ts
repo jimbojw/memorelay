@@ -6,12 +6,24 @@
  */
 
 import { createExpectingLogger } from './create-expecting-logger';
+import { CloseMessage, EventMessage, ReqMessage } from './message-types';
+import { Memorelay } from './memorelay';
 import { Subscriber } from './subscriber';
 
-import { LogEntry } from 'winston';
+import { Event as NostrEvent } from 'nostr-tools';
 import { IncomingMessage } from 'http';
+import { LogEntry } from 'winston';
 import { WebSocket } from 'ws';
-import { BadMessageError } from './bad-message-error';
+
+const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
+  content: 'BRB, turning on the miners',
+  created_at: 1683474317,
+  id: 'f9b1990f0c09f2f5bdd2311be939422ab2449f75d5de3a0167ba297bfb9ed9d3',
+  kind: 1,
+  pubkey: '6140478c9ae12f1d0b540e7c57806649327a91b040b07f7ba3dedc357cab0da5',
+  sig: 'c84d6e0db72b1b93f7ef95a03ad73519679966d007f030fe3e82fe66e199aa10278da0806109895b62c11f516dff986a59041461c6e26e600fa0f75f4948d8bd',
+  tags: [],
+});
 
 describe('Subscriber', () => {
   it('should be a constructor function', () => {
@@ -32,7 +44,13 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
 
       expect(subscriber instanceof Subscriber).toBe(true);
 
@@ -56,7 +74,8 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      new Subscriber(webSocket, fakeMessage, fakeLogger, memorelay);
 
       webSocket.emit('close');
 
@@ -81,7 +100,8 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      new Subscriber(webSocket, fakeMessage, fakeLogger, memorelay);
 
       webSocket.emit('error', 'ERROR_MESSAGE');
 
@@ -98,7 +118,13 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger(0);
-      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
 
       const actualInvocationData: Buffer[] = [];
       subscriber.handleMessage = (data: Buffer) => {
@@ -122,7 +148,13 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger(0);
-      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
 
       expect(() => {
         subscriber.handleMessage(undefined as unknown as Buffer);
@@ -159,7 +191,13 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
 
       subscriber.handleMessage(
         Buffer.from(JSON.stringify(['BAD_MESSAGE_TYPE']), 'utf-8')
@@ -194,7 +232,13 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const subscriber = new Subscriber(webSocket, fakeMessage, fakeLogger);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
 
       subscriber.handleMessage(
         Buffer.from(JSON.stringify(['CLOSE', '1']), 'utf-8')
@@ -206,6 +250,86 @@ describe('Subscriber', () => {
       const actualLogs = await actualLogsPromise;
 
       expect(actualLogs).toEqual(expectedLogs);
+    });
+
+    it('should call handleEventMessage() for EVENT messages', () => {
+      const webSocket = new WebSocket(null);
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+      const { fakeLogger } = createExpectingLogger(0);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      const handleEventMessageParams: EventMessage[] = [];
+      subscriber.handleEventMessage = (eventMessage: EventMessage) => {
+        handleEventMessageParams.push(eventMessage);
+      };
+
+      subscriber.handleMessage(
+        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
+      );
+
+      expect(handleEventMessageParams).toEqual([
+        ['EVENT', EXAMPLE_SIGNED_EVENT],
+      ]);
+    });
+
+    it('should call handleReqMessage() for REQ messages', () => {
+      const webSocket = new WebSocket(null);
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+      const { fakeLogger } = createExpectingLogger(0);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      const handleReqMessageParams: ReqMessage[] = [];
+      subscriber.handleReqMessage = (reqMessage: ReqMessage) => {
+        handleReqMessageParams.push(reqMessage);
+      };
+
+      subscriber.handleMessage(
+        Buffer.from(JSON.stringify(['REQ', 'SUBSCRIPTION_ID']), 'utf-8')
+      );
+
+      expect(handleReqMessageParams).toEqual([['REQ', 'SUBSCRIPTION_ID']]);
+    });
+
+    it('should call handleCloseMessage() for CLOSE messages', () => {
+      const webSocket = new WebSocket(null);
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+      const { fakeLogger } = createExpectingLogger(0);
+      const memorelay = new Memorelay();
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      const handleCloseMessageParams: CloseMessage[] = [];
+      subscriber.handleCloseMessage = (closeMessage: CloseMessage) => {
+        handleCloseMessageParams.push(closeMessage);
+      };
+
+      subscriber.handleMessage(
+        Buffer.from(JSON.stringify(['CLOSE', 'SUBSCRIPTION_ID']), 'utf-8')
+      );
+
+      expect(handleCloseMessageParams).toEqual([['CLOSE', 'SUBSCRIPTION_ID']]);
     });
   });
 });

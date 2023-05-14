@@ -13,12 +13,12 @@ import {
 import { BadMessageError } from './bad-message-error';
 import { verifyFilter } from './verify-filters';
 
-import { Filter } from 'nostr-tools';
-
-export type EventMessage = ['EVENT', NostrEvent];
-export type ReqMessage = ['REQ', string, ...Filter[]];
-export type CloseMessage = ['CLOSE', string];
-export type ClientMessage = EventMessage | ReqMessage | CloseMessage;
+import {
+  ClientMessage,
+  EventMessage,
+  ReqMessage,
+  CloseMessage,
+} from './message-types';
 
 /**
  * Check whether the subscription id is valid.

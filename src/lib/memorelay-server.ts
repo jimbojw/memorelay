@@ -11,9 +11,18 @@ import { Subscriber } from './subscriber';
 import { Logger } from 'winston';
 import { WebSocket, WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
+import { Memorelay } from './memorelay';
 
 export class MemorelayServer {
+  /**
+   * WebSocketServer to listen for connections.
+   */
   private webSocketServer?: WebSocketServer;
+
+  /**
+   * Backing Memorelay instance for managing received events.
+   */
+  private readonly memorelay = new Memorelay();
 
   /**
    * Mapping from WebSockets to the connected Subscriber objects.
@@ -99,7 +108,12 @@ export class MemorelayServer {
       throw new Error('websocket is already connected');
     }
 
-    const subscriber = new Subscriber(webSocket, incomingMessage, this.logger);
+    const subscriber = new Subscriber(
+      webSocket,
+      incomingMessage,
+      this.logger,
+      this.memorelay
+    );
     this.subscribers.set(webSocket, subscriber);
 
     webSocket.on('close', () => {
