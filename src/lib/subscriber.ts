@@ -16,7 +16,6 @@ import {
   ReqMessage,
 } from './message-types';
 import { Memorelay } from './memorelay';
-import { InternalError } from './internal-error';
 
 export class Subscriber {
   /**
@@ -92,10 +91,7 @@ export class Subscriber {
       return;
     }
 
-    if (messageType === 'CLOSE') {
-      this.handleCloseMessage(clientMessage);
-      return;
-    }
+    this.handleCloseMessage(clientMessage);
   }
 
   /**
