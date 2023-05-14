@@ -100,9 +100,12 @@ describe('Subscriber', () => {
       const memorelay = new Memorelay();
 
       const unsubscribedNumbers: number[] = [];
+      memorelay.subscribe = () => {
+        return 123;
+      };
       memorelay.unsubscribe = (subscriptionNumber: number) => {
         unsubscribedNumbers.push(subscriptionNumber);
-        return true;
+        return subscriptionNumber === 123;
       };
 
       const subscriber = new Subscriber(
@@ -122,7 +125,7 @@ describe('Subscriber', () => {
 
       await Promise.resolve();
 
-      expect(unsubscribedNumbers).toEqual([0]);
+      expect(unsubscribedNumbers).toEqual([123]);
     });
   });
 
@@ -540,6 +543,101 @@ describe('Subscriber', () => {
       expect(webSocketSentData[1]).toEqual(
         Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIPTION_ID']), 'utf-8')
       );
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+    });
+  });
+
+  describe('handleCloseMessage', () => {
+    it('should notify if the subscription does not exist', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentData: string[] = [];
+      webSocket.send = (sentData: string) => {
+        webSocketSentData.push(sentData);
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const { fakeLogger } = createExpectingLogger();
+
+      const memorelay = new Memorelay();
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleCloseMessage(['CLOSE', 'SUBSCRIPTION_ID']);
+
+      await Promise.resolve();
+
+      expect(webSocketSentData).toEqual([
+        Buffer.from(
+          JSON.stringify([
+            'NOTICE',
+            "ERROR: subscription not found: 'SUBSCRIPTION_ID'",
+          ]),
+          'utf-8'
+        ),
+      ]);
+    });
+
+    it('should close existing subscription', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentData: string[] = [];
+      webSocket.send = (sentData: string) => {
+        webSocketSentData.push(sentData);
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'verbose', message: 'REQ %s' },
+        { level: 'verbose', message: 'CLOSE %s' },
+      ];
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const memorelay = new Memorelay();
+      memorelay.subscribe = () => {
+        return 123;
+      };
+      const unsubscribedNumbers: number[] = [];
+      memorelay.unsubscribe = (subscriptionNumber: number) => {
+        unsubscribedNumbers.push(subscriptionNumber);
+        return subscriptionNumber === 123;
+      };
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleReqMessage(['REQ', 'SUBSCRIPTION_ID']);
+
+      expect(webSocketSentData.length).toBe(1);
+      expect(webSocketSentData[0]).toEqual(
+        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIPTION_ID']), 'utf-8')
+      );
+
+      subscriber.handleCloseMessage(['CLOSE', 'SUBSCRIPTION_ID']);
+
+      expect(unsubscribedNumbers).toEqual([123]);
 
       const actualLogs = await actualLogsPromise;
 
