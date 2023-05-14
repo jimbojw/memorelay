@@ -86,6 +86,14 @@ export class Subscriber {
    * @param eventMessage Incoming EVENT message to handle.
    */
   handleEventMessage(eventMessage: EventMessage) {
+    const event = eventMessage[1];
+    if (this.memorelay.hasEvent(event)) {
+      this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
+      return;
+    }
+
+    this.logger.log('verbose', 'EVENT %s', event.id);
+
     this.memorelay.addEvent(eventMessage[1]);
   }
 

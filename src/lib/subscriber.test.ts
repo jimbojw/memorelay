@@ -332,4 +332,73 @@ describe('Subscriber', () => {
       expect(handleCloseMessageParams).toEqual([['CLOSE', 'SUBSCRIPTION_ID']]);
     });
   });
+
+  describe('handleEventMessage', () => {
+    it('should log and not forward duplicate events', async () => {
+      const webSocket = new WebSocket(null);
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'debug', message: 'EVENT %s (duplicate)' },
+      ];
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const memorelay = new Memorelay();
+      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleEventMessage(['EVENT', EXAMPLE_SIGNED_EVENT]);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+    });
+
+    it('should log and forward previously unseen events', async () => {
+      const webSocket = new WebSocket(null);
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'verbose', message: 'EVENT %s' },
+      ];
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const memorelay = new Memorelay();
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleEventMessage(['EVENT', EXAMPLE_SIGNED_EVENT]);
+
+      expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+    });
+  });
 });
