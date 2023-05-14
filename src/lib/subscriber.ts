@@ -151,6 +151,26 @@ export class Subscriber {
    * @param closeMessage Incoming CLOSE message to handle.
    */
   handleCloseMessage(closeMessage: CloseMessage) {
-    // TODO(jimbo): Implement close message handler.
+    const [, subscriptionId] = closeMessage;
+
+    this.logger.log('verbose', 'CLOSE %s', subscriptionId);
+
+    const existingSubscriptionNumber =
+      this.subscriptionIdMap.get(subscriptionId);
+    if (existingSubscriptionNumber === undefined) {
+      this.webSocket.send(
+        Buffer.from(
+          JSON.stringify([
+            'NOTICE',
+            `ERROR: subscription not found: '${subscriptionId}'`,
+          ]),
+          'utf-8'
+        )
+      );
+      return;
+    }
+
+    this.memorelay.unsubscribe(existingSubscriptionNumber);
+    this.subscriptionIdMap.delete(subscriptionId);
   }
 }

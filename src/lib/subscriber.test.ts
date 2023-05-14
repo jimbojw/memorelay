@@ -226,7 +226,8 @@ describe('Subscriber', () => {
 
       const expectedLogs: LogEntry[] = [
         { level: 'http', message: 'OPEN (%s) %s' },
-        { level: 'silly', message: 'MESSAGE (CLOSE)' },
+        { level: 'silly', message: 'MESSAGE (EVENT)' },
+        { level: 'verbose', message: 'EVENT %s' },
       ];
       const { fakeLogger, actualLogsPromise } = createExpectingLogger(
         expectedLogs.length
@@ -241,7 +242,7 @@ describe('Subscriber', () => {
       );
 
       subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['CLOSE', '1']), 'utf-8')
+        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
       );
 
       // WebSocket should not have received any sent data.
