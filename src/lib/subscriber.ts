@@ -16,8 +16,21 @@ import {
   ReqMessage,
 } from './message-types';
 import { Memorelay } from './memorelay';
+import { InternalError } from './internal-error';
 
 export class Subscriber {
+  /**
+   * Mapping from Nostr REQ subscription id string to the Memorelay subscription
+   * number.
+   */
+  private readonly subscriptionIdMap = new Map<string, number>();
+
+  /**
+   * @param webSocket The connected socket that spawned this Subscriber.
+   * @param incomingMessage Incoming HTTP message details.
+   * @param logger
+   * @param memorelay Backing Memorelay for handling events.
+   */
   constructor(
     private readonly webSocket: WebSocket,
     private readonly incomingMessage: IncomingMessage,
@@ -102,7 +115,35 @@ export class Subscriber {
    * @param reqMessage Incoming REQ message to handle.
    */
   handleReqMessage(reqMessage: ReqMessage) {
-    // TODO(jimbo): Implement request message handler.
+    const [, subscriptionId, ...filters] = reqMessage;
+
+    this.logger.log('verbose', 'REQ %s', subscriptionId);
+
+    const existingSubscriptionNumber =
+      this.subscriptionIdMap.get(subscriptionId);
+    if (existingSubscriptionNumber !== undefined) {
+      this.memorelay.unsubscribe(existingSubscriptionNumber);
+      this.subscriptionIdMap.delete(subscriptionId);
+    }
+
+    const newSubscriptionNumber = this.memorelay.subscribe((event) => {
+      // TODO(jimbo): What if the WebSocket is disconnected?
+      this.webSocket.send(
+        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
+      );
+    }, filters);
+
+    this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
+
+    const matchingEvents = this.memorelay.matchFilters(filters);
+    for (const event of matchingEvents) {
+      this.webSocket.send(
+        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
+      );
+    }
+    this.webSocket.send(
+      Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8')
+    );
   }
 
   /**

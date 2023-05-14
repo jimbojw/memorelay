@@ -152,14 +152,14 @@ describe('Memorelay', () => {
         invocations.push({ event });
       };
 
-      const subscriptionId = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = memorelay.subscribe(callbackFn);
 
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
 
       expect(invocations).toEqual([]);
 
       // Remove the subscription. Still same execution thread.
-      memorelay.unsubscribe(subscriptionId);
+      memorelay.unsubscribe(subscriptionNumber);
 
       expect(invocations).toEqual([]);
 
@@ -255,7 +255,7 @@ describe('Memorelay', () => {
   });
 
   describe('subscribe', () => {
-    it('should return a subscriptionId for a new subscription', () => {
+    it('should return a subscriptionNumber for a new subscription', () => {
       const memorelay = new Memorelay();
 
       const invocations: { event: NostrEvent }[] = [];
@@ -263,13 +263,13 @@ describe('Memorelay', () => {
         invocations.push({ event });
       };
 
-      const subscriptionId = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = memorelay.subscribe(callbackFn);
 
-      expect(Number.isInteger(subscriptionId)).toBe(true);
+      expect(Number.isInteger(subscriptionNumber)).toBe(true);
       expect(invocations).toEqual([]);
     });
 
-    it('should return a different subscriptionId each time', () => {
+    it('should return a different subscriptionNumber each time', () => {
       const memorelay = new Memorelay();
 
       const invocations: { event: NostrEvent }[] = [];
@@ -277,12 +277,12 @@ describe('Memorelay', () => {
         invocations.push({ event });
       };
 
-      const firstSubscriptionId = memorelay.subscribe(callbackFn);
-      const secondSubscriptionId = memorelay.subscribe(callbackFn);
+      const firstSubscriptionNumber = memorelay.subscribe(callbackFn);
+      const secondSubscriptionNumber = memorelay.subscribe(callbackFn);
 
-      expect(Number.isInteger(firstSubscriptionId)).toBe(true);
-      expect(Number.isInteger(secondSubscriptionId)).toBe(true);
-      expect(firstSubscriptionId === secondSubscriptionId).toBe(false);
+      expect(Number.isInteger(firstSubscriptionNumber)).toBe(true);
+      expect(Number.isInteger(secondSubscriptionNumber)).toBe(true);
+      expect(firstSubscriptionNumber === secondSubscriptionNumber).toBe(false);
       expect(invocations).toEqual([]);
     });
 
@@ -298,13 +298,13 @@ describe('Memorelay', () => {
         UNEXPECETED_FIELD: 'UNEXPECTED_VALUE',
       } as unknown as Filter;
 
-      let subscriptionId: number | undefined = undefined;
+      let subscriptionNumber: number | undefined = undefined;
 
       expect(() => {
-        subscriptionId = memorelay.subscribe(callbackFn, [invalidFilter]);
+        subscriptionNumber = memorelay.subscribe(callbackFn, [invalidFilter]);
       }).toThrow('unexpected filter field');
 
-      expect(subscriptionId).toBeUndefined();
+      expect(subscriptionNumber).toBeUndefined();
     });
   });
 
@@ -323,9 +323,9 @@ describe('Memorelay', () => {
         invocations.push({ event });
       };
 
-      const subscriptionId = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = memorelay.subscribe(callbackFn);
 
-      expect(memorelay.unsubscribe(subscriptionId)).toBe(true);
+      expect(memorelay.unsubscribe(subscriptionNumber)).toBe(true);
       expect(invocations).toEqual([]);
     });
 
@@ -337,11 +337,11 @@ describe('Memorelay', () => {
         invocations.push({ event });
       };
 
-      const subscriptionId = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = memorelay.subscribe(callbackFn);
 
-      memorelay.unsubscribe(subscriptionId);
+      memorelay.unsubscribe(subscriptionNumber);
 
-      expect(memorelay.unsubscribe(subscriptionId)).toBe(false);
+      expect(memorelay.unsubscribe(subscriptionNumber)).toBe(false);
       expect(invocations).toEqual([]);
     });
 
