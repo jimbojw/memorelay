@@ -83,6 +83,47 @@ describe('Subscriber', () => {
 
       expect(actualLogs).toEqual(expectedLogs);
     });
+
+    it('should unsubscribe from all subscriptions', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentData: string[] = [];
+      webSocket.send = (sentData: string) => {
+        webSocketSentData.push(sentData);
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+      const { fakeLogger } = createExpectingLogger();
+
+      const memorelay = new Memorelay();
+
+      const unsubscribedNumbers: number[] = [];
+      memorelay.unsubscribe = (subscriptionNumber: number) => {
+        unsubscribedNumbers.push(subscriptionNumber);
+        return true;
+      };
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleReqMessage(['REQ', 'SUBSCRIBER_ID']);
+
+      expect(webSocketSentData).toEqual([
+        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIBER_ID']), 'utf-8'),
+      ]);
+
+      webSocket.emit('close');
+
+      await Promise.resolve();
+
+      expect(unsubscribedNumbers).toEqual([0]);
+    });
   });
 
   describe('on(error)', () => {
@@ -117,7 +158,7 @@ describe('Subscriber', () => {
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-      const { fakeLogger } = createExpectingLogger(0);
+      const { fakeLogger } = createExpectingLogger();
       const memorelay = new Memorelay();
       const subscriber = new Subscriber(
         webSocket,
@@ -147,7 +188,7 @@ describe('Subscriber', () => {
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-      const { fakeLogger } = createExpectingLogger(0);
+      const { fakeLogger } = createExpectingLogger();
       const memorelay = new Memorelay();
       const subscriber = new Subscriber(
         webSocket,
@@ -258,7 +299,7 @@ describe('Subscriber', () => {
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-      const { fakeLogger } = createExpectingLogger(0);
+      const { fakeLogger } = createExpectingLogger();
       const memorelay = new Memorelay();
       const subscriber = new Subscriber(
         webSocket,
@@ -286,7 +327,7 @@ describe('Subscriber', () => {
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-      const { fakeLogger } = createExpectingLogger(0);
+      const { fakeLogger } = createExpectingLogger();
       const memorelay = new Memorelay();
       const subscriber = new Subscriber(
         webSocket,
@@ -312,7 +353,7 @@ describe('Subscriber', () => {
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
-      const { fakeLogger } = createExpectingLogger(0);
+      const { fakeLogger } = createExpectingLogger();
       const memorelay = new Memorelay();
       const subscriber = new Subscriber(
         webSocket,

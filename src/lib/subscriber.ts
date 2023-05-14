@@ -44,6 +44,10 @@ export class Subscriber {
     this.logger.log('http', 'OPEN (%s) %s', secWebsocketKey, url);
 
     this.webSocket.on('close', (code) => {
+      for (const [, existingSubscriptionNumber] of this.subscriptionIdMap) {
+        this.memorelay.unsubscribe(existingSubscriptionNumber);
+      }
+      this.subscriptionIdMap.clear();
       this.logger.log('http', 'CLOSE (%s) %s', secWebsocketKey, code);
     });
 
