@@ -26,7 +26,9 @@
     "nostr",
     "relay"
   ],
-  "author": "jimbojw",
+  "author": {
+    "name": "jimbojw"
+  },
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/jimbojw/memorelay/issues"
@@ -39,8 +41,10 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@schemastore/package": "0.0.8",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
+    "@types/commander": "2.12.2",
     "@types/jest": "29.5.1",
     "@types/ws": "8.5.4",
     "@typescript-eslint/eslint-plugin": "5.59.2",
@@ -64,6 +68,7 @@
     "typescript": "5.0.4"
   },
   "dependencies": {
+    "commander": "10.0.1",
     "nostr-tools": "1.10.1",
     "winston": "3.8.2",
     "ws": "8.13.0"
