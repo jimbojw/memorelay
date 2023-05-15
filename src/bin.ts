@@ -5,14 +5,13 @@
  * @fileoverview Entry point for Memorelay server (bin file).
  */
 
-import * as rawPackageJson from '../package.json';
-import { JSONSchemaForNPMPackageJsonFiles2 } from '@schemastore/package';
-const packageJson = rawPackageJson as JSONSchemaForNPMPackageJsonFiles2;
-
 import { MemorelayServer } from './lib/memorelay-server';
+import { readPackageJson } from './lib/package-json';
 
-import { program } from 'commander';
 import { createLogger, format, transports } from 'winston';
+import { program } from 'commander';
+
+const packageJson = readPackageJson();
 
 if (!packageJson.name) {
   throw new Error('name field missing from package.json');
