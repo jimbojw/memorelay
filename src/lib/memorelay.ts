@@ -21,7 +21,7 @@ export class Memorelay {
   /**
    * Counter to keep track of the next subscription id to use.
    */
-  private nextSubscriptionId = 0;
+  private nextSubscriptionNumber = 0;
 
   /**
    * Map of subscriptions.
@@ -48,8 +48,10 @@ export class Memorelay {
       return false;
     }
     this.eventsMap.set(event.id, event);
-    for (const [, { callbackFn, filters, subscriptionId }] of this
-      .subscriptionsMap) {
+    for (const [
+      ,
+      { callbackFn, filters, subscriptionNumber: subscriptionId },
+    ] of this.subscriptionsMap) {
       queueMicrotask(() => {
         if (!this.subscriptionsMap.has(subscriptionId)) {
           // Short-circuit if this subscription has been removed.
@@ -108,14 +110,14 @@ export class Memorelay {
     filters?: Filter[]
   ): number {
     filters && verifyFilters(filters);
-    const subscriptionId = this.nextSubscriptionId++;
+    const subscriptionId = this.nextSubscriptionNumber++;
     if (this.subscriptionsMap.has(subscriptionId)) {
       throw new InternalError('subscription id conflict');
     }
     this.subscriptionsMap.set(subscriptionId, {
       callbackFn,
       filters,
-      subscriptionId,
+      subscriptionNumber: subscriptionId,
     });
     return subscriptionId;
   }

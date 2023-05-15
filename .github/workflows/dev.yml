@@ -39,3 +39,5 @@ jobs:
           path: './'
           config: './.github/license-check/license-config.json'
           strict: true
+      - name: Package
+        run: npm run package

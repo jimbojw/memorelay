@@ -28,5 +28,5 @@ export interface Subscription {
    * Unique numeric id for this subscription in the context of the Memorelay
    * instance which created it.
    */
-  readonly subscriptionId: number;
+  readonly subscriptionNumber: number;
 }

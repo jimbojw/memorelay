@@ -2,11 +2,15 @@
   "name": "memorelay",
   "version": "1.2.0",
   "description": "In-memory Nostr relay.",
+  "bin": "dist/bin/index.js",
   "scripts": {
     "check-licenses": "check-license-header check --config .github/license-check/license-config.json --strict",
     "clean": "rimraf ./dist && mkdir dist",
-    "build": "npm run clean; tsc",
+    "build": "tsc --emitDeclarationOnly",
     "lint": "eslint **/*.{js,ts}",
+    "package": "ncc build src/bin.ts --license LICENSE --out dist/bin && prepend dist/bin/index.js '#!/usr/bin/env node\n\n'",
+    "start": "ts-node ./src/bin.ts",
+    "start:dev": "nodemon ./src/bin.ts",
     "test": "jest",
     "test:dev": "jest --watchAll"
   },
@@ -38,8 +42,10 @@
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@types/jest": "29.5.1",
+    "@types/ws": "8.5.4",
     "@typescript-eslint/eslint-plugin": "5.59.2",
     "@typescript-eslint/parser": "5.59.2",
+    "@vercel/ncc": "0.36.1",
     "check-license-header": "github:viperproject/check-license-header#v2",
     "eslint": "8.40.0",
     "eslint-config-standard-with-typescript": "34.0.1",
@@ -48,13 +54,18 @@
     "eslint-plugin-promise": "6.1.1",
     "eslint-plugin-spellcheck": "0.0.20",
     "jest": "29.5.0",
+    "nodemon": "2.0.22",
+    "prepend-file-cli": "1.0.6",
     "prettier": "2.8.8",
     "rimraf": "5.0.0",
     "semantic-release": "21.0.2",
     "ts-jest": "29.1.0",
+    "ts-node": "10.9.1",
     "typescript": "5.0.4"
   },
   "dependencies": {
-    "nostr-tools": "1.10.1"
+    "nostr-tools": "1.10.1",
+    "winston": "3.8.2",
+    "ws": "8.13.0"
   }
 }

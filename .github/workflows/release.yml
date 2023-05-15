@@ -41,6 +41,8 @@ jobs:
           path: './'
           config: './.github/license-check/license-config.json'
           strict: true
+      - name: Package
+        run: npm run package
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
