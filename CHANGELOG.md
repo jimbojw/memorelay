@@ -1,3 +1,23 @@
+# [1.4.0](https://github.com/jimbojw/memorelay/compare/v1.3.0...v1.4.0) (2023-05-15)
+
+
+### Bug Fixes
+
+* Unsubscribing from all subscriptions on WebSocket 'close'. ([531487f](https://github.com/jimbojw/memorelay/commit/531487f6334ca80f232bc5cd2d721cf3e1af2c46))
+
+
+### Features
+
+* Adding bufferToMessage() parsing function, related tests, integration into Subscriber. ([420e412](https://github.com/jimbojw/memorelay/commit/420e412363b752c1b9213621d09814686f5717a5))
+* Adding event handling to Subscriber WebSockets. ([000535a](https://github.com/jimbojw/memorelay/commit/000535a6ca8eace5dbf3d447c3a6e219e00bb164))
+* Adding placeholder bin file for eventual server implementation. ([4acf909](https://github.com/jimbojw/memorelay/commit/4acf90959003561ff7e50d47bacb6be79c4958b8))
+* Beginning implementation of connec() method for MemorelayServer and related tests. ([56adee1](https://github.com/jimbojw/memorelay/commit/56adee192589d35896c9658575b2a407e39bf863))
+* Implementing bin.ts command-line server. ([aa0a1d6](https://github.com/jimbojw/memorelay/commit/aa0a1d60060497a4e6b738ca8ecabe4050d78730))
+* Implementing handleCloseMessage() for unsubscribing. ([5a831d9](https://github.com/jimbojw/memorelay/commit/5a831d99b941c7a879818ab50abfc0bded0798a4))
+* Implementing handleReqMessage() so that subscriptions can be made and events are sent to them. ([2e10b66](https://github.com/jimbojw/memorelay/commit/2e10b6633cc4ba57f468c4f81f4e8e94c3cb7a27))
+* Implementing handling of EVENT messages. ([aaeea2b](https://github.com/jimbojw/memorelay/commit/aaeea2b83c10e9275032789ca7ae7f399a08b0fa))
+* Implementing rudimentary MemorelayServer implementation, related libraries and tests. ([4bd56bb](https://github.com/jimbojw/memorelay/commit/4bd56bb0c9f5a8e7bd256b921dbc478cd7adb864))
+
 # [1.3.0](https://github.com/jimbojw/memorelay/compare/v1.2.0...v1.3.0) (2023-05-13)
 
 
