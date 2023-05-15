@@ -6,7 +6,7 @@
  */
 
 const skipWords = `
-dotenv ecma fileoverview lang jsx memorelay microtask msg nostr printf pubkey
+dotenv ecma fileoverview fs lang jsx memorelay microtask msg nostr printf pubkey
 readonly req sig tsconfig tsx unparseable utf ws wss
 `.match(/\w+/g);
 
