@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/jimbojw/memorelay/compare/v1.4.0...v1.5.0) (2023-05-15)
+
+
+### Bug Fixes
+
+* Reading package.json at runtime to work with auto-packaged releases. ([d80b1a1](https://github.com/jimbojw/memorelay/commit/d80b1a18f9c1063f20376bb894270152d363f796))
+
+
+### Features
+
+* Using Commander to implement --port and --log-level command line arguments. ([a3442f9](https://github.com/jimbojw/memorelay/commit/a3442f9719b5a1cae8bfa53065a908fba354e753))
+
 # [1.4.0](https://github.com/jimbojw/memorelay/compare/v1.3.0...v1.4.0) (2023-05-15)
 
 
