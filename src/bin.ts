@@ -76,7 +76,8 @@ function reportErrorAndExit(error: unknown) {
   process.exit(1);
 }
 
-function shutdownAndExit() {
+function shutdownAndExit(signalName: string) {
+  logger.log('info', `${signalName} signal received, stopping...`);
   server
     .stop()
     .then((success) => {
