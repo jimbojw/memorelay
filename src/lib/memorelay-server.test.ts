@@ -9,6 +9,7 @@ import { createExpectingLogger } from './create-expecting-logger';
 import { MemorelayServer } from './memorelay-server';
 import { Subscriber } from './subscriber';
 
+import { createServer } from 'net';
 import { createLogger, LogEntry } from 'winston';
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
@@ -41,6 +42,42 @@ describe('MemorelayServer', () => {
 
       // Needed to prevent jest warning about worker processes.
       await server.stop();
+    });
+
+    it('should fail if the port is in use', async () => {
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(1);
+
+      const memorelayServer = new MemorelayServer(3000, fakeLogger);
+
+      const netServer = createServer();
+      await new Promise((resolve) => {
+        netServer.listen(3000, undefined, undefined, () => {
+          resolve('BLOCKING_PORT');
+        });
+      });
+
+      try {
+        await memorelayServer.listen();
+        fail('listen() promise should have rejected');
+      } catch (err) {
+        const error = err as { code: string };
+        expect(error.code).toBe('EADDRINUSE');
+      }
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs.length).toBe(1);
+      expect(actualLogs[0].level).toBe('error');
+
+      // Unblock the network port.
+      await new Promise((resolve, reject) => {
+        netServer.once('close', () => {
+          resolve(true);
+        });
+        netServer.close((error) => {
+          error && reject(error);
+        });
+      });
     });
 
     it('should return false if already listening', async () => {
