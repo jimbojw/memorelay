@@ -28855,6 +28855,44 @@ exports.bufferToMessage = bufferToMessage;
 
 /***/ }),
 
+/***/ 6331:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Utility function for creating a Promise and returning it and
+ * both its resolve and reject functions.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createPromise = void 0;
+/**
+ * Create a new Promise and return it along with functions that can be used to
+ * either resolve or reject the promise.
+ * @returns The Promise and its resolve and reject functions.
+ */
+function createPromise() {
+    // Must assign a value to combat TS 2454 'used before being assigned'.
+    let resolveOrUndefined = undefined;
+    let rejectOrUndefined = undefined;
+    const promise = new Promise((promiseResolve, promiseReject) => {
+        resolveOrUndefined = promiseResolve;
+        rejectOrUndefined = promiseReject;
+    });
+    // Laborious re-casting to combat TS 2322 'not assignable' and TS 2352
+    // 'Conversion of type' errors.
+    const resolve = resolveOrUndefined;
+    const reject = rejectOrUndefined;
+    return { promise, resolve, reject };
+}
+exports.createPromise = createPromise;
+
+
+/***/ }),
+
 /***/ 5375:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -28961,13 +28999,29 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemorelayServer = void 0;
 const internal_error_1 = __nccwpck_require__(3280);
-const subscriber_1 = __nccwpck_require__(4593);
-const ws_1 = __nccwpck_require__(8867);
 const memorelay_1 = __nccwpck_require__(7167);
+const subscriber_1 = __nccwpck_require__(4593);
+const http_1 = __nccwpck_require__(3685);
+const ws_1 = __nccwpck_require__(8867);
+const create_promise_1 = __nccwpck_require__(6331);
 class MemorelayServer {
+    /**
+     * @param port TCP port on which to listen.
+     * @param logger Logger to use for reporting.
+     */
     constructor(port, logger) {
         this.port = port;
         this.logger = logger;
+        /**
+         * HTTP server to listen for connections.
+         */
+        this.httpServer = (0, http_1.createServer)((request, response) => {
+            this.handleRequest(request, response);
+        });
+        /**
+         * WebSocketServer to listen for connections.
+         */
+        this.webSocketServer = new ws_1.WebSocketServer({ noServer: true });
         /**
          * Backing Memorelay instance for managing received events.
          */
@@ -28976,34 +29030,48 @@ class MemorelayServer {
          * Mapping from WebSockets to the connected Subscriber objects.
          */
         this.subscribers = new Map();
+        this.httpServer.on('upgrade', (request, socket, head) => {
+            if (request.url === undefined) {
+                this.logger.log('warning', 'Request url is undefined');
+                socket.destroy();
+                return;
+            }
+            if (request.url !== '/') {
+                this.logger.log('verbose', `Rejecting WebSocket upgrade on non-root path: ${request.url}`);
+                socket.destroy();
+                return;
+            }
+            this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+                this.webSocketServer.emit('connection', webSocket, request);
+            });
+        });
+        this.httpServer.on('error', (error) => {
+            this.logger.log('error', error);
+            if (this.listeningPromise) {
+                this.listeningPromise.reject(error);
+            }
+        });
+        this.webSocketServer.on('connection', (webSocket, request) => {
+            this.connect(webSocket, request);
+        });
     }
     /**
-     * Begin listening for WebSocket connections.
+     * Begin listening for HTTP connections.
      * @returns A promise which resolves to whether the listening was successful.
      */
     listen() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.webSocketServer) {
+            if (this.listeningPromise || this.httpServer.listening) {
                 return Promise.resolve(false);
             }
-            this.webSocketServer = new ws_1.WebSocketServer({ port: this.port });
-            return new Promise((resolve, reject) => {
-                if (!this.webSocketServer) {
-                    reject(new internal_error_1.InternalError('WebSocketServer missing'));
-                    return;
-                }
-                this.webSocketServer.on('listening', () => {
-                    this.logger.log('info', `Memorelay listening on port ${this.port}`);
-                    resolve(true);
-                });
-                this.webSocketServer.on('error', (error) => {
-                    this.logger.log('error', error);
-                    reject(error);
-                });
-                this.webSocketServer.on('connection', (webSocket, incomingMessage) => {
-                    this.connect(webSocket, incomingMessage);
-                });
+            this.listeningPromise = (0, create_promise_1.createPromise)();
+            const { promise, resolve } = this.listeningPromise;
+            this.httpServer.listen({ port: this.port }, () => {
+                this.logger.log('info', `Memorelay listening on port ${this.port}`);
+                resolve(true);
+                this.listeningPromise = undefined;
             });
+            return promise;
         });
     }
     /**
@@ -29012,26 +29080,21 @@ class MemorelayServer {
      */
     stop() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.webSocketServer) {
+            if (this.stoppingPromise || !this.httpServer.listening) {
                 return Promise.resolve(false);
             }
-            return new Promise((resolve, reject) => {
-                if (!this.webSocketServer) {
-                    reject(new internal_error_1.InternalError('WebSocketServer missing'));
+            this.stoppingPromise = (0, create_promise_1.createPromise)();
+            const { promise, resolve, reject } = this.stoppingPromise;
+            this.httpServer.close((error) => {
+                this.stoppingPromise = undefined;
+                if (error) {
+                    reject(error);
                     return;
                 }
-                this.webSocketServer.close((error) => {
-                    if (error) {
-                        this.logger.log('error', error);
-                        reject(error);
-                    }
-                    else {
-                        this.logger.log('info', 'Memorelay closed');
-                        this.webSocketServer = undefined;
-                        resolve(true);
-                    }
-                });
+                this.logger.log('info', 'Memorelay closed');
+                resolve(true);
             });
+            return promise;
         });
     }
     /**
@@ -29055,6 +29118,42 @@ class MemorelayServer {
             this.subscribers.delete(webSocket);
         });
         return subscriber;
+    }
+    /**
+     * Handle an incoming http request.
+     */
+    handleRequest(request, response) {
+        var _a;
+        if (request.method !== 'HEAD' && request.method !== 'GET') {
+            response.writeHead(501, { 'Content-Type': 'text/plain' });
+            response.write(`Method not implemented: ${(_a = request.method) !== null && _a !== void 0 ? _a : 'undefined'}`);
+            response.end();
+        }
+        if (request.headers.accept === 'application/nostr+json') {
+            this.sendRelayDocument(request, response);
+            return;
+        }
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.write('memorelay');
+        response.end();
+    }
+    /**
+     * Send the NIP-11 relay information document.
+     */
+    sendRelayDocument(request, response) {
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        if (request.method === 'GET') {
+            response.write(JSON.stringify(this.getRelayDocument()));
+        }
+        response.end();
+    }
+    /**
+     * Return the NIP-11 relay information document.
+     */
+    getRelayDocument() {
+        return {
+            supported_nips: [1, 11],
+        };
     }
 }
 exports.MemorelayServer = MemorelayServer;

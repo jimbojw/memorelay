@@ -5,17 +5,22 @@
  * @fileoverview Memorelay WebSocket server.
  */
 /// <reference types="node" />
+import { RelayInformationDocument } from './relay-information-document';
 import { Subscriber } from './subscriber';
 import { Logger } from 'winston';
+import { IncomingMessage, ServerResponse } from 'http';
 import { WebSocket } from 'ws';
-import { IncomingMessage } from 'http';
 export declare class MemorelayServer {
     readonly port: number;
     readonly logger: Logger;
     /**
+     * HTTP server to listen for connections.
+     */
+    private readonly httpServer;
+    /**
      * WebSocketServer to listen for connections.
      */
-    private webSocketServer?;
+    private readonly webSocketServer;
     /**
      * Backing Memorelay instance for managing received events.
      */
@@ -24,9 +29,21 @@ export declare class MemorelayServer {
      * Mapping from WebSockets to the connected Subscriber objects.
      */
     private readonly subscribers;
+    /**
+     * Promise for the active call to `listen()`.
+     */
+    private listeningPromise?;
+    /**
+     * Promise for the active call to `stop()`.
+     */
+    private stoppingPromise?;
+    /**
+     * @param port TCP port on which to listen.
+     * @param logger Logger to use for reporting.
+     */
     constructor(port: number, logger: Logger);
     /**
-     * Begin listening for WebSocket connections.
+     * Begin listening for HTTP connections.
      * @returns A promise which resolves to whether the listening was successful.
      */
     listen(): Promise<boolean>;
@@ -44,4 +61,16 @@ export declare class MemorelayServer {
      * @throws If the webSocket is already connected.
      */
     connect(webSocket: WebSocket, incomingMessage: IncomingMessage): Subscriber;
+    /**
+     * Handle an incoming http request.
+     */
+    handleRequest(request: IncomingMessage, response: ServerResponse): void;
+    /**
+     * Send the NIP-11 relay information document.
+     */
+    sendRelayDocument(request: IncomingMessage, response: ServerResponse): void;
+    /**
+     * Return the NIP-11 relay information document.
+     */
+    getRelayDocument(): RelayInformationDocument;
 }

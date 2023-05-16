@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/jimbojw/memorelay/compare/v1.5.0...v1.6.0) (2023-05-16)
+
+
+### Bug Fixes
+
+* Responding to non-GET, non-HEAD requests with HTTP 501 Not Implemented. ([d3365e9](https://github.com/jimbojw/memorelay/commit/d3365e958bb50dc099e4d87d19efc5d33c0625f9))
+
+
+### Features
+
+* Implementing NIP-11. ([c5dae6f](https://github.com/jimbojw/memorelay/commit/c5dae6f5805b081e4182fb205f4c911f61952a9b))
+
 # [1.5.0](https://github.com/jimbojw/memorelay/compare/v1.4.0...v1.5.0) (2023-05-15)
 
 
