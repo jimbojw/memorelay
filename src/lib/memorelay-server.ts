@@ -7,11 +7,12 @@
 
 import { InternalError } from './internal-error';
 import { Memorelay } from './memorelay';
+import { RelayInformationDocument } from './relay-information-document';
 import { Subscriber } from './subscriber';
 
 import { createServer } from 'http';
 import { Logger } from 'winston';
-import { IncomingMessage } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 import { CreatePromiseResult, createPromise } from './create-promise';
 
@@ -19,7 +20,9 @@ export class MemorelayServer {
   /**
    * HTTP server to listen for connections.
    */
-  private readonly httpServer = createServer();
+  private readonly httpServer = createServer((request, response) => {
+    this.handleRequest(request, response);
+  });
 
   /**
    * WebSocketServer to listen for connections.
@@ -153,5 +156,38 @@ export class MemorelayServer {
     });
 
     return subscriber;
+  }
+
+  /**
+   * Handle an incoming http request.
+   */
+  handleRequest(request: IncomingMessage, response: ServerResponse) {
+    if (request.headers.accept === 'application/nostr+json') {
+      this.sendRelayDocument(response);
+      return;
+    }
+
+    response.writeHead(200, { 'Content-Type': 'text/plain' });
+    response.write('memorelay');
+    response.end();
+  }
+
+  /**
+   * Send the NIP-11 relay information document.
+   * @see https://github.com/nostr-protocol/nips/blob/master/11.md
+   */
+  sendRelayDocument(response: ServerResponse) {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.write(JSON.stringify(this.getRelayDocument()));
+    response.end();
+  }
+
+  /**
+   * Return the NIP-11 relay information document.
+   */
+  getRelayDocument(): RelayInformationDocument {
+    return {
+      supported_nips: [1, 11],
+    };
   }
 }
