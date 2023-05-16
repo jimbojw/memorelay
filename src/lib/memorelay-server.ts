@@ -162,8 +162,16 @@ export class MemorelayServer {
    * Handle an incoming http request.
    */
   handleRequest(request: IncomingMessage, response: ServerResponse) {
+    if (request.method !== 'HEAD' && request.method !== 'GET') {
+      response.writeHead(501, { 'Content-Type': 'text/plain' });
+      response.write(
+        `Method not implemented: ${request.method ?? 'undefined'}`
+      );
+      response.end();
+    }
+
     if (request.headers.accept === 'application/nostr+json') {
-      this.sendRelayDocument(response);
+      this.sendRelayDocument(request, response);
       return;
     }
 
@@ -174,11 +182,12 @@ export class MemorelayServer {
 
   /**
    * Send the NIP-11 relay information document.
-   * @see https://github.com/nostr-protocol/nips/blob/master/11.md
    */
-  sendRelayDocument(response: ServerResponse) {
+  sendRelayDocument(request: IncomingMessage, response: ServerResponse) {
     response.writeHead(200, { 'Content-Type': 'application/json' });
-    response.write(JSON.stringify(this.getRelayDocument()));
+    if (request.method === 'GET') {
+      response.write(JSON.stringify(this.getRelayDocument()));
+    }
     response.end();
   }
 
