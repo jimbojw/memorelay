@@ -6,18 +6,25 @@
  */
 
 import { InternalError } from './internal-error';
+import { Memorelay } from './memorelay';
 import { Subscriber } from './subscriber';
 
+import { createServer } from 'http';
 import { Logger } from 'winston';
-import { WebSocket, WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
-import { Memorelay } from './memorelay';
+import { WebSocket, WebSocketServer } from 'ws';
+import { CreatePromiseResult, createPromise } from './create-promise';
 
 export class MemorelayServer {
   /**
+   * HTTP server to listen for connections.
+   */
+  private readonly httpServer = createServer();
+
+  /**
    * WebSocketServer to listen for connections.
    */
-  private webSocketServer?: WebSocketServer;
+  private readonly webSocketServer = new WebSocketServer({ noServer: true });
 
   /**
    * Backing Memorelay instance for managing received events.
@@ -29,42 +36,70 @@ export class MemorelayServer {
    */
   private readonly subscribers = new Map<WebSocket, Subscriber>();
 
-  constructor(readonly port: number, readonly logger: Logger) {}
+  /**
+   * Promise for the active call to `listen()`.
+   */
+  private listeningPromise?: CreatePromiseResult<boolean>;
 
   /**
-   * Begin listening for WebSocket connections.
-   * @returns A promise which resolves to whether the listening was successful.
+   * Promise for the active call to `stop()`.
    */
-  async listen(): Promise<boolean> {
-    if (this.webSocketServer) {
-      return Promise.resolve(false);
-    }
+  private stoppingPromise?: CreatePromiseResult<boolean>;
 
-    this.webSocketServer = new WebSocketServer({ port: this.port });
-
-    return new Promise<boolean>((resolve, reject) => {
-      if (!this.webSocketServer) {
-        reject(new InternalError('WebSocketServer missing'));
+  /**
+   * @param port TCP port on which to listen.
+   * @param logger Logger to use for reporting.
+   */
+  constructor(readonly port: number, readonly logger: Logger) {
+    this.httpServer.on('upgrade', (request, socket, head) => {
+      if (request.url === undefined) {
+        this.logger.log('warning', 'Request url is undefined');
+        socket.destroy();
         return;
       }
 
-      this.webSocketServer.on('listening', () => {
-        this.logger.log('info', `Memorelay listening on port ${this.port}`);
-        resolve(true);
-      });
+      if (request.url !== '/') {
+        this.logger.log(
+          'verbose',
+          `Rejecting WebSocket upgrade on non-root path: ${request.url}`
+        );
+        socket.destroy();
+        return;
+      }
 
-      this.webSocketServer.on('error', (error) => {
-        this.logger.log('error', error);
-        reject(error);
+      this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+        this.webSocketServer.emit('connection', webSocket, request);
       });
-
-      this.webSocketServer.on(
-        'connection',
-        (webSocket: WebSocket, incomingMessage: IncomingMessage) => {
-          this.connect(webSocket, incomingMessage);
-        }
-      );
     });
+
+    this.httpServer.on('error', (error: unknown) => {
+      this.logger.log('error', error);
+      if (this.listeningPromise) {
+        this.listeningPromise.reject(error);
+      }
+    });
+
+    this.webSocketServer.on('connection', (webSocket, request) => {
+      this.connect(webSocket, request);
+    });
+  }
+
+  /**
+   * Begin listening for HTTP connections.
+   * @returns A promise which resolves to whether the listening was successful.
+   */
+  async listen(): Promise<boolean> {
+    if (this.listeningPromise || this.httpServer.listening) {
+      return Promise.resolve(false);
+    }
+    this.listeningPromise = createPromise<boolean>();
+    const { promise, resolve } = this.listeningPromise;
+    this.httpServer.listen({ port: this.port }, () => {
+      this.logger.log('info', `Memorelay listening on port ${this.port}`);
+      resolve(true);
+      this.listeningPromise = undefined;
+    });
+    return promise;
   }
 
   /**
@@ -72,27 +107,21 @@ export class MemorelayServer {
    * @returns A promise that resolves to whether the stopping was successful.
    */
   async stop(): Promise<boolean> {
-    if (!this.webSocketServer) {
+    if (this.stoppingPromise || !this.httpServer.listening) {
       return Promise.resolve(false);
     }
-
-    return new Promise<boolean>((resolve, reject) => {
-      if (!this.webSocketServer) {
-        reject(new InternalError('WebSocketServer missing'));
+    this.stoppingPromise = createPromise<boolean>();
+    const { promise, resolve, reject } = this.stoppingPromise;
+    this.httpServer.close((error) => {
+      this.stoppingPromise = undefined;
+      if (error) {
+        reject(error);
         return;
       }
-
-      this.webSocketServer.close((error) => {
-        if (error) {
-          this.logger.log('error', error);
-          reject(error);
-        } else {
-          this.logger.log('info', 'Memorelay closed');
-          this.webSocketServer = undefined;
-          resolve(true);
-        }
-      });
+      this.logger.log('info', 'Memorelay closed');
+      resolve(true);
     });
+    return promise;
   }
 
   /**
