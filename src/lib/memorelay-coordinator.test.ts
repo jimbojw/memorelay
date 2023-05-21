@@ -5,7 +5,7 @@
  * @fileoverview Tests for the Memorelay class.
  */
 
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 
 import { Filter, Event as NostrEvent } from 'nostr-tools';
 import { BadEventError } from './verify-event';
@@ -32,26 +32,26 @@ const ALTERNATIVE_SIGNED_EVENT: NostrEvent = Object.freeze({
 
 describe('Memorelay', () => {
   it('should be a constructor function', () => {
-    expect(typeof Memorelay).toBe('function');
+    expect(typeof MemorelayCoordinator).toBe('function');
 
-    const memorelay = new Memorelay();
-    expect(memorelay instanceof Memorelay).toBe(true);
+    const memorelay = new MemorelayCoordinator();
+    expect(memorelay instanceof MemorelayCoordinator).toBe(true);
   });
 
   describe('addEvent', () => {
     it('should return true for a previously unknown event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(memorelay.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
 
     it('should return false when adding a known event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       expect(memorelay.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should throw when adding an invalid event object', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(() => {
         memorelay.addEvent({} as NostrEvent);
       }).toThrow(BadEventError);
@@ -66,7 +66,7 @@ describe('Memorelay', () => {
     });
 
     it('should invoke callback of unfiltered subscriptions', async () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -97,7 +97,7 @@ describe('Memorelay', () => {
     });
 
     it('should NOT invoke callback for late subscription', async () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -120,7 +120,7 @@ describe('Memorelay', () => {
     });
 
     it('should invoke callback only if subscription filter matches', async () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -145,7 +145,7 @@ describe('Memorelay', () => {
     });
 
     it('should NOT invoke callback if subscription is removed', async () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -173,12 +173,12 @@ describe('Memorelay', () => {
 
   describe('hasEvent', () => {
     it('should return false for an unknown event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should return true for a known event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
@@ -186,12 +186,12 @@ describe('Memorelay', () => {
 
   describe('deleteEvent', () => {
     it('should return false for an unknown event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(memorelay.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should return true for a known event', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       expect(memorelay.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
@@ -199,7 +199,7 @@ describe('Memorelay', () => {
 
   describe('matchFilters', () => {
     it('should return an empty array when no events are known', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(memorelay.matchFilters()).toEqual([]);
       expect(memorelay.matchFilters([])).toEqual([]);
       expect(memorelay.matchFilters([{}])).toEqual([]);
@@ -210,7 +210,7 @@ describe('Memorelay', () => {
     });
 
     it('should find all events when no filters are provided', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
@@ -222,7 +222,7 @@ describe('Memorelay', () => {
     });
 
     it('should find only events that match filters', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
       memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
@@ -236,7 +236,7 @@ describe('Memorelay', () => {
     });
 
     it('should throw if a filter is invalid', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       expect(() => {
         memorelay.matchFilters([
@@ -256,7 +256,7 @@ describe('Memorelay', () => {
 
   describe('subscribe', () => {
     it('should return a subscriptionNumber for a new subscription', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -270,7 +270,7 @@ describe('Memorelay', () => {
     });
 
     it('should return a different subscriptionNumber each time', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -287,7 +287,7 @@ describe('Memorelay', () => {
     });
 
     it('should throw if an invalid filter is passed', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -310,13 +310,13 @@ describe('Memorelay', () => {
 
   describe('unsubscribe', () => {
     it('should return false when there are no subscriptions', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(memorelay.unsubscribe(0)).toBe(false);
       expect(memorelay.unsubscribe(1)).toBe(false);
     });
 
     it('should return true when there is a matching subscription', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -330,7 +330,7 @@ describe('Memorelay', () => {
     });
 
     it('should return false for an already removed subscription', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -346,7 +346,7 @@ describe('Memorelay', () => {
     });
 
     it('should throw if the subscription id is invalid', () => {
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       expect(() => {
         memorelay.unsubscribe('NOT_A_NUMBER' as unknown as number);
       }).toThrow(RangeError);

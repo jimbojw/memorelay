@@ -15,7 +15,7 @@ import {
   EventMessage,
   ReqMessage,
 } from './message-types';
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 
 export class Subscriber {
   /**
@@ -34,7 +34,7 @@ export class Subscriber {
     private readonly webSocket: WebSocket,
     private readonly incomingMessage: IncomingMessage,
     private readonly logger: Logger,
-    private readonly memorelay: Memorelay
+    private readonly memorelay: MemorelayCoordinator
   ) {
     const { headers, url: path } = incomingMessage;
     const secWebsocketKey = headers['sec-websocket-key'];

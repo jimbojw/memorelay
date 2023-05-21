@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Main entry point for Memorelay library.
+ * @fileoverview Coordinator object for tracking events and subscriptions.
  */
 
 import { InternalError } from './internal-error';
@@ -12,14 +12,14 @@ import { verifyFilters } from './verify-filters';
 
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
 
-export class Memorelay {
+export class MemorelayCoordinator {
   /**
    * Map of events keyed by id known to this memorelay instance.
    */
   private readonly eventsMap = new Map<string, NostrEvent>();
 
   /**
-   * Counter to keep track of the next subscription id to use.
+   * Counter to keep track of the next subscription number to use.
    */
   private nextSubscriptionNumber = 0;
 

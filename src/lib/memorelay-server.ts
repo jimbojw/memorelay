@@ -6,7 +6,7 @@
  */
 
 import { InternalError } from './internal-error';
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 import { RelayInformationDocument } from './relay-information-document';
 import { Subscriber } from './subscriber';
 
@@ -30,9 +30,9 @@ export class MemorelayServer {
   private readonly webSocketServer = new WebSocketServer({ noServer: true });
 
   /**
-   * Backing Memorelay instance for managing received events.
+   * Backing coordinator instance for managing received events.
    */
-  private readonly memorelay = new Memorelay();
+  private readonly coordinator = new MemorelayCoordinator();
 
   /**
    * Mapping from WebSockets to the connected Subscriber objects.
@@ -144,7 +144,7 @@ export class MemorelayServer {
       webSocket,
       incomingMessage,
       this.logger,
-      this.memorelay
+      this.coordinator
     );
     this.subscribers.set(webSocket, subscriber);
 
