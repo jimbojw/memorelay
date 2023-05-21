@@ -33331,7 +33331,8 @@ commander_1.program
     .description(packageJson.description)
     .version(packageJson.version)
     .option('-p, --port <number>', 'TCP port on which to listen', '3000')
-    .option('-l, --log-level <level>', 'Minimum log level to report', 'info');
+    .option('-l, --log-level <level>', 'minimum log level to report', 'info')
+    .option('--no-color', 'disable colorized log output');
 commander_1.program.parse();
 const options = commander_1.program.opts();
 const portNumber = +options.port;
@@ -33351,11 +33352,19 @@ const logLevel = options.logLevel;
 if (!LOG_LEVELS.includes(logLevel)) {
     throw new Error(`unrecognized log level: '${logLevel}'`);
 }
+const formatOptions = [
+    winston_1.format.timestamp(),
+    winston_1.format.splat(),
+    winston_1.format.printf(({ timestamp, level, message }) => {
+        return `[${timestamp}] ${level}: ${message}`;
+    }),
+];
+if (options.color) {
+    formatOptions.unshift(winston_1.format.colorize());
+}
 const logger = (0, winston_1.createLogger)({
     transports: [new winston_1.transports.Console({ level: logLevel })],
-    format: winston_1.format.combine(winston_1.format.colorize(), winston_1.format.timestamp(), winston_1.format.splat(), winston_1.format.printf(({ timestamp, level, message }) => {
-        return `[${timestamp}] ${level}: ${message}`;
-    })),
+    format: winston_1.format.combine(...formatOptions),
 });
 const server = new memorelay_server_1.MemorelayServer(portNumber, logger);
 function reportErrorAndExit(error) {

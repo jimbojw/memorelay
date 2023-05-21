@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/jimbojw/memorelay/compare/v1.6.1...v1.7.0) (2023-05-21)
+
+
+### Features
+
+* Adding --no-color command line option to disable colorized log output. ([aabb0f4](https://github.com/jimbojw/memorelay/commit/aabb0f4cb4d5ef200ae0693c13512e6ef6d45542))
+
 ## [1.6.1](https://github.com/jimbojw/memorelay/compare/v1.6.0...v1.6.1) (2023-05-21)
 
 
