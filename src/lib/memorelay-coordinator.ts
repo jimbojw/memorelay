@@ -10,13 +10,45 @@ import { Subscription } from './subscription';
 import { verifyEvent } from './verify-event';
 import { verifyFilters } from './verify-filters';
 
+import binarySearch from 'binary-search';
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
+
+/**
+ * A Map keyed by event.id and whose value is the NostrEvent.
+ */
+type EventsMap = Map<string, NostrEvent>;
+
+/**
+ * Record binding a created_at time to a map of events that have that created_at
+ * value.
+ */
+interface CreatedAtEventsRecord {
+  createdAt: number;
+  eventsMap: EventsMap;
+}
+
+/**
+ * Comparator function for binary searching an array of events sorted by their
+ * created_at values.
+ * @param event The event in the sorted array being evaluated.
+ * @param createdAt The needle created_at value being searched for.
+ * @returns A number indicating the direction of the comparison.
+ */
+function compareCreatedAt(event: CreatedAtEventsRecord, createdAt: number) {
+  return event.createdAt - createdAt;
+}
 
 export class MemorelayCoordinator {
   /**
    * Map of events keyed by id known to this memorelay instance.
    */
-  private readonly eventsMap = new Map<string, NostrEvent>();
+  private readonly eventsMap: EventsMap = new Map();
+
+  /**
+   * Array of EventsMaps sorted by the `created_at` field. Used for performing
+   * ordered queries.
+   */
+  private readonly eventsByCreatedAt: CreatedAtEventsRecord[] = [];
 
   /**
    * Counter to keep track of the next subscription number to use.
@@ -47,7 +79,27 @@ export class MemorelayCoordinator {
     if (this.hasEvent(event)) {
       return false;
     }
+
     this.eventsMap.set(event.id, event);
+
+    const result = binarySearch(
+      this.eventsByCreatedAt,
+      event.created_at,
+      (a, b) => a.createdAt - b
+    );
+
+    if (result < 0) {
+      const eventsMap = new Map<string, NostrEvent>();
+      eventsMap.set(event.id, event);
+      this.eventsByCreatedAt.splice(~result, 0, {
+        createdAt: event.created_at,
+        eventsMap,
+      });
+    }
+
+    const index = result < 0 ? ~result : result;
+    this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
+
     for (const [
       ,
       { callbackFn, filters, subscriptionNumber: subscriptionId },
@@ -75,6 +127,28 @@ export class MemorelayCoordinator {
       return false;
     }
     this.eventsMap.delete(event.id);
+
+    const index = binarySearch(
+      this.eventsByCreatedAt,
+      event.created_at,
+      compareCreatedAt
+    );
+
+    if (index < 0) {
+      throw new InternalError('created_at events map missing');
+    }
+
+    const { eventsMap } = this.eventsByCreatedAt[index];
+    if (!eventsMap.has(event.id)) {
+      throw new InternalError('could not find event to delete');
+    }
+    eventsMap.delete(event.id);
+
+    if (!eventsMap.size) {
+      // Remove record if there are no events at this created_at left.
+      this.eventsByCreatedAt.splice(index, 1);
+    }
+
     return true;
   }
 
