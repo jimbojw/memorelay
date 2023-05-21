@@ -221,6 +221,46 @@ describe('Memorelay', () => {
       expect(coordinator.matchFilters([{}])).toEqual(EXPECTED_RESULTS);
     });
 
+    it('should find only events up to the limit', () => {
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [ALTERNATIVE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
+    });
+
+    it('should find newest events irrespective of order added', () => {
+      const coordinator = new MemorelayCoordinator();
+
+      // Adding the later, 'alternative' event first.
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [ALTERNATIVE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
+    });
+
+    it('should not find deleted events', () => {
+      const coordinator = new MemorelayCoordinator();
+
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.deleteEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [EXAMPLE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
+    });
+
     it('should find only events that match filters', () => {
       const coordinator = new MemorelayCoordinator();
       coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
