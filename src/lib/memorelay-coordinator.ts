@@ -119,7 +119,7 @@ export class MemorelayCoordinator {
 
   /**
    * Delete the event from the events map and return whether successful.
-   * @param event The event to add.
+   * @param event The event to delete.
    * @returns Whether the event was deleted.
    */
   deleteEvent(event: NostrEvent): boolean {
@@ -161,12 +161,38 @@ export class MemorelayCoordinator {
    */
   matchFilters(filters?: Filter[]): NostrEvent[] {
     filters && verifyFilters(filters);
-    const matchingEvents: NostrEvent[] = [];
-    for (const [, event] of this.eventsMap) {
-      if (!filters || filters.length < 1 || matchFilters(filters, event)) {
-        matchingEvents.push(event);
+
+    let limit = Infinity;
+    for (const filter of filters ?? []) {
+      if (filter.limit !== undefined && filter.limit < limit) {
+        limit = filter.limit;
       }
     }
+
+    const matchingEvents: NostrEvent[] = [];
+
+    // Walk backwards through the eventsByCreatedAt array so that we find the
+    // latest events first on our way to satisfying the limit.
+    for (
+      let index = this.eventsByCreatedAt.length - 1;
+      index >= 0 && matchingEvents.length < limit;
+      index--
+    ) {
+      const { eventsMap } = this.eventsByCreatedAt[index];
+      for (const [, event] of eventsMap) {
+        if (!filters || filters.length < 1 || matchFilters(filters, event)) {
+          matchingEvents.push(event);
+          if (matchingEvents.length >= limit) {
+            break;
+          }
+        }
+      }
+    }
+
+    // Because we walked backwards through the eventsByCreatedAt array, the
+    // collection will be in reverse order by created_at stamp.
+    matchingEvents.reverse();
+
     return matchingEvents;
   }
 
