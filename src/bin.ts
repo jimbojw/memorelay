@@ -30,7 +30,8 @@ program
   .description(packageJson.description)
   .version(packageJson.version)
   .option('-p, --port <number>', 'TCP port on which to listen', '3000')
-  .option('-l, --log-level <level>', 'Minimum log level to report', 'info');
+  .option('-l, --log-level <level>', 'minimum log level to report', 'info')
+  .option('--no-color', 'disable colorized log output');
 
 program.parse();
 
@@ -56,16 +57,21 @@ if (!LOG_LEVELS.includes(logLevel)) {
   throw new Error(`unrecognized log level: '${logLevel}'`);
 }
 
+const formatOptions = [
+  format.timestamp(),
+  format.splat(),
+  format.printf(({ timestamp, level, message }) => {
+    return `[${timestamp as string}] ${level}: ${message as string}`;
+  }),
+];
+
+if (options.color) {
+  formatOptions.unshift(format.colorize());
+}
+
 const logger = createLogger({
   transports: [new transports.Console({ level: logLevel })],
-  format: format.combine(
-    format.colorize(),
-    format.timestamp(),
-    format.splat(),
-    format.printf(({ timestamp, level, message }) => {
-      return `[${timestamp as string}] ${level}: ${message as string}`;
-    })
-  ),
+  format: format.combine(...formatOptions),
 });
 
 const server = new MemorelayServer(portNumber, logger);
