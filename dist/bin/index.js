@@ -7707,6 +7707,58 @@ module.exports = exports['default'];
 
 /***/ }),
 
+/***/ 9326:
+/***/ ((module) => {
+
+module.exports = function(haystack, needle, comparator, low, high) {
+  var mid, cmp;
+
+  if(low === undefined)
+    low = 0;
+
+  else {
+    low = low|0;
+    if(low < 0 || low >= haystack.length)
+      throw new RangeError("invalid lower bound");
+  }
+
+  if(high === undefined)
+    high = haystack.length - 1;
+
+  else {
+    high = high|0;
+    if(high < low || high >= haystack.length)
+      throw new RangeError("invalid upper bound");
+  }
+
+  while(low <= high) {
+    // The naive `low + high >>> 1` could fail for array lengths > 2**31
+    // because `>>>` converts its operands to int32. `low + (high - low >>> 1)`
+    // works for array lengths <= 2**32-1 which is also Javascript's max array
+    // length.
+    mid = low + ((high - low) >>> 1);
+    cmp = +comparator(haystack[mid], needle, mid, haystack);
+
+    // Too low.
+    if(cmp < 0.0)
+      low  = mid + 1;
+
+    // Too high.
+    else if(cmp > 0.0)
+      high = mid - 1;
+
+    // Key found.
+    else
+      return mid;
+  }
+
+  // Key not found.
+  return ~low;
+}
+
+
+/***/ }),
+
 /***/ 8510:
 /***/ ((module) => {
 
@@ -28976,6 +29028,205 @@ exports.InternalError = InternalError;
 
 /***/ }),
 
+/***/ 1689:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Coordinator object for tracking events and subscriptions.
+ */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemorelayCoordinator = void 0;
+const internal_error_1 = __nccwpck_require__(3280);
+const verify_event_1 = __nccwpck_require__(1560);
+const verify_filters_1 = __nccwpck_require__(8562);
+const binary_search_1 = __importDefault(__nccwpck_require__(9326));
+const nostr_tools_1 = __nccwpck_require__(259);
+/**
+ * Comparator function for binary searching an array of events sorted by their
+ * created_at values.
+ * @param event The event in the sorted array being evaluated.
+ * @param createdAt The needle created_at value being searched for.
+ * @returns A number indicating the direction of the comparison.
+ */
+function compareCreatedAt(event, createdAt) {
+    return event.createdAt - createdAt;
+}
+class MemorelayCoordinator {
+    constructor() {
+        /**
+         * Map of events keyed by id known to this memorelay instance.
+         */
+        this.eventsMap = new Map();
+        /**
+         * Array of EventsMaps sorted by the `created_at` field. Used for performing
+         * ordered queries.
+         */
+        this.eventsByCreatedAt = [];
+        /**
+         * Counter to keep track of the next subscription number to use.
+         */
+        this.nextSubscriptionNumber = 0;
+        /**
+         * Map of subscriptions.
+         */
+        this.subscriptionsMap = new Map();
+    }
+    /**
+     * Returns whether the provided event is in memory.
+     * @param event The event to check.
+     */
+    hasEvent(event) {
+        return this.eventsMap.has(event.id);
+    }
+    /**
+     * Add the given event to the events map and return whether successful.
+     * @param event The event to add.
+     * @returns Whether the event was added.
+     * @throws BadEventError if the incoming object is not a valid, signed event.
+     */
+    addEvent(event) {
+        (0, verify_event_1.verifyEvent)(event);
+        if (this.hasEvent(event)) {
+            return false;
+        }
+        this.eventsMap.set(event.id, event);
+        const result = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, (a, b) => a.createdAt - b);
+        if (result < 0) {
+            const eventsMap = new Map();
+            eventsMap.set(event.id, event);
+            this.eventsByCreatedAt.splice(~result, 0, {
+                createdAt: event.created_at,
+                eventsMap,
+            });
+        }
+        const index = result < 0 ? ~result : result;
+        this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
+        for (const [, { callbackFn, filters, subscriptionNumber: subscriptionId },] of this.subscriptionsMap) {
+            queueMicrotask(() => {
+                if (!this.subscriptionsMap.has(subscriptionId)) {
+                    // Short-circuit if this subscription has been removed.
+                    return;
+                }
+                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
+                    callbackFn(event);
+                }
+            });
+        }
+        return true;
+    }
+    /**
+     * Delete the event from the events map and return whether successful.
+     * @param event The event to delete.
+     * @returns Whether the event was deleted.
+     */
+    deleteEvent(event) {
+        if (!this.hasEvent(event)) {
+            return false;
+        }
+        this.eventsMap.delete(event.id);
+        const index = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, compareCreatedAt);
+        if (index < 0) {
+            throw new internal_error_1.InternalError('created_at events map missing');
+        }
+        const { eventsMap } = this.eventsByCreatedAt[index];
+        if (!eventsMap.has(event.id)) {
+            throw new internal_error_1.InternalError('could not find event to delete');
+        }
+        eventsMap.delete(event.id);
+        if (!eventsMap.size) {
+            // Remove record if there are no events at this created_at left.
+            this.eventsByCreatedAt.splice(index, 1);
+        }
+        return true;
+    }
+    /**
+     * Find and return all events which match the provided array of filters. If
+     * the filters array is not provided, or if it is an empty array, then no
+     * criteria are enforced and all events will match.
+     * @param filters Optional array of Filter objects to test.
+     * @returns An array of matching events.
+     */
+    matchFilters(filters) {
+        filters && (0, verify_filters_1.verifyFilters)(filters);
+        let limit = Infinity;
+        for (const filter of filters !== null && filters !== void 0 ? filters : []) {
+            if (filter.limit !== undefined && filter.limit < limit) {
+                limit = filter.limit;
+            }
+        }
+        const matchingEvents = [];
+        // Walk backwards through the eventsByCreatedAt array so that we find the
+        // latest events first on our way to satisfying the limit.
+        for (let index = this.eventsByCreatedAt.length - 1; index >= 0 && matchingEvents.length < limit; index--) {
+            const { eventsMap } = this.eventsByCreatedAt[index];
+            for (const [, event] of eventsMap) {
+                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
+                    matchingEvents.push(event);
+                    if (matchingEvents.length >= limit) {
+                        break;
+                    }
+                }
+            }
+        }
+        // Because we walked backwards through the eventsByCreatedAt array, the
+        // collection will be in reverse order by created_at stamp.
+        matchingEvents.reverse();
+        return matchingEvents;
+    }
+    /**
+     * Subscribe to events matching the optional filters list. Only newly added
+     * events AFTER the subscription is made will trigger the callback function.
+     * @param callbackFn Function to invoke when events are added that match
+     * the filter(s).
+     * @param filters Optional list of filters to match. If omitted or empty, then
+     * all added events will trigger the callback.
+     * @returns Unique subscription index number to be used with unsubscribe.
+     */
+    subscribe(callbackFn, filters) {
+        filters && (0, verify_filters_1.verifyFilters)(filters);
+        const subscriptionId = this.nextSubscriptionNumber++;
+        if (this.subscriptionsMap.has(subscriptionId)) {
+            throw new internal_error_1.InternalError('subscription id conflict');
+        }
+        this.subscriptionsMap.set(subscriptionId, {
+            callbackFn,
+            filters,
+            subscriptionNumber: subscriptionId,
+        });
+        return subscriptionId;
+    }
+    /**
+     * Unsubscribe from the previously established subscription. If there was no
+     * such subscription with the provided id, then false is returned.
+     * @param subscriptionId Unique subscription id number previously returned by
+     * a call to subscribe().
+     * @returns Whether the subscription was removed.
+     * @throws RangeError if the provided subscription id is invalid.
+     */
+    unsubscribe(subscriptionId) {
+        if (!Number.isInteger(subscriptionId)) {
+            throw new RangeError('invalid subscription id');
+        }
+        if (!this.subscriptionsMap.has(subscriptionId)) {
+            return false;
+        }
+        this.subscriptionsMap.delete(subscriptionId);
+        return true;
+    }
+}
+exports.MemorelayCoordinator = MemorelayCoordinator;
+
+
+/***/ }),
+
 /***/ 4997:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -28999,7 +29250,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemorelayServer = void 0;
 const internal_error_1 = __nccwpck_require__(3280);
-const memorelay_1 = __nccwpck_require__(7167);
+const memorelay_coordinator_1 = __nccwpck_require__(1689);
 const subscriber_1 = __nccwpck_require__(4593);
 const http_1 = __nccwpck_require__(3685);
 const ws_1 = __nccwpck_require__(8867);
@@ -29023,9 +29274,9 @@ class MemorelayServer {
          */
         this.webSocketServer = new ws_1.WebSocketServer({ noServer: true });
         /**
-         * Backing Memorelay instance for managing received events.
+         * Backing coordinator instance for managing received events.
          */
-        this.memorelay = new memorelay_1.Memorelay();
+        this.coordinator = new memorelay_coordinator_1.MemorelayCoordinator();
         /**
          * Mapping from WebSockets to the connected Subscriber objects.
          */
@@ -29109,7 +29360,7 @@ class MemorelayServer {
         if (this.subscribers.has(webSocket)) {
             throw new Error('websocket is already connected');
         }
-        const subscriber = new subscriber_1.Subscriber(webSocket, incomingMessage, this.logger, this.memorelay);
+        const subscriber = new subscriber_1.Subscriber(webSocket, incomingMessage, this.logger, this.coordinator);
         this.subscribers.set(webSocket, subscriber);
         webSocket.on('close', () => {
             if (!this.subscribers.has(webSocket)) {
@@ -29157,145 +29408,6 @@ class MemorelayServer {
     }
 }
 exports.MemorelayServer = MemorelayServer;
-
-
-/***/ }),
-
-/***/ 7167:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Main entry point for Memorelay library.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Memorelay = void 0;
-const internal_error_1 = __nccwpck_require__(3280);
-const verify_event_1 = __nccwpck_require__(1560);
-const verify_filters_1 = __nccwpck_require__(8562);
-const nostr_tools_1 = __nccwpck_require__(259);
-class Memorelay {
-    constructor() {
-        /**
-         * Map of events keyed by id known to this memorelay instance.
-         */
-        this.eventsMap = new Map();
-        /**
-         * Counter to keep track of the next subscription id to use.
-         */
-        this.nextSubscriptionNumber = 0;
-        /**
-         * Map of subscriptions.
-         */
-        this.subscriptionsMap = new Map();
-    }
-    /**
-     * Returns whether the provided event is in memory.
-     * @param event The event to check.
-     */
-    hasEvent(event) {
-        return this.eventsMap.has(event.id);
-    }
-    /**
-     * Add the given event to the events map and return whether successful.
-     * @param event The event to add.
-     * @returns Whether the event was added.
-     * @throws BadEventError if the incoming object is not a valid, signed event.
-     */
-    addEvent(event) {
-        (0, verify_event_1.verifyEvent)(event);
-        if (this.hasEvent(event)) {
-            return false;
-        }
-        this.eventsMap.set(event.id, event);
-        for (const [, { callbackFn, filters, subscriptionNumber: subscriptionId },] of this.subscriptionsMap) {
-            queueMicrotask(() => {
-                if (!this.subscriptionsMap.has(subscriptionId)) {
-                    // Short-circuit if this subscription has been removed.
-                    return;
-                }
-                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
-                    callbackFn(event);
-                }
-            });
-        }
-        return true;
-    }
-    /**
-     * Delete the event from the events map and return whether successful.
-     * @param event The event to add.
-     * @returns Whether the event was deleted.
-     */
-    deleteEvent(event) {
-        if (!this.hasEvent(event)) {
-            return false;
-        }
-        this.eventsMap.delete(event.id);
-        return true;
-    }
-    /**
-     * Find and return all events which match the provided array of filters. If
-     * the filters array is not provided, or if it is an empty array, then no
-     * criteria are enforced and all events will match.
-     * @param filters Optional array of Filter objects to test.
-     * @returns An array of matching events.
-     */
-    matchFilters(filters) {
-        filters && (0, verify_filters_1.verifyFilters)(filters);
-        const matchingEvents = [];
-        for (const [, event] of this.eventsMap) {
-            if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
-                matchingEvents.push(event);
-            }
-        }
-        return matchingEvents;
-    }
-    /**
-     * Subscribe to events matching the optional filters list. Only newly added
-     * events AFTER the subscription is made will trigger the callback function.
-     * @param callbackFn Function to invoke when events are added that match
-     * the filter(s).
-     * @param filters Optional list of filters to match. If omitted or empty, then
-     * all added events will trigger the callback.
-     * @returns Unique subscription index number to be used with unsubscribe.
-     */
-    subscribe(callbackFn, filters) {
-        filters && (0, verify_filters_1.verifyFilters)(filters);
-        const subscriptionId = this.nextSubscriptionNumber++;
-        if (this.subscriptionsMap.has(subscriptionId)) {
-            throw new internal_error_1.InternalError('subscription id conflict');
-        }
-        this.subscriptionsMap.set(subscriptionId, {
-            callbackFn,
-            filters,
-            subscriptionNumber: subscriptionId,
-        });
-        return subscriptionId;
-    }
-    /**
-     * Unsubscribe from the previously established subscription. If there was no
-     * such subscription with the provided id, then false is returned.
-     * @param subscriptionId Unique subscription id number previously returned by
-     * a call to subscribe().
-     * @returns Whether the subscription was removed.
-     * @throws RangeError if the provided subscription id is invalid.
-     */
-    unsubscribe(subscriptionId) {
-        if (!Number.isInteger(subscriptionId)) {
-            throw new RangeError('invalid subscription id');
-        }
-        if (!this.subscriptionsMap.has(subscriptionId)) {
-            return false;
-        }
-        this.subscriptionsMap.delete(subscriptionId);
-        return true;
-    }
-}
-exports.Memorelay = Memorelay;
 
 
 /***/ }),
@@ -29374,8 +29486,9 @@ class Subscriber {
         this.logger = logger;
         this.memorelay = memorelay;
         /**
-         * Mapping from Nostr REQ subscription id string to the Memorelay subscription
-         * number.
+         * Mapping from Nostr REQ subscription id string to the Memorelay coordinator
+         * subscription number. These subscriptions are only created AFTER the sweep
+         * of historical events has completed.
          */
         this.subscriptionIdMap = new Map();
         const { headers, url: path } = incomingMessage;
@@ -29451,16 +29564,18 @@ class Subscriber {
             this.memorelay.unsubscribe(existingSubscriptionNumber);
             this.subscriptionIdMap.delete(subscriptionId);
         }
-        const newSubscriptionNumber = this.memorelay.subscribe((event) => {
-            // TODO(jimbo): What if the WebSocket is disconnected?
-            this.webSocket.send(Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8'));
-        }, filters);
-        this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
+        // Per NIP-01, first the stored events are searched, and THEN the
+        // subscription for future events is saved.
         const matchingEvents = this.memorelay.matchFilters(filters);
         for (const event of matchingEvents) {
             this.webSocket.send(Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8'));
         }
         this.webSocket.send(Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8'));
+        const newSubscriptionNumber = this.memorelay.subscribe((event) => {
+            // TODO(jimbo): What if the WebSocket is disconnected?
+            this.webSocket.send(Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8'));
+        }, filters);
+        this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
     }
     /**
      * Handle an incoming CLOSE message.
@@ -29611,6 +29726,10 @@ function verifyFilter(filter) {
         const value = filter[field];
         if (!Number.isInteger(value)) {
             throw new Error(`${field} contains a non-integer value`);
+        }
+        const numericValue = value;
+        if (numericValue < 0) {
+            throw new Error(`${field} contains a negative value`);
         }
     }
 }

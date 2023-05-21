@@ -22,9 +22,9 @@ export declare class MemorelayServer {
      */
     private readonly webSocketServer;
     /**
-     * Backing Memorelay instance for managing received events.
+     * Backing coordinator instance for managing received events.
      */
-    private readonly memorelay;
+    private readonly coordinator;
     /**
      * Mapping from WebSockets to the connected Subscriber objects.
      */

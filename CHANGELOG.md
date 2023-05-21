@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/jimbojw/memorelay/compare/v1.6.0...v1.6.1) (2023-05-21)
+
+
+### Bug Fixes
+
+* Rejecting filters with negative values for limit, since and until fields. ([c353681](https://github.com/jimbojw/memorelay/commit/c353681cb6ad47f83129530d5d69929daa2707f4))
+
 # [1.6.0](https://github.com/jimbojw/memorelay/compare/v1.5.0...v1.6.0) (2023-05-16)
 
 

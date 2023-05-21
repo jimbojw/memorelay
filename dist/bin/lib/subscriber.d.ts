@@ -10,15 +10,16 @@ import { IncomingMessage } from 'http';
 import { Logger } from 'winston';
 import { WebSocket } from 'ws';
 import { CloseMessage, EventMessage, ReqMessage } from './message-types';
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 export declare class Subscriber {
     private readonly webSocket;
     private readonly incomingMessage;
     private readonly logger;
     private readonly memorelay;
     /**
-     * Mapping from Nostr REQ subscription id string to the Memorelay subscription
-     * number.
+     * Mapping from Nostr REQ subscription id string to the Memorelay coordinator
+     * subscription number. These subscriptions are only created AFTER the sweep
+     * of historical events has completed.
      */
     private readonly subscriptionIdMap;
     /**
@@ -27,7 +28,7 @@ export declare class Subscriber {
      * @param logger
      * @param memorelay Backing Memorelay for handling events.
      */
-    constructor(webSocket: WebSocket, incomingMessage: IncomingMessage, logger: Logger, memorelay: Memorelay);
+    constructor(webSocket: WebSocket, incomingMessage: IncomingMessage, logger: Logger, memorelay: MemorelayCoordinator);
     /**
      * Handle an incoming WebSocket message.
      * @param payloadDataBuffer Buffer of incoming message data.
