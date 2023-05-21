@@ -15,12 +15,13 @@ import {
   EventMessage,
   ReqMessage,
 } from './message-types';
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 
 export class Subscriber {
   /**
-   * Mapping from Nostr REQ subscription id string to the Memorelay subscription
-   * number.
+   * Mapping from Nostr REQ subscription id string to the Memorelay coordinator
+   * subscription number. These subscriptions are only created AFTER the sweep
+   * of historical events has completed.
    */
   private readonly subscriptionIdMap = new Map<string, number>();
 
@@ -34,7 +35,7 @@ export class Subscriber {
     private readonly webSocket: WebSocket,
     private readonly incomingMessage: IncomingMessage,
     private readonly logger: Logger,
-    private readonly memorelay: Memorelay
+    private readonly memorelay: MemorelayCoordinator
   ) {
     const { headers, url: path } = incomingMessage;
     const secWebsocketKey = headers['sec-websocket-key'];
@@ -126,15 +127,8 @@ export class Subscriber {
       this.subscriptionIdMap.delete(subscriptionId);
     }
 
-    const newSubscriptionNumber = this.memorelay.subscribe((event) => {
-      // TODO(jimbo): What if the WebSocket is disconnected?
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
-    }, filters);
-
-    this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
-
+    // Per NIP-01, first the stored events are searched, and THEN the
+    // subscription for future events is saved.
     const matchingEvents = this.memorelay.matchFilters(filters);
     for (const event of matchingEvents) {
       this.webSocket.send(
@@ -144,6 +138,15 @@ export class Subscriber {
     this.webSocket.send(
       Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8')
     );
+
+    const newSubscriptionNumber = this.memorelay.subscribe((event) => {
+      // TODO(jimbo): What if the WebSocket is disconnected?
+      this.webSocket.send(
+        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
+      );
+    }, filters);
+
+    this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
   }
 
   /**

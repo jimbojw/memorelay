@@ -5,7 +5,7 @@
  * @fileoverview Tests for the Memorelay class.
  */
 
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 
 import { Filter, Event as NostrEvent } from 'nostr-tools';
 import { BadEventError } from './verify-event';
@@ -32,50 +32,50 @@ const ALTERNATIVE_SIGNED_EVENT: NostrEvent = Object.freeze({
 
 describe('Memorelay', () => {
   it('should be a constructor function', () => {
-    expect(typeof Memorelay).toBe('function');
+    expect(typeof MemorelayCoordinator).toBe('function');
 
-    const memorelay = new Memorelay();
-    expect(memorelay instanceof Memorelay).toBe(true);
+    const coordinator = new MemorelayCoordinator();
+    expect(coordinator instanceof MemorelayCoordinator).toBe(true);
   });
 
   describe('addEvent', () => {
     it('should return true for a previously unknown event', () => {
-      const memorelay = new Memorelay();
-      expect(memorelay.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      const coordinator = new MemorelayCoordinator();
+      expect(coordinator.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
 
     it('should return false when adding a known event', () => {
-      const memorelay = new Memorelay();
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
-      expect(memorelay.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      expect(coordinator.addEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should throw when adding an invalid event object', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
       expect(() => {
-        memorelay.addEvent({} as NostrEvent);
+        coordinator.addEvent({} as NostrEvent);
       }).toThrow(BadEventError);
 
       expect(() => {
-        memorelay.addEvent(undefined as unknown as NostrEvent);
+        coordinator.addEvent(undefined as unknown as NostrEvent);
       }).toThrow(BadEventError);
 
       expect(() => {
-        memorelay.addEvent(EXAMPLE_SIGNED_EVENT.id as unknown as NostrEvent);
+        coordinator.addEvent(EXAMPLE_SIGNED_EVENT.id as unknown as NostrEvent);
       }).toThrow(BadEventError);
     });
 
     it('should invoke callback of unfiltered subscriptions', async () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      memorelay.subscribe(callbackFn);
+      coordinator.subscribe(callbackFn);
 
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
 
       // Same execution thread, should not have been invoked yet.
       expect(invocations).toEqual([]);
@@ -86,7 +86,7 @@ describe('Memorelay', () => {
       // Now the callback function should have been invoked.
       expect(invocations).toEqual([{ event: EXAMPLE_SIGNED_EVENT }]);
 
-      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
       await Promise.resolve();
 
@@ -97,17 +97,17 @@ describe('Memorelay', () => {
     });
 
     it('should NOT invoke callback for late subscription', async () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
 
       // Add subscription strictly after the event was added.
-      memorelay.subscribe(callbackFn);
+      coordinator.subscribe(callbackFn);
 
       // Same execution thread, should not have been invoked yet.
       expect(invocations).toEqual([]);
@@ -120,23 +120,23 @@ describe('Memorelay', () => {
     });
 
     it('should invoke callback only if subscription filter matches', async () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      memorelay.subscribe(callbackFn, [{ ids: ['8e'] }]);
+      coordinator.subscribe(callbackFn, [{ ids: ['8e'] }]);
 
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
 
       await Promise.resolve();
 
       // Callback function should NOT be invoked for 'f9' event.
       expect(invocations).toEqual([]);
 
-      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
       await Promise.resolve();
 
@@ -145,21 +145,21 @@ describe('Memorelay', () => {
     });
 
     it('should NOT invoke callback if subscription is removed', async () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      const subscriptionNumber = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = coordinator.subscribe(callbackFn);
 
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
 
       expect(invocations).toEqual([]);
 
       // Remove the subscription. Still same execution thread.
-      memorelay.unsubscribe(subscriptionNumber);
+      coordinator.unsubscribe(subscriptionNumber);
 
       expect(invocations).toEqual([]);
 
@@ -173,79 +173,119 @@ describe('Memorelay', () => {
 
   describe('hasEvent', () => {
     it('should return false for an unknown event', () => {
-      const memorelay = new Memorelay();
-      expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+      const coordinator = new MemorelayCoordinator();
+      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should return true for a known event', () => {
-      const memorelay = new Memorelay();
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
-      expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
   });
 
   describe('deleteEvent', () => {
     it('should return false for an unknown event', () => {
-      const memorelay = new Memorelay();
-      expect(memorelay.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+      const coordinator = new MemorelayCoordinator();
+      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
     });
 
     it('should return true for a known event', () => {
-      const memorelay = new Memorelay();
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
-      expect(memorelay.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
     });
   });
 
   describe('matchFilters', () => {
     it('should return an empty array when no events are known', () => {
-      const memorelay = new Memorelay();
-      expect(memorelay.matchFilters()).toEqual([]);
-      expect(memorelay.matchFilters([])).toEqual([]);
-      expect(memorelay.matchFilters([{}])).toEqual([]);
-      expect(memorelay.matchFilters([{ kinds: [1] }])).toEqual([]);
-      expect(memorelay.matchFilters([{ ids: ['6'] }, { kinds: [1] }])).toEqual(
-        []
-      );
+      const coordinator = new MemorelayCoordinator();
+      expect(coordinator.matchFilters()).toEqual([]);
+      expect(coordinator.matchFilters([])).toEqual([]);
+      expect(coordinator.matchFilters([{}])).toEqual([]);
+      expect(coordinator.matchFilters([{ kinds: [1] }])).toEqual([]);
+      expect(
+        coordinator.matchFilters([{ ids: ['6'] }, { kinds: [1] }])
+      ).toEqual([]);
     });
 
     it('should find all events when no filters are provided', () => {
-      const memorelay = new Memorelay();
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
-      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
       const EXPECTED_RESULTS = [EXAMPLE_SIGNED_EVENT, ALTERNATIVE_SIGNED_EVENT];
 
-      expect(memorelay.matchFilters()).toEqual(EXPECTED_RESULTS);
-      expect(memorelay.matchFilters([])).toEqual(EXPECTED_RESULTS);
-      expect(memorelay.matchFilters([{}])).toEqual(EXPECTED_RESULTS);
+      expect(coordinator.matchFilters()).toEqual(EXPECTED_RESULTS);
+      expect(coordinator.matchFilters([])).toEqual(EXPECTED_RESULTS);
+      expect(coordinator.matchFilters([{}])).toEqual(EXPECTED_RESULTS);
+    });
+
+    it('should find only events up to the limit', () => {
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [ALTERNATIVE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
+    });
+
+    it('should find newest events irrespective of order added', () => {
+      const coordinator = new MemorelayCoordinator();
+
+      // Adding the later, 'alternative' event first.
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [ALTERNATIVE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
+    });
+
+    it('should not find deleted events', () => {
+      const coordinator = new MemorelayCoordinator();
+
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.deleteEvent(ALTERNATIVE_SIGNED_EVENT);
+
+      const EXPECTED_RESULTS = [EXAMPLE_SIGNED_EVENT];
+
+      expect(coordinator.matchFilters([{ limit: 1 }])).toEqual(
+        EXPECTED_RESULTS
+      );
     });
 
     it('should find only events that match filters', () => {
-      const memorelay = new Memorelay();
-      memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
-      memorelay.addEvent(ALTERNATIVE_SIGNED_EVENT);
+      const coordinator = new MemorelayCoordinator();
+      coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
+      coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
 
-      expect(memorelay.matchFilters([{ ids: ['f9'] }])).toEqual([
+      expect(coordinator.matchFilters([{ ids: ['f9'] }])).toEqual([
         EXAMPLE_SIGNED_EVENT,
       ]);
-      expect(memorelay.matchFilters([{ ids: ['8e'] }])).toEqual([
+      expect(coordinator.matchFilters([{ ids: ['8e'] }])).toEqual([
         ALTERNATIVE_SIGNED_EVENT,
       ]);
-      expect(memorelay.matchFilters([{ ids: ['XX'] }])).toEqual([]);
+      expect(coordinator.matchFilters([{ ids: ['XX'] }])).toEqual([]);
     });
 
     it('should throw if a filter is invalid', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       expect(() => {
-        memorelay.matchFilters([
+        coordinator.matchFilters([
           { INVALID_KEY: ['UNEXPECTED VALUE'] } as unknown as Filter,
         ]);
       }).toThrow('unexpected filter field');
 
       expect(() => {
-        memorelay.matchFilters([
+        coordinator.matchFilters([
           {},
           { INVALID_KEY: ['UNEXPECTED VALUE'] } as unknown as Filter,
           { kinds: [1] },
@@ -256,29 +296,29 @@ describe('Memorelay', () => {
 
   describe('subscribe', () => {
     it('should return a subscriptionNumber for a new subscription', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      const subscriptionNumber = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = coordinator.subscribe(callbackFn);
 
       expect(Number.isInteger(subscriptionNumber)).toBe(true);
       expect(invocations).toEqual([]);
     });
 
     it('should return a different subscriptionNumber each time', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      const firstSubscriptionNumber = memorelay.subscribe(callbackFn);
-      const secondSubscriptionNumber = memorelay.subscribe(callbackFn);
+      const firstSubscriptionNumber = coordinator.subscribe(callbackFn);
+      const secondSubscriptionNumber = coordinator.subscribe(callbackFn);
 
       expect(Number.isInteger(firstSubscriptionNumber)).toBe(true);
       expect(Number.isInteger(secondSubscriptionNumber)).toBe(true);
@@ -287,7 +327,7 @@ describe('Memorelay', () => {
     });
 
     it('should throw if an invalid filter is passed', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
@@ -301,7 +341,7 @@ describe('Memorelay', () => {
       let subscriptionNumber: number | undefined = undefined;
 
       expect(() => {
-        subscriptionNumber = memorelay.subscribe(callbackFn, [invalidFilter]);
+        subscriptionNumber = coordinator.subscribe(callbackFn, [invalidFilter]);
       }).toThrow('unexpected filter field');
 
       expect(subscriptionNumber).toBeUndefined();
@@ -310,45 +350,45 @@ describe('Memorelay', () => {
 
   describe('unsubscribe', () => {
     it('should return false when there are no subscriptions', () => {
-      const memorelay = new Memorelay();
-      expect(memorelay.unsubscribe(0)).toBe(false);
-      expect(memorelay.unsubscribe(1)).toBe(false);
+      const coordinator = new MemorelayCoordinator();
+      expect(coordinator.unsubscribe(0)).toBe(false);
+      expect(coordinator.unsubscribe(1)).toBe(false);
     });
 
     it('should return true when there is a matching subscription', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      const subscriptionNumber = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = coordinator.subscribe(callbackFn);
 
-      expect(memorelay.unsubscribe(subscriptionNumber)).toBe(true);
+      expect(coordinator.unsubscribe(subscriptionNumber)).toBe(true);
       expect(invocations).toEqual([]);
     });
 
     it('should return false for an already removed subscription', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
 
       const invocations: { event: NostrEvent }[] = [];
       const callbackFn = (event: NostrEvent) => {
         invocations.push({ event });
       };
 
-      const subscriptionNumber = memorelay.subscribe(callbackFn);
+      const subscriptionNumber = coordinator.subscribe(callbackFn);
 
-      memorelay.unsubscribe(subscriptionNumber);
+      coordinator.unsubscribe(subscriptionNumber);
 
-      expect(memorelay.unsubscribe(subscriptionNumber)).toBe(false);
+      expect(coordinator.unsubscribe(subscriptionNumber)).toBe(false);
       expect(invocations).toEqual([]);
     });
 
     it('should throw if the subscription id is invalid', () => {
-      const memorelay = new Memorelay();
+      const coordinator = new MemorelayCoordinator();
       expect(() => {
-        memorelay.unsubscribe('NOT_A_NUMBER' as unknown as number);
+        coordinator.unsubscribe('NOT_A_NUMBER' as unknown as number);
       }).toThrow(RangeError);
     });
   });

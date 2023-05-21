@@ -7,7 +7,7 @@
 
 import { createExpectingLogger } from './create-expecting-logger';
 import { CloseMessage, EventMessage, ReqMessage } from './message-types';
-import { Memorelay } from './memorelay';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 import { Subscriber } from './subscriber';
 
 import { Event as NostrEvent } from 'nostr-tools';
@@ -44,7 +44,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -74,7 +74,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       new Subscriber(webSocket, fakeMessage, fakeLogger, memorelay);
 
       webSocket.emit('close');
@@ -97,7 +97,7 @@ describe('Subscriber', () => {
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const unsubscribedNumbers: number[] = [];
       memorelay.subscribe = () => {
@@ -144,7 +144,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       new Subscriber(webSocket, fakeMessage, fakeLogger, memorelay);
 
       webSocket.emit('error', 'ERROR_MESSAGE');
@@ -162,7 +162,7 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -192,7 +192,7 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -235,7 +235,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -277,7 +277,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -303,7 +303,7 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -331,7 +331,7 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -357,7 +357,7 @@ describe('Subscriber', () => {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
       const { fakeLogger } = createExpectingLogger();
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       const subscriber = new Subscriber(
         webSocket,
         fakeMessage,
@@ -395,7 +395,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
 
       const subscriber = new Subscriber(
@@ -428,7 +428,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const subscriber = new Subscriber(
         webSocket,
@@ -469,7 +469,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const subscriber = new Subscriber(
         webSocket,
@@ -522,7 +522,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
 
       const subscriber = new Subscriber(
@@ -565,7 +565,7 @@ describe('Subscriber', () => {
 
       const { fakeLogger } = createExpectingLogger();
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
 
       const subscriber = new Subscriber(
         webSocket,
@@ -611,7 +611,7 @@ describe('Subscriber', () => {
         expectedLogs.length
       );
 
-      const memorelay = new Memorelay();
+      const memorelay = new MemorelayCoordinator();
       memorelay.subscribe = () => {
         return 123;
       };

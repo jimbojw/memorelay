@@ -137,7 +137,7 @@ describe('verifyFilters', () => {
 
         expect(() => {
           verifyFilter({ [field]: -12345 });
-        }).not.toThrow();
+        }).toThrow(`${field} contains a negative value`);
       });
 
       it('should reject a non-integer', () => {

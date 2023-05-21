@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Main entry point for Memorelay library.
+ * @fileoverview Coordinator object for tracking events and subscriptions.
  */
 
 import { InternalError } from './internal-error';
@@ -10,16 +10,48 @@ import { Subscription } from './subscription';
 import { verifyEvent } from './verify-event';
 import { verifyFilters } from './verify-filters';
 
+import binarySearch from 'binary-search';
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
 
-export class Memorelay {
+/**
+ * A Map keyed by event.id and whose value is the NostrEvent.
+ */
+type EventsMap = Map<string, NostrEvent>;
+
+/**
+ * Record binding a created_at time to a map of events that have that created_at
+ * value.
+ */
+interface CreatedAtEventsRecord {
+  createdAt: number;
+  eventsMap: EventsMap;
+}
+
+/**
+ * Comparator function for binary searching an array of events sorted by their
+ * created_at values.
+ * @param event The event in the sorted array being evaluated.
+ * @param createdAt The needle created_at value being searched for.
+ * @returns A number indicating the direction of the comparison.
+ */
+function compareCreatedAt(event: CreatedAtEventsRecord, createdAt: number) {
+  return event.createdAt - createdAt;
+}
+
+export class MemorelayCoordinator {
   /**
    * Map of events keyed by id known to this memorelay instance.
    */
-  private readonly eventsMap = new Map<string, NostrEvent>();
+  private readonly eventsMap: EventsMap = new Map();
 
   /**
-   * Counter to keep track of the next subscription id to use.
+   * Array of EventsMaps sorted by the `created_at` field. Used for performing
+   * ordered queries.
+   */
+  private readonly eventsByCreatedAt: CreatedAtEventsRecord[] = [];
+
+  /**
+   * Counter to keep track of the next subscription number to use.
    */
   private nextSubscriptionNumber = 0;
 
@@ -47,7 +79,27 @@ export class Memorelay {
     if (this.hasEvent(event)) {
       return false;
     }
+
     this.eventsMap.set(event.id, event);
+
+    const result = binarySearch(
+      this.eventsByCreatedAt,
+      event.created_at,
+      (a, b) => a.createdAt - b
+    );
+
+    if (result < 0) {
+      const eventsMap = new Map<string, NostrEvent>();
+      eventsMap.set(event.id, event);
+      this.eventsByCreatedAt.splice(~result, 0, {
+        createdAt: event.created_at,
+        eventsMap,
+      });
+    }
+
+    const index = result < 0 ? ~result : result;
+    this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
+
     for (const [
       ,
       { callbackFn, filters, subscriptionNumber: subscriptionId },
@@ -67,7 +119,7 @@ export class Memorelay {
 
   /**
    * Delete the event from the events map and return whether successful.
-   * @param event The event to add.
+   * @param event The event to delete.
    * @returns Whether the event was deleted.
    */
   deleteEvent(event: NostrEvent): boolean {
@@ -75,6 +127,28 @@ export class Memorelay {
       return false;
     }
     this.eventsMap.delete(event.id);
+
+    const index = binarySearch(
+      this.eventsByCreatedAt,
+      event.created_at,
+      compareCreatedAt
+    );
+
+    if (index < 0) {
+      throw new InternalError('created_at events map missing');
+    }
+
+    const { eventsMap } = this.eventsByCreatedAt[index];
+    if (!eventsMap.has(event.id)) {
+      throw new InternalError('could not find event to delete');
+    }
+    eventsMap.delete(event.id);
+
+    if (!eventsMap.size) {
+      // Remove record if there are no events at this created_at left.
+      this.eventsByCreatedAt.splice(index, 1);
+    }
+
     return true;
   }
 
@@ -87,12 +161,38 @@ export class Memorelay {
    */
   matchFilters(filters?: Filter[]): NostrEvent[] {
     filters && verifyFilters(filters);
-    const matchingEvents: NostrEvent[] = [];
-    for (const [, event] of this.eventsMap) {
-      if (!filters || filters.length < 1 || matchFilters(filters, event)) {
-        matchingEvents.push(event);
+
+    let limit = Infinity;
+    for (const filter of filters ?? []) {
+      if (filter.limit !== undefined && filter.limit < limit) {
+        limit = filter.limit;
       }
     }
+
+    const matchingEvents: NostrEvent[] = [];
+
+    // Walk backwards through the eventsByCreatedAt array so that we find the
+    // latest events first on our way to satisfying the limit.
+    for (
+      let index = this.eventsByCreatedAt.length - 1;
+      index >= 0 && matchingEvents.length < limit;
+      index--
+    ) {
+      const { eventsMap } = this.eventsByCreatedAt[index];
+      for (const [, event] of eventsMap) {
+        if (!filters || filters.length < 1 || matchFilters(filters, event)) {
+          matchingEvents.push(event);
+          if (matchingEvents.length >= limit) {
+            break;
+          }
+        }
+      }
+    }
+
+    // Because we walked backwards through the eventsByCreatedAt array, the
+    // collection will be in reverse order by created_at stamp.
+    matchingEvents.reverse();
+
     return matchingEvents;
   }
 

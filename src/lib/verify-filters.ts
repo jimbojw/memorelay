@@ -103,6 +103,10 @@ export function verifyFilter(filter: unknown) {
     if (!Number.isInteger(value)) {
       throw new Error(`${field} contains a non-integer value`);
     }
+    const numericValue = value as number;
+    if (numericValue < 0) {
+      throw new Error(`${field} contains a negative value`);
+    }
   }
 }
 
