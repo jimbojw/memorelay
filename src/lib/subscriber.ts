@@ -19,8 +19,9 @@ import { MemorelayCoordinator } from './memorelay-coordinator';
 
 export class Subscriber {
   /**
-   * Mapping from Nostr REQ subscription id string to the Memorelay subscription
-   * number.
+   * Mapping from Nostr REQ subscription id string to the Memorelay coordinator
+   * subscription number. These subscriptions are only created AFTER the sweep
+   * of historical events has completed.
    */
   private readonly subscriptionIdMap = new Map<string, number>();
 
@@ -118,6 +119,9 @@ export class Subscriber {
     const [, subscriptionId, ...filters] = reqMessage;
 
     this.logger.log('verbose', 'REQ %s', subscriptionId);
+
+    // If the subscriptionId is not unique to this connection, the previous
+    // subscription could be in either of two states: sweeping or subscribed.
 
     const existingSubscriptionNumber =
       this.subscriptionIdMap.get(subscriptionId);
