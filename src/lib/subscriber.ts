@@ -120,9 +120,6 @@ export class Subscriber {
 
     this.logger.log('verbose', 'REQ %s', subscriptionId);
 
-    // If the subscriptionId is not unique to this connection, the previous
-    // subscription could be in either of two states: sweeping or subscribed.
-
     const existingSubscriptionNumber =
       this.subscriptionIdMap.get(subscriptionId);
     if (existingSubscriptionNumber !== undefined) {
@@ -130,15 +127,8 @@ export class Subscriber {
       this.subscriptionIdMap.delete(subscriptionId);
     }
 
-    const newSubscriptionNumber = this.memorelay.subscribe((event) => {
-      // TODO(jimbo): What if the WebSocket is disconnected?
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
-    }, filters);
-
-    this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
-
+    // Per NIP-01, first the stored events are searched, and THEN the
+    // subscription for future events is saved.
     const matchingEvents = this.memorelay.matchFilters(filters);
     for (const event of matchingEvents) {
       this.webSocket.send(
@@ -148,6 +138,15 @@ export class Subscriber {
     this.webSocket.send(
       Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8')
     );
+
+    const newSubscriptionNumber = this.memorelay.subscribe((event) => {
+      // TODO(jimbo): What if the WebSocket is disconnected?
+      this.webSocket.send(
+        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
+      );
+    }, filters);
+
+    this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
   }
 
   /**
