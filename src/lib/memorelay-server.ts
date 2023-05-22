@@ -196,7 +196,7 @@ export class MemorelayServer {
    */
   getRelayDocument(): RelayInformationDocument {
     return {
-      supported_nips: [1, 11],
+      supported_nips: [1, 9, 11],
     };
   }
 }
