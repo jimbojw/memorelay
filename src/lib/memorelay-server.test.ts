@@ -12,7 +12,7 @@ import { Subscriber } from './subscriber';
 
 import { createServer } from 'net';
 import { createLogger, LogEntry } from 'winston';
-import { IncomingMessage, ServerResponse } from 'http';
+import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 import {
   createRequest,
@@ -20,6 +20,7 @@ import {
   MockRequest,
   MockResponse,
 } from 'node-mocks-http';
+import { Request, Response } from 'express';
 
 describe('MemorelayServer', () => {
   it('should be a constructor function', () => {
@@ -189,7 +190,7 @@ describe('MemorelayServer', () => {
         method: 'GET',
         url: '/',
       });
-      const response: MockResponse<ServerResponse> = createResponse();
+      const response: MockResponse<Response> = createResponse();
 
       server.handleRequest(request, response);
 
@@ -204,11 +205,11 @@ describe('MemorelayServer', () => {
       const { fakeLogger } = createExpectingLogger(0);
       const server = new MemorelayServer(3000, fakeLogger);
 
-      const request: MockRequest<IncomingMessage> = createRequest({
+      const request: MockRequest<Request> = createRequest({
         method: 'POST',
         url: '/',
       });
-      const response: MockResponse<ServerResponse> = createResponse();
+      const response: MockResponse<Response> = createResponse();
 
       server.handleRequest(request, response);
 
@@ -223,12 +224,12 @@ describe('MemorelayServer', () => {
       const { fakeLogger } = createExpectingLogger(0);
       const server = new MemorelayServer(3000, fakeLogger);
 
-      const request: MockRequest<IncomingMessage> = createRequest({
+      const request: MockRequest<Request> = createRequest({
         method: 'GET',
         url: '/',
         headers: { accept: 'application/nostr+json' },
       });
-      const response: MockResponse<ServerResponse> = createResponse();
+      const response: MockResponse<Response> = createResponse();
 
       server.handleRequest(request, response);
 
