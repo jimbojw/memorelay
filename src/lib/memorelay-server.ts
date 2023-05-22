@@ -168,6 +168,7 @@ export class MemorelayServer {
         `Method not implemented: ${request.method ?? 'undefined'}`
       );
       response.end();
+      return;
     }
 
     if (request.headers.accept === 'application/nostr+json') {
