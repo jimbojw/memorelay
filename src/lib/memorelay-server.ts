@@ -168,6 +168,7 @@ export class MemorelayServer {
         `Method not implemented: ${request.method ?? 'undefined'}`
       );
       response.end();
+      return;
     }
 
     if (request.headers.accept === 'application/nostr+json') {
@@ -196,7 +197,7 @@ export class MemorelayServer {
    */
   getRelayDocument(): RelayInformationDocument {
     return {
-      supported_nips: [1, 11],
+      supported_nips: [1, 9, 11],
     };
   }
 }

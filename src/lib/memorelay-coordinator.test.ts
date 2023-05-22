@@ -7,8 +7,15 @@
 
 import { MemorelayCoordinator } from './memorelay-coordinator';
 
-import { Filter, Event as NostrEvent } from 'nostr-tools';
+import {
+  Filter,
+  Kind,
+  Event as NostrEvent,
+  generatePrivateKey,
+  getPublicKey,
+} from 'nostr-tools';
 import { BadEventError } from './verify-event';
+import { signEvent } from './sign-event';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
   content: 'BRB, turning on the miners',
@@ -30,7 +37,7 @@ const ALTERNATIVE_SIGNED_EVENT: NostrEvent = Object.freeze({
   tags: [],
 });
 
-describe('Memorelay', () => {
+describe('MemorelayCoordinator', () => {
   it('should be a constructor function', () => {
     expect(typeof MemorelayCoordinator).toBe('function');
 
@@ -169,31 +176,146 @@ describe('Memorelay', () => {
       // subscription was removed before the invocation could have happened.
       expect(invocations).toEqual([]);
     });
+
+    describe('Kind.EventDeletion', () => {
+      it('should cause tagged events to be deleted', () => {
+        const coordinator = new MemorelayCoordinator();
+
+        const secretKey = generatePrivateKey();
+        const pubkey = getPublicKey(secretKey);
+
+        const startTime = Math.floor(Date.now() / 1000);
+
+        const firstTextEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 10,
+            tags: [],
+            content: 'FIRST TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(firstTextEvent);
+        expect(coordinator.hasEvent(firstTextEvent.id)).toBe(true);
+
+        const secondTextEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 20,
+            tags: [],
+            content: 'SECNOND TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(secondTextEvent);
+        expect(coordinator.hasEvent(secondTextEvent.id)).toBe(true);
+
+        const deleteEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 30,
+            tags: [
+              ['e', firstTextEvent.id],
+              ['e', secondTextEvent.id],
+            ],
+            content: 'DELETE BOTH EVENTS',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(deleteEvent);
+        expect(coordinator.hasEvent(deleteEvent.id)).toBe(true);
+
+        // The crux: confirm that previously added events have been deleted.
+        expect(coordinator.hasEvent(firstTextEvent.id)).toBe(false);
+        expect(coordinator.hasEvent(secondTextEvent.id)).toBe(false);
+      });
+
+      it('should not affect non-tagged events to be deleted', () => {
+        const coordinator = new MemorelayCoordinator();
+
+        const secretKey = generatePrivateKey();
+        const pubkey = getPublicKey(secretKey);
+
+        const startTime = Math.floor(Date.now() / 1000);
+
+        const firstTextEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 10,
+            tags: [],
+            content: 'FIRST TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(firstTextEvent);
+        expect(coordinator.hasEvent(firstTextEvent.id)).toBe(true);
+
+        const secondTextEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 20,
+            tags: [],
+            content: 'SECNOND TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(secondTextEvent);
+        expect(coordinator.hasEvent(secondTextEvent.id)).toBe(true);
+
+        const deleteEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 30,
+            tags: [['e', firstTextEvent.id]],
+            content: 'DELETE ONLY FIRST EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(deleteEvent);
+        expect(coordinator.hasEvent(deleteEvent.id)).toBe(true);
+
+        // The crux: confirm that intended events have been deleted.
+        expect(coordinator.hasEvent(firstTextEvent.id)).toBe(false);
+        expect(coordinator.hasEvent(secondTextEvent.id)).toBe(true);
+      });
+    });
   });
 
   describe('hasEvent', () => {
     it('should return false for an unknown event', () => {
       const coordinator = new MemorelayCoordinator();
-      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT.id)).toBe(false);
     });
 
     it('should return true for a known event', () => {
       const coordinator = new MemorelayCoordinator();
       coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
-      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      expect(coordinator.hasEvent(EXAMPLE_SIGNED_EVENT.id)).toBe(true);
     });
   });
 
   describe('deleteEvent', () => {
     it('should return false for an unknown event', () => {
       const coordinator = new MemorelayCoordinator();
-      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(false);
+      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT.id)).toBe(false);
     });
 
     it('should return true for a known event', () => {
       const coordinator = new MemorelayCoordinator();
       coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
-      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      expect(coordinator.deleteEvent(EXAMPLE_SIGNED_EVENT.id)).toBe(true);
     });
   });
 
@@ -252,7 +374,7 @@ describe('Memorelay', () => {
 
       coordinator.addEvent(ALTERNATIVE_SIGNED_EVENT);
       coordinator.addEvent(EXAMPLE_SIGNED_EVENT);
-      coordinator.deleteEvent(ALTERNATIVE_SIGNED_EVENT);
+      coordinator.deleteEvent(ALTERNATIVE_SIGNED_EVENT.id);
 
       const EXPECTED_RESULTS = [EXAMPLE_SIGNED_EVENT];
 

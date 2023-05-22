@@ -11,7 +11,7 @@ import { verifyEvent } from './verify-event';
 import { verifyFilters } from './verify-filters';
 
 import binarySearch from 'binary-search';
-import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
+import { Filter, Kind, Event as NostrEvent, matchFilters } from 'nostr-tools';
 
 /**
  * A Map keyed by event.id and whose value is the NostrEvent.
@@ -62,10 +62,10 @@ export class MemorelayCoordinator {
 
   /**
    * Returns whether the provided event is in memory.
-   * @param event The event to check.
+   * @param eventId The id of the event to check.
    */
-  hasEvent(event: NostrEvent): boolean {
-    return this.eventsMap.has(event.id);
+  hasEvent(eventId: string): boolean {
+    return this.eventsMap.has(eventId);
   }
 
   /**
@@ -76,7 +76,8 @@ export class MemorelayCoordinator {
    */
   addEvent(event: NostrEvent): boolean {
     verifyEvent(event);
-    if (this.hasEvent(event)) {
+
+    if (this.hasEvent(event.id)) {
       return false;
     }
 
@@ -100,12 +101,10 @@ export class MemorelayCoordinator {
     const index = result < 0 ? ~result : result;
     this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
 
-    for (const [
-      ,
-      { callbackFn, filters, subscriptionNumber: subscriptionId },
-    ] of this.subscriptionsMap) {
+    for (const [, { callbackFn, filters, subscriptionNumber }] of this
+      .subscriptionsMap) {
       queueMicrotask(() => {
-        if (!this.subscriptionsMap.has(subscriptionId)) {
+        if (!this.subscriptionsMap.has(subscriptionNumber)) {
           // Short-circuit if this subscription has been removed.
           return;
         }
@@ -114,18 +113,37 @@ export class MemorelayCoordinator {
         }
       });
     }
+
+    // Implement NIP-09 event deletion.
+    if (event.kind === Kind.EventDeletion) {
+      for (const tag of event.tags) {
+        const [tagType, eventId] = tag;
+        if (
+          tagType === 'e' &&
+          typeof eventId === 'string' &&
+          eventId.length === 64 &&
+          this.eventsMap.has(eventId)
+        ) {
+          this.deleteEvent(eventId);
+        }
+      }
+    }
+
     return true;
   }
 
   /**
    * Delete the event from the events map and return whether successful.
-   * @param event The event to delete.
+   * @param eventId The id of the event to delete.
    * @returns Whether the event was deleted.
    */
-  deleteEvent(event: NostrEvent): boolean {
-    if (!this.hasEvent(event)) {
+  deleteEvent(eventId: string): boolean {
+    const event = this.eventsMap.get(eventId);
+
+    if (!event) {
       return false;
     }
+
     this.eventsMap.delete(event.id);
 
     const index = binarySearch(
