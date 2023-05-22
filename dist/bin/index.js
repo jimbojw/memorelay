@@ -29081,10 +29081,10 @@ class MemorelayCoordinator {
     }
     /**
      * Returns whether the provided event is in memory.
-     * @param event The event to check.
+     * @param eventId The id of the event to check.
      */
-    hasEvent(event) {
-        return this.eventsMap.has(event.id);
+    hasEvent(eventId) {
+        return this.eventsMap.has(eventId);
     }
     /**
      * Add the given event to the events map and return whether successful.
@@ -29094,7 +29094,7 @@ class MemorelayCoordinator {
      */
     addEvent(event) {
         (0, verify_event_1.verifyEvent)(event);
-        if (this.hasEvent(event)) {
+        if (this.hasEvent(event.id)) {
             return false;
         }
         this.eventsMap.set(event.id, event);
@@ -29109,9 +29109,10 @@ class MemorelayCoordinator {
         }
         const index = result < 0 ? ~result : result;
         this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
-        for (const [, { callbackFn, filters, subscriptionNumber: subscriptionId },] of this.subscriptionsMap) {
+        for (const [, { callbackFn, filters, subscriptionNumber }] of this
+            .subscriptionsMap) {
             queueMicrotask(() => {
-                if (!this.subscriptionsMap.has(subscriptionId)) {
+                if (!this.subscriptionsMap.has(subscriptionNumber)) {
                     // Short-circuit if this subscription has been removed.
                     return;
                 }
@@ -29120,15 +29121,28 @@ class MemorelayCoordinator {
                 }
             });
         }
+        // Implement NIP-09 event deletion.
+        if (event.kind === nostr_tools_1.Kind.EventDeletion) {
+            for (const tag of event.tags) {
+                const [tagType, eventId] = tag;
+                if (tagType === 'e' &&
+                    typeof eventId === 'string' &&
+                    eventId.length === 64 &&
+                    this.eventsMap.has(eventId)) {
+                    this.deleteEvent(eventId);
+                }
+            }
+        }
         return true;
     }
     /**
      * Delete the event from the events map and return whether successful.
-     * @param event The event to delete.
+     * @param eventId The id of the event to delete.
      * @returns Whether the event was deleted.
      */
-    deleteEvent(event) {
-        if (!this.hasEvent(event)) {
+    deleteEvent(eventId) {
+        const event = this.eventsMap.get(eventId);
+        if (!event) {
             return false;
         }
         this.eventsMap.delete(event.id);
@@ -29379,6 +29393,7 @@ class MemorelayServer {
             response.writeHead(501, { 'Content-Type': 'text/plain' });
             response.write(`Method not implemented: ${(_a = request.method) !== null && _a !== void 0 ? _a : 'undefined'}`);
             response.end();
+            return;
         }
         if (request.headers.accept === 'application/nostr+json') {
             this.sendRelayDocument(request, response);
@@ -29403,7 +29418,7 @@ class MemorelayServer {
      */
     getRelayDocument() {
         return {
-            supported_nips: [1, 11],
+            supported_nips: [1, 9, 11],
         };
     }
 }
@@ -29545,7 +29560,7 @@ class Subscriber {
      */
     handleEventMessage(eventMessage) {
         const event = eventMessage[1];
-        if (this.memorelay.hasEvent(event)) {
+        if (this.memorelay.hasEvent(event.id)) {
             this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
             return;
         }

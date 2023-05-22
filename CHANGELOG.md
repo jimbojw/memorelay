@@ -1,3 +1,16 @@
+# [1.8.0](https://github.com/jimbojw/memorelay/compare/v1.7.0...v1.8.0) (2023-05-22)
+
+
+### Bug Fixes
+
+* Adding 9 to the list of supported nips in the relay inforamtion document. ([27f344d](https://github.com/jimbojw/memorelay/commit/27f344d1d01ed843fe9984b14af364d62af36f4d))
+* Return immediately after returning 501 for unimplemented HTTP methods. ([fd0fe5e](https://github.com/jimbojw/memorelay/commit/fd0fe5e4b9dd0441156f0686e60aaa7adf4aed02))
+
+
+### Features
+
+* Implementing NIP-09 event deletion. ([53eaafa](https://github.com/jimbojw/memorelay/commit/53eaafa234661b6d619058f46d940f447c7cc56e))
+
 # [1.7.0](https://github.com/jimbojw/memorelay/compare/v1.6.1...v1.7.0) (2023-05-21)
 
 

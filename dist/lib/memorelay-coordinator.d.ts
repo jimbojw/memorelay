@@ -25,9 +25,9 @@ export declare class MemorelayCoordinator {
     private readonly subscriptionsMap;
     /**
      * Returns whether the provided event is in memory.
-     * @param event The event to check.
+     * @param eventId The id of the event to check.
      */
-    hasEvent(event: NostrEvent): boolean;
+    hasEvent(eventId: string): boolean;
     /**
      * Add the given event to the events map and return whether successful.
      * @param event The event to add.
@@ -37,10 +37,10 @@ export declare class MemorelayCoordinator {
     addEvent(event: NostrEvent): boolean;
     /**
      * Delete the event from the events map and return whether successful.
-     * @param event The event to delete.
+     * @param eventId The id of the event to delete.
      * @returns Whether the event was deleted.
      */
-    deleteEvent(event: NostrEvent): boolean;
+    deleteEvent(eventId: string): boolean;
     /**
      * Find and return all events which match the provided array of filters. If
      * the filters array is not provided, or if it is an empty array, then no
