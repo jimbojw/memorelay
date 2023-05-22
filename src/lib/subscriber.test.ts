@@ -439,7 +439,7 @@ describe('Subscriber', () => {
 
       subscriber.handleEventMessage(['EVENT', EXAMPLE_SIGNED_EVENT]);
 
-      expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT)).toBe(true);
+      expect(memorelay.hasEvent(EXAMPLE_SIGNED_EVENT.id)).toBe(true);
 
       const actualLogs = await actualLogsPromise;
 
