@@ -7,12 +7,19 @@
 
 import { createExpectingLogger } from './create-expecting-logger';
 import { MemorelayServer } from './memorelay-server';
+import { RelayInformationDocument } from './relay-information-document';
 import { Subscriber } from './subscriber';
 
 import { createServer } from 'net';
 import { createLogger, LogEntry } from 'winston';
-import { IncomingMessage } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 import { WebSocket } from 'ws';
+import {
+  createRequest,
+  createResponse,
+  MockRequest,
+  MockResponse,
+} from 'node-mocks-http';
 
 describe('MemorelayServer', () => {
   it('should be a constructor function', () => {
@@ -170,6 +177,71 @@ describe('MemorelayServer', () => {
       } as unknown as IncomingMessage;
       const subscriber = server.connect(webSocket, fakeMessage);
       expect(subscriber instanceof Subscriber).toBe(true);
+    });
+  });
+
+  describe('handleRequest', () => {
+    it('should handle an incoming HTTP request', () => {
+      const { fakeLogger } = createExpectingLogger(0);
+      const server = new MemorelayServer(3000, fakeLogger);
+
+      const request: IncomingMessage = createRequest({
+        method: 'GET',
+        url: '/',
+      });
+      const response: MockResponse<ServerResponse> = createResponse();
+
+      server.handleRequest(request, response);
+
+      expect(response.statusCode).toBe(200);
+      expect(response._isEndCalled()).toBe(true);
+      expect((response._getData() as Buffer).toString('utf-8')).toBe(
+        'memorelay'
+      );
+    });
+
+    it('should reject non-GET/HEAD methods', () => {
+      const { fakeLogger } = createExpectingLogger(0);
+      const server = new MemorelayServer(3000, fakeLogger);
+
+      const request: MockRequest<IncomingMessage> = createRequest({
+        method: 'POST',
+        url: '/',
+      });
+      const response: MockResponse<ServerResponse> = createResponse();
+
+      server.handleRequest(request, response);
+
+      expect(response.statusCode).toBe(501);
+      expect(response._isEndCalled()).toBe(true);
+      expect((response._getData() as Buffer).toString('utf-8')).toContain(
+        'Method not implemented'
+      );
+    });
+
+    it('should return the relay information document', () => {
+      const { fakeLogger } = createExpectingLogger(0);
+      const server = new MemorelayServer(3000, fakeLogger);
+
+      const request: MockRequest<IncomingMessage> = createRequest({
+        method: 'GET',
+        url: '/',
+        headers: { accept: 'application/nostr+json' },
+      });
+      const response: MockResponse<ServerResponse> = createResponse();
+
+      server.handleRequest(request, response);
+
+      expect(response.statusCode).toBe(200);
+      expect(response._isEndCalled()).toBe(true);
+      expect(response._isJSON()).toBe(true);
+
+      const document = response._getJSONData() as RelayInformationDocument;
+      expect(typeof document).toBe('object');
+      expect(Array.isArray(document.supported_nips)).toBe(true);
+      expect(document.supported_nips?.includes(1)).toBe(true);
+      expect(document.supported_nips?.includes(9)).toBe(true);
+      expect(document.supported_nips?.includes(11)).toBe(true);
     });
   });
 });
