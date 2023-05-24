@@ -5,17 +5,21 @@
  * @fileoverview A connected Subscriber to a MemorelayServer.
  */
 
-import { IncomingMessage } from 'http';
-import { Logger } from 'winston';
-import { WebSocket } from 'ws';
-import { bufferToMessage } from './buffer-to-message';
+import { bufferToClientMessage } from './buffer-to-message';
 import {
   ClientMessage,
   CloseMessage,
   EventMessage,
+  RelayMessage,
   ReqMessage,
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
+import { messageToBuffer } from './message-to-buffer';
+
+import { IncomingMessage } from 'http';
+import { Kind } from 'nostr-tools';
+import { Logger } from 'winston';
+import { WebSocket } from 'ws';
 
 export class Subscriber {
   /**
@@ -71,7 +75,7 @@ export class Subscriber {
 
     let clientMessage: ClientMessage;
     try {
-      clientMessage = bufferToMessage(payloadDataBuffer);
+      clientMessage = bufferToClientMessage(payloadDataBuffer);
     } catch (err) {
       const errorMessage = (err as Error).message;
       this.logger.log('verbose', `${errorMessage}`);
@@ -103,12 +107,25 @@ export class Subscriber {
     const event = eventMessage[1];
     if (this.memorelay.hasEvent(event.id)) {
       this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
+      this.sendMessage(['OK', event.id, true, 'duplicate:']);
+      return;
+    }
+
+    if (
+      event.kind !== Kind.EventDeletion &&
+      this.memorelay.wasDeleted(event.id)
+    ) {
+      this.logger.log('debug', 'EVENT %s (deleted)', event.id);
+      this.sendMessage(['OK', event.id, false, 'deleted:']);
       return;
     }
 
     this.logger.log('verbose', 'EVENT %s', event.id);
-
-    this.memorelay.addEvent(eventMessage[1]);
+    const status = this.memorelay.addEvent(eventMessage[1]);
+    if (!status) {
+      this.logger.log('error', 'FAILED TO ADD EVENT %s', event.id);
+    }
+    this.sendMessage(['OK', event.id, status, '']);
   }
 
   /**
@@ -131,19 +148,13 @@ export class Subscriber {
     // subscription for future events is saved.
     const matchingEvents = this.memorelay.matchFilters(filters);
     for (const event of matchingEvents) {
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
+      this.sendMessage(['EVENT', event]);
     }
-    this.webSocket.send(
-      Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8')
-    );
+    this.sendMessage(['EOSE', subscriptionId]);
 
     const newSubscriptionNumber = this.memorelay.subscribe((event) => {
       // TODO(jimbo): What if the WebSocket is disconnected?
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
+      this.sendMessage(['EVENT', event]);
     }, filters);
 
     this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
@@ -175,5 +186,12 @@ export class Subscriber {
 
     this.memorelay.unsubscribe(existingSubscriptionNumber);
     this.subscriptionIdMap.delete(subscriptionId);
+  }
+
+  /**
+   * Send a message to the connected WebSocket.
+   */
+  sendMessage(message: RelayMessage) {
+    this.webSocket.send(messageToBuffer(message));
   }
 }

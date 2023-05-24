@@ -5,12 +5,26 @@
  * @fileoverview Tests for the Subscriber class.
  */
 
+import { bufferToRelayMessage } from './buffer-to-message';
 import { createExpectingLogger } from './create-expecting-logger';
-import { CloseMessage, EventMessage, ReqMessage } from './message-types';
+import {
+  ClientMessage,
+  CloseMessage,
+  EventMessage,
+  RelayMessage,
+  ReqMessage,
+} from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
+import { messageToBuffer } from './message-to-buffer';
+import { signEvent } from './sign-event';
 import { Subscriber } from './subscriber';
 
-import { Event as NostrEvent } from 'nostr-tools';
+import {
+  Kind,
+  Event as NostrEvent,
+  generatePrivateKey,
+  getPublicKey,
+} from 'nostr-tools';
 import { IncomingMessage } from 'http';
 import { LogEntry } from 'winston';
 import { WebSocket } from 'ws';
@@ -87,8 +101,8 @@ describe('Subscriber', () => {
     it('should unsubscribe from all subscriptions', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -118,7 +132,7 @@ describe('Subscriber', () => {
       subscriber.handleReqMessage(['REQ', 'SUBSCRIBER_ID']);
 
       expect(webSocketSentData).toEqual([
-        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIBER_ID']), 'utf-8'),
+        messageToBuffer(['EOSE', 'SUBSCRIBER_ID']),
       ]);
 
       webSocket.emit('close');
@@ -218,8 +232,8 @@ describe('Subscriber', () => {
     it('should log an error when not a Nostr message', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -244,7 +258,7 @@ describe('Subscriber', () => {
       );
 
       subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['BAD_MESSAGE_TYPE']), 'utf-8')
+        messageToBuffer(['BAD_MESSAGE_TYPE'] as unknown as ClientMessage)
       );
 
       expect(webSocketSentData).toEqual([
@@ -259,9 +273,9 @@ describe('Subscriber', () => {
     it('should log a message when a Nostr message is received', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
-        webSocketSentData.push(sentData);
+      const webSocketSentMessages: RelayMessage[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
       };
 
       const fakeMessage = {
@@ -286,11 +300,13 @@ describe('Subscriber', () => {
       );
 
       subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
+        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
       );
 
       // WebSocket should not have received any sent data.
-      expect(webSocketSentData).toEqual([]);
+      expect(webSocketSentMessages).toEqual([
+        ['OK', EXAMPLE_SIGNED_EVENT.id, true, ''],
+      ]);
 
       const actualLogs = await actualLogsPromise;
 
@@ -317,7 +333,7 @@ describe('Subscriber', () => {
       };
 
       subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
+        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
       );
 
       expect(handleEventMessageParams).toEqual([
@@ -344,9 +360,7 @@ describe('Subscriber', () => {
         handleReqMessageParams.push(reqMessage);
       };
 
-      subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['REQ', 'SUBSCRIPTION_ID']), 'utf-8')
-      );
+      subscriber.handleMessage(messageToBuffer(['REQ', 'SUBSCRIPTION_ID']));
 
       expect(handleReqMessageParams).toEqual([['REQ', 'SUBSCRIPTION_ID']]);
     });
@@ -370,17 +384,20 @@ describe('Subscriber', () => {
         handleCloseMessageParams.push(closeMessage);
       };
 
-      subscriber.handleMessage(
-        Buffer.from(JSON.stringify(['CLOSE', 'SUBSCRIPTION_ID']), 'utf-8')
-      );
+      subscriber.handleMessage(messageToBuffer(['CLOSE', 'SUBSCRIPTION_ID']));
 
       expect(handleCloseMessageParams).toEqual([['CLOSE', 'SUBSCRIPTION_ID']]);
     });
   });
 
   describe('handleEventMessage', () => {
-    it('should log and not forward duplicate events', async () => {
+    it('should log and notify duplicate events', async () => {
       const webSocket = new WebSocket(null);
+
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentData.push(sentData);
+      };
 
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
@@ -410,10 +427,20 @@ describe('Subscriber', () => {
       const actualLogs = await actualLogsPromise;
 
       expect(actualLogs).toEqual(expectedLogs);
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentData).toEqual([
+        messageToBuffer(['OK', EXAMPLE_SIGNED_EVENT.id, true, 'duplicate:']),
+      ]);
     });
 
     it('should log and forward previously unseen events', async () => {
       const webSocket = new WebSocket(null);
+
+      const webSocketSentMessages: RelayMessage[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
+      };
 
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
@@ -444,6 +471,81 @@ describe('Subscriber', () => {
       const actualLogs = await actualLogsPromise;
 
       expect(actualLogs).toEqual(expectedLogs);
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentMessages).toEqual([
+        ['OK', EXAMPLE_SIGNED_EVENT.id, true, ''],
+      ]);
+    });
+
+    it('should reject and notify deleted events', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentMessages: RelayMessage[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'debug', message: 'EVENT %s (deleted)' },
+      ];
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const secretKey = generatePrivateKey();
+      const pubkey = getPublicKey(secretKey);
+
+      const startTime = Math.floor(Date.now() / 1000);
+
+      const targetEvent = signEvent(
+        {
+          kind: Kind.Text,
+          created_at: startTime + 10,
+          tags: [],
+          content: 'TARGET TEXT EVENT',
+          pubkey,
+        },
+        secretKey
+      );
+
+      const deleteEvent = signEvent(
+        {
+          kind: Kind.EventDeletion,
+          created_at: startTime + 20,
+          tags: [['e', targetEvent.id]],
+          content: 'DELETE TARGET EVENT',
+          pubkey,
+        },
+        secretKey
+      );
+
+      const memorelay = new MemorelayCoordinator();
+      memorelay.addEvent(deleteEvent);
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleEventMessage(['EVENT', targetEvent]);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentMessages).toEqual([
+        ['OK', targetEvent.id, false, 'deleted:'],
+      ]);
     });
   });
 
@@ -451,8 +553,8 @@ describe('Subscriber', () => {
     it('should set up a subscription to receive later events', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -482,7 +584,7 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(1);
       expect(webSocketSentData[0]).toEqual(
-        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIPTION_ID']), 'utf-8')
+        messageToBuffer(['EOSE', 'SUBSCRIPTION_ID'])
       );
 
       memorelay.addEvent(EXAMPLE_SIGNED_EVENT);
@@ -493,7 +595,7 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(2);
       expect(webSocketSentData[1]).toEqual(
-        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
+        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
       );
 
       const actualLogs = await actualLogsPromise;
@@ -504,8 +606,8 @@ describe('Subscriber', () => {
     it('should set up a subscription and receive past events', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -538,10 +640,10 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(2);
       expect(webSocketSentData[0]).toEqual(
-        Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
+        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
       );
       expect(webSocketSentData[1]).toEqual(
-        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIPTION_ID']), 'utf-8')
+        messageToBuffer(['EOSE', 'SUBSCRIPTION_ID'])
       );
 
       const actualLogs = await actualLogsPromise;
@@ -554,8 +656,8 @@ describe('Subscriber', () => {
     it('should notify if the subscription does not exist', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -579,21 +681,18 @@ describe('Subscriber', () => {
       await Promise.resolve();
 
       expect(webSocketSentData).toEqual([
-        Buffer.from(
-          JSON.stringify([
-            'NOTICE',
-            "ERROR: subscription not found: 'SUBSCRIPTION_ID'",
-          ]),
-          'utf-8'
-        ),
+        messageToBuffer([
+          'NOTICE',
+          "ERROR: subscription not found: 'SUBSCRIPTION_ID'",
+        ]),
       ]);
     });
 
     it('should close existing subscription', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: string[] = [];
-      webSocket.send = (sentData: string) => {
+      const webSocketSentData: Buffer[] = [];
+      webSocket.send = (sentData: Buffer) => {
         webSocketSentData.push(sentData);
       };
 
@@ -632,7 +731,7 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(1);
       expect(webSocketSentData[0]).toEqual(
-        Buffer.from(JSON.stringify(['EOSE', 'SUBSCRIPTION_ID']), 'utf-8')
+        messageToBuffer(['EOSE', 'SUBSCRIPTION_ID'])
       );
 
       subscriber.handleCloseMessage(['CLOSE', 'SUBSCRIPTION_ID']);
