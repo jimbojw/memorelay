@@ -13,9 +13,11 @@ import {
   ClientMessage,
   CloseMessage,
   EventMessage,
+  RelayMessage,
   ReqMessage,
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
+import { messageToBuffer } from './message-to-buffer';
 
 export class Subscriber {
   /**
@@ -131,19 +133,13 @@ export class Subscriber {
     // subscription for future events is saved.
     const matchingEvents = this.memorelay.matchFilters(filters);
     for (const event of matchingEvents) {
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
+      this.sendMessage(['EVENT', event]);
     }
-    this.webSocket.send(
-      Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8')
-    );
+    this.sendMessage(['EOSE', subscriptionId]);
 
     const newSubscriptionNumber = this.memorelay.subscribe((event) => {
       // TODO(jimbo): What if the WebSocket is disconnected?
-      this.webSocket.send(
-        Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8')
-      );
+      this.sendMessage(['EVENT', event]);
     }, filters);
 
     this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
@@ -175,5 +171,12 @@ export class Subscriber {
 
     this.memorelay.unsubscribe(existingSubscriptionNumber);
     this.subscriptionIdMap.delete(subscriptionId);
+  }
+
+  /**
+   * Send a message to the connected WebSocket.
+   */
+  sendMessage(message: RelayMessage) {
+    this.webSocket.send(messageToBuffer(message));
   }
 }
