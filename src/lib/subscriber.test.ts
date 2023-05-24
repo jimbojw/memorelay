@@ -273,9 +273,9 @@ describe('Subscriber', () => {
     it('should log a message when a Nostr message is received', async () => {
       const webSocket = new WebSocket(null);
 
-      const webSocketSentData: Buffer[] = [];
+      const webSocketSentMessages: RelayMessage[] = [];
       webSocket.send = (sentData: Buffer) => {
-        webSocketSentData.push(sentData);
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
       };
 
       const fakeMessage = {
@@ -304,7 +304,9 @@ describe('Subscriber', () => {
       );
 
       // WebSocket should not have received any sent data.
-      expect(webSocketSentData).toEqual([]);
+      expect(webSocketSentMessages).toEqual([
+        ['OK', EXAMPLE_SIGNED_EVENT.id, true, ''],
+      ]);
 
       const actualLogs = await actualLogsPromise;
 
@@ -435,6 +437,11 @@ describe('Subscriber', () => {
     it('should log and forward previously unseen events', async () => {
       const webSocket = new WebSocket(null);
 
+      const webSocketSentMessages: RelayMessage[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
+      };
+
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
@@ -464,6 +471,11 @@ describe('Subscriber', () => {
       const actualLogs = await actualLogsPromise;
 
       expect(actualLogs).toEqual(expectedLogs);
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentMessages).toEqual([
+        ['OK', EXAMPLE_SIGNED_EVENT.id, true, ''],
+      ]);
     });
 
     it('should reject and notify deleted events', async () => {

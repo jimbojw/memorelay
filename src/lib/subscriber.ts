@@ -5,9 +5,6 @@
  * @fileoverview A connected Subscriber to a MemorelayServer.
  */
 
-import { IncomingMessage } from 'http';
-import { Logger } from 'winston';
-import { WebSocket } from 'ws';
 import { bufferToClientMessage } from './buffer-to-message';
 import {
   ClientMessage,
@@ -18,6 +15,11 @@ import {
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
 import { messageToBuffer } from './message-to-buffer';
+
+import { IncomingMessage } from 'http';
+import { Kind } from 'nostr-tools';
+import { Logger } from 'winston';
+import { WebSocket } from 'ws';
 
 export class Subscriber {
   /**
@@ -109,14 +111,21 @@ export class Subscriber {
       return;
     }
 
-    if (this.memorelay.wasDeleted(event.id)) {
+    if (
+      event.kind !== Kind.EventDeletion &&
+      this.memorelay.wasDeleted(event.id)
+    ) {
       this.logger.log('debug', 'EVENT %s (deleted)', event.id);
       this.sendMessage(['OK', event.id, false, 'deleted:']);
       return;
     }
 
     this.logger.log('verbose', 'EVENT %s', event.id);
-    this.memorelay.addEvent(eventMessage[1]);
+    const status = this.memorelay.addEvent(eventMessage[1]);
+    if (!status) {
+      this.logger.log('error', 'FAILED TO ADD EVENT %s', event.id);
+    }
+    this.sendMessage(['OK', event.id, status, '']);
   }
 
   /**
