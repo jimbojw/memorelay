@@ -243,6 +243,7 @@ describe('MemorelayServer', () => {
       expect(document.supported_nips?.includes(1)).toBe(true);
       expect(document.supported_nips?.includes(9)).toBe(true);
       expect(document.supported_nips?.includes(11)).toBe(true);
+      expect(document.supported_nips?.includes(20)).toBe(true);
     });
   });
 });

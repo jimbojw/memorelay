@@ -5,12 +5,16 @@
  * @fileoverview Integration tests for binary (entry point bin.ts).
  */
 
-import { bufferToClientMessage } from './lib/buffer-to-message';
+import {
+  bufferToClientMessage,
+  bufferToRelayMessage,
+} from './lib/buffer-to-message';
 
 import { Event as NostrEvent } from 'nostr-tools';
 import path from 'path';
 import { spawn } from 'child_process';
 import { WebSocket } from 'ws';
+import { OKMessage } from './lib/message-types';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
   content: 'BRB, turning on the miners',
@@ -190,30 +194,49 @@ describe('bin.ts', () => {
       childProcess.on('error', reject);
     });
 
+    const webSocketOKMessagePromise = new Promise<OKMessage>(
+      (resolve, reject) => {
+        webSocket.once('message', (buffer: Buffer) => {
+          resolve(bufferToRelayMessage(buffer) as OKMessage);
+        });
+        webSocket.once('error', reject);
+      }
+    );
+
     webSocket.send(
       Buffer.from(JSON.stringify(['EVENT', EXAMPLE_SIGNED_EVENT]), 'utf-8')
     );
 
-    const childProcessEventLogMessage = await childProcessEventPromise;
+    const [childProcessEventLogMessage, webSocketOKMessage] = await Promise.all(
+      [childProcessEventPromise, webSocketOKMessagePromise]
+    );
 
     childProcess.removeAllListeners();
     childProcess.stdout.removeAllListeners();
+    webSocket.removeAllListeners();
 
     expect(childProcessEventLogMessage).toContain(
       `verbose: EVENT ${EXAMPLE_SIGNED_EVENT.id}`
     );
 
+    expect(webSocketOKMessage).toEqual([
+      'OK',
+      EXAMPLE_SIGNED_EVENT.id,
+      true,
+      '',
+    ]);
+
     // Wait for WebSocket to close.
     await new Promise<void>((resolve, reject) => {
-      webSocket.on('close', resolve);
-      webSocket.on('error', reject);
+      webSocket.once('close', resolve);
+      webSocket.once('error', reject);
       webSocket.close();
     });
 
     // Kill memorelay child process.
     await new Promise<void>((resolve, reject) => {
-      childProcess.on('error', reject);
-      childProcess.on('exit', resolve);
+      childProcess.once('error', reject);
+      childProcess.once('exit', resolve);
       const innerResult = childProcess.kill('SIGINT');
       expect(innerResult).toBe(true);
     });
