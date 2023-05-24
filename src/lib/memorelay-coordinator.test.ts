@@ -316,9 +316,9 @@ describe('MemorelayCoordinator', () => {
         const deleteEvent = signEvent(
           {
             kind: Kind.EventDeletion,
-            created_at: startTime + 30,
+            created_at: startTime + 20,
             tags: [['e', targetEvent.id]],
-            content: 'DELETE BOTH EVENTS',
+            content: 'DELETE TARGET EVENT',
             pubkey,
           },
           secretKey
@@ -332,6 +332,131 @@ describe('MemorelayCoordinator', () => {
 
         // Confirm that the target event was not added.
         expect(coordinator.hasEvent(targetEvent.id)).toBe(false);
+      });
+
+      it('should NOT delete previous deletion events', () => {
+        const coordinator = new MemorelayCoordinator();
+
+        const secretKey = generatePrivateKey();
+        const pubkey = getPublicKey(secretKey);
+
+        const startTime = Math.floor(Date.now() / 1000);
+
+        const originalEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 10,
+            tags: [],
+            content: 'ORIGINAL TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        // DO NOT add the original event.
+        expect(coordinator.hasEvent(originalEvent.id)).toBe(false);
+
+        const firstDeletionEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 20,
+            tags: [['e', originalEvent.id]],
+            content: 'FIRST DELETION EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(firstDeletionEvent);
+        expect(coordinator.hasEvent(firstDeletionEvent.id)).toBe(true);
+
+        const secondDeletionEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 30,
+            tags: [['e', firstDeletionEvent.id]],
+            content: 'SECOND DELETION EVENT (ILLEGAL)',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(secondDeletionEvent);
+        expect(coordinator.hasEvent(secondDeletionEvent.id)).toBe(true);
+
+        // Crux: Confirm that second deletion event DID NOT delete the first.
+        expect(coordinator.hasEvent(firstDeletionEvent.id)).toBe(true);
+
+        // Now attempt to add the event that's already marked for deletion.
+        coordinator.addEvent(originalEvent);
+
+        // Confirm that the original event was NOT added.
+        expect(coordinator.hasEvent(originalEvent.id)).toBe(false);
+      });
+
+      it('should NOT stop later deletion events', () => {
+        const coordinator = new MemorelayCoordinator();
+
+        const secretKey = generatePrivateKey();
+        const pubkey = getPublicKey(secretKey);
+
+        const startTime = Math.floor(Date.now() / 1000);
+
+        const originalEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 10,
+            tags: [],
+            content: 'ORIGINAL TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        // DO NOT add the original event.
+        expect(coordinator.hasEvent(originalEvent.id)).toBe(false);
+
+        const firstDeletionEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 20,
+            tags: [['e', originalEvent.id]],
+            content: 'FIRST DELETION EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        // DO NOT add the first deletion event.
+        expect(coordinator.hasEvent(firstDeletionEvent.id)).toBe(false);
+
+        const secondDeletionEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 30,
+            tags: [['e', firstDeletionEvent.id]],
+            content: 'SECOND DELETION EVENT (NO-OP)',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(secondDeletionEvent);
+        expect(coordinator.hasEvent(secondDeletionEvent.id)).toBe(true);
+
+        // Now add the original event, which should succeed because the first
+        // deletion event has not yet been presented to the coordinator.
+        coordinator.addEvent(originalEvent);
+        expect(coordinator.hasEvent(originalEvent.id)).toBe(true);
+
+        // Now add the first deletion event, which should not be stopped by the
+        // second (NO-OP) deletion event.
+        coordinator.addEvent(firstDeletionEvent);
+        expect(coordinator.hasEvent(firstDeletionEvent.id)).toBe(true);
+
+        // Confirm that the original event was deleted by the introduction of
+        // the first deletion event.
+        expect(coordinator.hasEvent(originalEvent.id)).toBe(false);
       });
     });
   });

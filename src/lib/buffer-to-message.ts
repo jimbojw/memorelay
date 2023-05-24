@@ -18,6 +18,11 @@ import {
   EventMessage,
   ReqMessage,
   CloseMessage,
+  EOSEMessage,
+  NoticeMessage,
+  OKMessage,
+  RelayMessage,
+  GenericMessage,
 } from './message-types';
 
 /**
@@ -43,11 +48,9 @@ export function checkSubscriptionId(subscriptionId: unknown) {
 }
 
 /**
- * Parse a payload data buffer as a ClientMessage.
- * @param payloadRawData The incoming Buffer data.
- * @returns A parsed, valid ClientMessage.
+ * Parse a payload data buffer as a generic message.
  */
-export function bufferToMessage(payloadRawData: Buffer): ClientMessage {
+export function bufferToGenericMessage(payloadRawData: Buffer): GenericMessage {
   const payloadString = payloadRawData.toString('utf-8');
 
   let payloadJson: unknown;
@@ -71,16 +74,28 @@ export function bufferToMessage(payloadRawData: Buffer): ClientMessage {
     throw new BadMessageError('message type was not a string');
   }
 
+  return payloadJson as unknown as GenericMessage;
+}
+
+/**
+ * Parse a payload data buffer as a ClientMessage.
+ * @param payloadRawData The incoming Buffer data.
+ * @returns A parsed, valid ClientMessage.
+ */
+export function bufferToClientMessage(payloadRawData: Buffer): ClientMessage {
+  const genericMessage = bufferToGenericMessage(payloadRawData);
+  const eventType: unknown = genericMessage[0];
+
   if (eventType === 'EVENT') {
-    if (payloadJson.length < 2) {
+    if (genericMessage.length < 2) {
       throw new BadMessageError('event missing');
     }
 
-    if (payloadJson.length > 2) {
+    if (genericMessage.length > 2) {
       throw new BadMessageError('extra elements detected');
     }
 
-    const payloadEvent = payloadJson[1] as NostrEvent;
+    const payloadEvent = genericMessage[1] as NostrEvent;
 
     if (!validateEvent(payloadEvent)) {
       throw new BadMessageError('event invalid');
@@ -94,31 +109,150 @@ export function bufferToMessage(payloadRawData: Buffer): ClientMessage {
       throw new BadMessageError('bad signature');
     }
 
-    return payloadJson as EventMessage;
+    return genericMessage as EventMessage;
   }
 
   if (eventType === 'REQ') {
-    checkSubscriptionId(payloadJson[1]);
+    checkSubscriptionId(genericMessage[1]);
 
     try {
-      for (let i = 2; i < payloadJson.length; i++) {
-        verifyFilter(payloadJson[i]);
+      for (let i = 2; i < genericMessage.length; i++) {
+        verifyFilter(genericMessage[i]);
       }
     } catch (err) {
       throw new BadMessageError((err as Error).message);
     }
 
-    return payloadJson as ReqMessage;
+    return genericMessage as ReqMessage;
   }
 
   if (eventType === 'CLOSE') {
-    checkSubscriptionId(payloadJson[1]);
+    checkSubscriptionId(genericMessage[1]);
 
-    if (payloadJson.length > 2) {
+    if (genericMessage.length > 2) {
       throw new BadMessageError('extra elements detected');
     }
 
-    return payloadJson as CloseMessage;
+    return genericMessage as CloseMessage;
+  }
+
+  throw new BadMessageError('unrecognized event type');
+}
+
+/**
+ * Parse a payload data buffer as a RelayMessage.
+ * @param payloadRawData The incoming Buffer data.
+ * @returns A parsed, valid RelayMessage.
+ */
+export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
+  const genericMessage = bufferToGenericMessage(payloadRawData);
+  const eventType: unknown = genericMessage[0];
+
+  if (typeof eventType !== 'string') {
+    throw new BadMessageError('message type was not a string');
+  }
+
+  if (eventType === 'EVENT') {
+    if (genericMessage.length < 2) {
+      throw new BadMessageError('event missing');
+    }
+
+    if (genericMessage.length > 2) {
+      throw new BadMessageError('extra elements detected');
+    }
+
+    const payloadEvent = genericMessage[1] as NostrEvent;
+
+    if (!validateEvent(payloadEvent)) {
+      throw new BadMessageError('event invalid');
+    }
+
+    if (!payloadEvent.sig) {
+      throw new BadMessageError('event signature missing');
+    }
+
+    if (!verifySignature(payloadEvent)) {
+      throw new BadMessageError('bad signature');
+    }
+
+    return genericMessage as EventMessage;
+  }
+
+  if (eventType === 'EOSE') {
+    checkSubscriptionId(genericMessage[1]);
+
+    return genericMessage as EOSEMessage;
+  }
+
+  if (eventType === 'NOTICE') {
+    if (genericMessage.length < 2) {
+      throw new BadMessageError('notice message missing');
+    }
+
+    if (typeof genericMessage[1] !== 'string') {
+      throw new BadMessageError('notice message type mismatch');
+    }
+
+    if (genericMessage.length > 2) {
+      throw new BadMessageError('extra elements detected');
+    }
+
+    return genericMessage as NoticeMessage;
+  }
+
+  if (eventType === 'OK') {
+    if (genericMessage.length < 2) {
+      throw new BadMessageError('event id missing');
+    }
+
+    const eventId = genericMessage[1] as string;
+    if (typeof eventId !== 'string') {
+      throw new BadMessageError('event id type mismatch');
+    }
+
+    if (eventId.length !== 64) {
+      throw new BadMessageError('event id malformed');
+    }
+
+    if (genericMessage.length < 3) {
+      throw new BadMessageError('status missing');
+    }
+
+    const status = genericMessage[2] as boolean;
+    if (typeof status !== 'boolean') {
+      throw new BadMessageError('status type mismatch');
+    }
+
+    if (genericMessage.length < 4) {
+      throw new BadMessageError('description missing');
+    }
+
+    const description = genericMessage[3] as string;
+    if (typeof description !== 'string') {
+      throw new BadMessageError('description type mismatch');
+    }
+
+    if (description.length) {
+      const colonIndex = description.indexOf(':');
+      if (colonIndex < 1) {
+        throw new BadMessageError('reason missing');
+      }
+
+      const reason = description.substring(0, colonIndex).trim();
+      if (!reason.length) {
+        throw new BadMessageError('reason missing');
+      }
+
+      if (reason !== 'duplicate' && reason !== 'deleted') {
+        throw new BadMessageError(`unrecognized reason: ${reason}`);
+      }
+    }
+
+    if (genericMessage.length > 4) {
+      throw new BadMessageError('extra elements detected');
+    }
+
+    return genericMessage as OKMessage;
   }
 
   throw new BadMessageError('unrecognized event type');

@@ -287,4 +287,11 @@ export class MemorelayCoordinator {
     this.subscriptionsMap.delete(subscriptionId);
     return true;
   }
+
+  /**
+   * Determine whether an event is known to have been deleted.
+   */
+  wasDeleted(eventId: string) {
+    return this.deletedEventIds.has(eventId);
+  }
 }

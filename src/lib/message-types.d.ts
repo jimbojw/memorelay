@@ -8,6 +8,8 @@
 import { Event as NostrEvent } from 'nostr-tools';
 import { Filter } from 'nostr-tools';
 
+export type GenericMessage = [string, ...unknown[]];
+
 // @see https://github.com/nostr-protocol/nips/blob/master/01.md
 export type EventMessage = ['EVENT', NostrEvent];
 export type ReqMessage = ['REQ', string, ...Filter[]];

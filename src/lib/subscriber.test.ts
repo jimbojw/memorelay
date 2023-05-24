@@ -5,18 +5,26 @@
  * @fileoverview Tests for the Subscriber class.
  */
 
+import { bufferToRelayMessage } from './buffer-to-message';
 import { createExpectingLogger } from './create-expecting-logger';
 import {
   ClientMessage,
   CloseMessage,
   EventMessage,
+  RelayMessage,
   ReqMessage,
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
 import { messageToBuffer } from './message-to-buffer';
+import { signEvent } from './sign-event';
 import { Subscriber } from './subscriber';
 
-import { Event as NostrEvent } from 'nostr-tools';
+import {
+  Kind,
+  Event as NostrEvent,
+  generatePrivateKey,
+  getPublicKey,
+} from 'nostr-tools';
 import { IncomingMessage } from 'http';
 import { LogEntry } from 'winston';
 import { WebSocket } from 'ws';
@@ -456,6 +464,76 @@ describe('Subscriber', () => {
       const actualLogs = await actualLogsPromise;
 
       expect(actualLogs).toEqual(expectedLogs);
+    });
+
+    it('should reject and notify deleted events', async () => {
+      const webSocket = new WebSocket(null);
+
+      const webSocketSentMessages: RelayMessage[] = [];
+      webSocket.send = (sentData: Buffer) => {
+        webSocketSentMessages.push(bufferToRelayMessage(sentData));
+      };
+
+      const fakeMessage = {
+        headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
+      } as unknown as IncomingMessage;
+
+      const expectedLogs: LogEntry[] = [
+        { level: 'http', message: 'OPEN (%s) %s' },
+        { level: 'debug', message: 'EVENT %s (deleted)' },
+      ];
+
+      const { fakeLogger, actualLogsPromise } = createExpectingLogger(
+        expectedLogs.length
+      );
+
+      const secretKey = generatePrivateKey();
+      const pubkey = getPublicKey(secretKey);
+
+      const startTime = Math.floor(Date.now() / 1000);
+
+      const targetEvent = signEvent(
+        {
+          kind: Kind.Text,
+          created_at: startTime + 10,
+          tags: [],
+          content: 'TARGET TEXT EVENT',
+          pubkey,
+        },
+        secretKey
+      );
+
+      const deleteEvent = signEvent(
+        {
+          kind: Kind.EventDeletion,
+          created_at: startTime + 20,
+          tags: [['e', targetEvent.id]],
+          content: 'DELETE TARGET EVENT',
+          pubkey,
+        },
+        secretKey
+      );
+
+      const memorelay = new MemorelayCoordinator();
+      memorelay.addEvent(deleteEvent);
+
+      const subscriber = new Subscriber(
+        webSocket,
+        fakeMessage,
+        fakeLogger,
+        memorelay
+      );
+
+      subscriber.handleEventMessage(['EVENT', targetEvent]);
+
+      const actualLogs = await actualLogsPromise;
+
+      expect(actualLogs).toEqual(expectedLogs);
+
+      // WebSocket should not have received any sent data.
+      expect(webSocketSentMessages).toEqual([
+        ['OK', targetEvent.id, false, 'deleted:'],
+      ]);
     });
   });
 

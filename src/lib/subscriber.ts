@@ -8,7 +8,7 @@
 import { IncomingMessage } from 'http';
 import { Logger } from 'winston';
 import { WebSocket } from 'ws';
-import { bufferToMessage } from './buffer-to-message';
+import { bufferToClientMessage } from './buffer-to-message';
 import {
   ClientMessage,
   CloseMessage,
@@ -73,7 +73,7 @@ export class Subscriber {
 
     let clientMessage: ClientMessage;
     try {
-      clientMessage = bufferToMessage(payloadDataBuffer);
+      clientMessage = bufferToClientMessage(payloadDataBuffer);
     } catch (err) {
       const errorMessage = (err as Error).message;
       this.logger.log('verbose', `${errorMessage}`);
@@ -109,8 +109,13 @@ export class Subscriber {
       return;
     }
 
-    this.logger.log('verbose', 'EVENT %s', event.id);
+    if (this.memorelay.wasDeleted(event.id)) {
+      this.logger.log('debug', 'EVENT %s (deleted)', event.id);
+      this.sendMessage(['OK', event.id, false, 'deleted:']);
+      return;
+    }
 
+    this.logger.log('verbose', 'EVENT %s', event.id);
     this.memorelay.addEvent(eventMessage[1]);
   }
 

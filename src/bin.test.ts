@@ -5,7 +5,7 @@
  * @fileoverview Integration tests for binary (entry point bin.ts).
  */
 
-import { bufferToMessage } from './lib/buffer-to-message';
+import { bufferToClientMessage } from './lib/buffer-to-message';
 
 import { Event as NostrEvent } from 'nostr-tools';
 import path from 'path';
@@ -316,7 +316,7 @@ describe('bin.ts', () => {
     });
     listenerWebSocket.removeAllListeners();
 
-    const listenerMessage = bufferToMessage(listenerData);
+    const listenerMessage = bufferToClientMessage(listenerData);
 
     expect(listenerMessage[0]).toBe('EVENT');
     expect(listenerMessage[1]).toEqual(EXAMPLE_SIGNED_EVENT);
