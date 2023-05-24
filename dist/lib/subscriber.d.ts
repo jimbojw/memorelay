@@ -6,11 +6,11 @@
  */
 /// <reference types="node" />
 /// <reference types="node" />
+import { CloseMessage, EventMessage, RelayMessage, ReqMessage } from './message-types';
+import { MemorelayCoordinator } from './memorelay-coordinator';
 import { IncomingMessage } from 'http';
 import { Logger } from 'winston';
 import { WebSocket } from 'ws';
-import { CloseMessage, EventMessage, ReqMessage } from './message-types';
-import { MemorelayCoordinator } from './memorelay-coordinator';
 export declare class Subscriber {
     private readonly webSocket;
     private readonly incomingMessage;
@@ -49,4 +49,8 @@ export declare class Subscriber {
      * @param closeMessage Incoming CLOSE message to handle.
      */
     handleCloseMessage(closeMessage: CloseMessage): void;
+    /**
+     * Send a message to the connected WebSocket.
+     */
+    sendMessage(message: RelayMessage): void;
 }

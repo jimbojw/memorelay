@@ -1,3 +1,19 @@
+# [1.9.0](https://github.com/jimbojw/memorelay/compare/v1.8.0...v1.9.0) (2023-05-24)
+
+
+### Bug Fixes
+
+* Preventing later-added deleted events from being accepted (see [#47](https://github.com/jimbojw/memorelay/issues/47)). ([914dd98](https://github.com/jimbojw/memorelay/commit/914dd98bc310c6de2f1e447d899291f55ae85215))
+
+
+### Features
+
+* Adding 20 to list of supported_nips in relay information document. ([a837e85](https://github.com/jimbojw/memorelay/commit/a837e857644990d128f310eb08ad3b5e21908d13))
+* Emitting 'OK' message when event is sucessfully received. ([7306f6e](https://github.com/jimbojw/memorelay/commit/7306f6eeb97f739e44b68e8b7e5e204060d555d8))
+* Implementing NIP-20 'OK' response for duplicate messages. ([624d025](https://github.com/jimbojw/memorelay/commit/624d0250fdc1f02c688fa58fcc5abb27e2ef0521))
+* Include NIP-20 'OK' messages in message types. ([ce0277e](https://github.com/jimbojw/memorelay/commit/ce0277e175d0d3f7ea42a1ef19708cf1910048c4))
+* Notify on deleted event rejected, type/parse relay messages. ([2ad30da](https://github.com/jimbojw/memorelay/commit/2ad30dadbfba81bc53bb7cd4d21fc93a00baad89))
+
 # [1.8.0](https://github.com/jimbojw/memorelay/compare/v1.7.0...v1.8.0) (2023-05-22)
 
 

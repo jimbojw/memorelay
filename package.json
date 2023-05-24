@@ -1,6 +1,6 @@
 {
   "name": "memorelay",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "In-memory Nostr relay.",
   "bin": "dist/bin/index.js",
   "scripts": {

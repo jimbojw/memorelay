@@ -16,6 +16,10 @@ export declare class MemorelayCoordinator {
      */
     private readonly eventsByCreatedAt;
     /**
+     * Set containing the ids of previously deleted events.
+     */
+    private readonly deletedEventIds;
+    /**
      * Counter to keep track of the next subscription number to use.
      */
     private nextSubscriptionNumber;
@@ -68,4 +72,8 @@ export declare class MemorelayCoordinator {
      * @throws RangeError if the provided subscription id is invalid.
      */
     unsubscribe(subscriptionId: number): boolean;
+    /**
+     * Determine whether an event is known to have been deleted.
+     */
+    wasDeleted(eventId: string): boolean;
 }

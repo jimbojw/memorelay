@@ -28815,7 +28815,7 @@ exports.BadMessageError = BadMessageError;
  * @fileoverview Parse an incoming Buffer as a Nostr message.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bufferToMessage = exports.checkSubscriptionId = void 0;
+exports.bufferToRelayMessage = exports.bufferToClientMessage = exports.bufferToGenericMessage = exports.checkSubscriptionId = void 0;
 const nostr_tools_1 = __nccwpck_require__(259);
 const bad_message_error_1 = __nccwpck_require__(194);
 const verify_filters_1 = __nccwpck_require__(8562);
@@ -28839,11 +28839,9 @@ function checkSubscriptionId(subscriptionId) {
 }
 exports.checkSubscriptionId = checkSubscriptionId;
 /**
- * Parse a payload data buffer as a ClientMessage.
- * @param payloadRawData The incoming Buffer data.
- * @returns A parsed, valid ClientMessage.
+ * Parse a payload data buffer as a generic message.
  */
-function bufferToMessage(payloadRawData) {
+function bufferToGenericMessage(payloadRawData) {
     const payloadString = payloadRawData.toString('utf-8');
     let payloadJson;
     try {
@@ -28862,14 +28860,25 @@ function bufferToMessage(payloadRawData) {
     if (typeof eventType !== 'string') {
         throw new bad_message_error_1.BadMessageError('message type was not a string');
     }
+    return payloadJson;
+}
+exports.bufferToGenericMessage = bufferToGenericMessage;
+/**
+ * Parse a payload data buffer as a ClientMessage.
+ * @param payloadRawData The incoming Buffer data.
+ * @returns A parsed, valid ClientMessage.
+ */
+function bufferToClientMessage(payloadRawData) {
+    const genericMessage = bufferToGenericMessage(payloadRawData);
+    const eventType = genericMessage[0];
     if (eventType === 'EVENT') {
-        if (payloadJson.length < 2) {
+        if (genericMessage.length < 2) {
             throw new bad_message_error_1.BadMessageError('event missing');
         }
-        if (payloadJson.length > 2) {
+        if (genericMessage.length > 2) {
             throw new bad_message_error_1.BadMessageError('extra elements detected');
         }
-        const payloadEvent = payloadJson[1];
+        const payloadEvent = genericMessage[1];
         if (!(0, nostr_tools_1.validateEvent)(payloadEvent)) {
             throw new bad_message_error_1.BadMessageError('event invalid');
         }
@@ -28879,30 +28888,122 @@ function bufferToMessage(payloadRawData) {
         if (!(0, nostr_tools_1.verifySignature)(payloadEvent)) {
             throw new bad_message_error_1.BadMessageError('bad signature');
         }
-        return payloadJson;
+        return genericMessage;
     }
     if (eventType === 'REQ') {
-        checkSubscriptionId(payloadJson[1]);
+        checkSubscriptionId(genericMessage[1]);
         try {
-            for (let i = 2; i < payloadJson.length; i++) {
-                (0, verify_filters_1.verifyFilter)(payloadJson[i]);
+            for (let i = 2; i < genericMessage.length; i++) {
+                (0, verify_filters_1.verifyFilter)(genericMessage[i]);
             }
         }
         catch (err) {
             throw new bad_message_error_1.BadMessageError(err.message);
         }
-        return payloadJson;
+        return genericMessage;
     }
     if (eventType === 'CLOSE') {
-        checkSubscriptionId(payloadJson[1]);
-        if (payloadJson.length > 2) {
+        checkSubscriptionId(genericMessage[1]);
+        if (genericMessage.length > 2) {
             throw new bad_message_error_1.BadMessageError('extra elements detected');
         }
-        return payloadJson;
+        return genericMessage;
     }
     throw new bad_message_error_1.BadMessageError('unrecognized event type');
 }
-exports.bufferToMessage = bufferToMessage;
+exports.bufferToClientMessage = bufferToClientMessage;
+/**
+ * Parse a payload data buffer as a RelayMessage.
+ * @param payloadRawData The incoming Buffer data.
+ * @returns A parsed, valid RelayMessage.
+ */
+function bufferToRelayMessage(payloadRawData) {
+    const genericMessage = bufferToGenericMessage(payloadRawData);
+    const eventType = genericMessage[0];
+    if (typeof eventType !== 'string') {
+        throw new bad_message_error_1.BadMessageError('message type was not a string');
+    }
+    if (eventType === 'EVENT') {
+        if (genericMessage.length < 2) {
+            throw new bad_message_error_1.BadMessageError('event missing');
+        }
+        if (genericMessage.length > 2) {
+            throw new bad_message_error_1.BadMessageError('extra elements detected');
+        }
+        const payloadEvent = genericMessage[1];
+        if (!(0, nostr_tools_1.validateEvent)(payloadEvent)) {
+            throw new bad_message_error_1.BadMessageError('event invalid');
+        }
+        if (!payloadEvent.sig) {
+            throw new bad_message_error_1.BadMessageError('event signature missing');
+        }
+        if (!(0, nostr_tools_1.verifySignature)(payloadEvent)) {
+            throw new bad_message_error_1.BadMessageError('bad signature');
+        }
+        return genericMessage;
+    }
+    if (eventType === 'EOSE') {
+        checkSubscriptionId(genericMessage[1]);
+        return genericMessage;
+    }
+    if (eventType === 'NOTICE') {
+        if (genericMessage.length < 2) {
+            throw new bad_message_error_1.BadMessageError('notice message missing');
+        }
+        if (typeof genericMessage[1] !== 'string') {
+            throw new bad_message_error_1.BadMessageError('notice message type mismatch');
+        }
+        if (genericMessage.length > 2) {
+            throw new bad_message_error_1.BadMessageError('extra elements detected');
+        }
+        return genericMessage;
+    }
+    if (eventType === 'OK') {
+        if (genericMessage.length < 2) {
+            throw new bad_message_error_1.BadMessageError('event id missing');
+        }
+        const eventId = genericMessage[1];
+        if (typeof eventId !== 'string') {
+            throw new bad_message_error_1.BadMessageError('event id type mismatch');
+        }
+        if (eventId.length !== 64) {
+            throw new bad_message_error_1.BadMessageError('event id malformed');
+        }
+        if (genericMessage.length < 3) {
+            throw new bad_message_error_1.BadMessageError('status missing');
+        }
+        const status = genericMessage[2];
+        if (typeof status !== 'boolean') {
+            throw new bad_message_error_1.BadMessageError('status type mismatch');
+        }
+        if (genericMessage.length < 4) {
+            throw new bad_message_error_1.BadMessageError('description missing');
+        }
+        const description = genericMessage[3];
+        if (typeof description !== 'string') {
+            throw new bad_message_error_1.BadMessageError('description type mismatch');
+        }
+        if (description.length) {
+            const colonIndex = description.indexOf(':');
+            if (colonIndex < 1) {
+                throw new bad_message_error_1.BadMessageError('reason missing');
+            }
+            const reason = description.substring(0, colonIndex).trim();
+            if (!reason.length) {
+                throw new bad_message_error_1.BadMessageError('reason missing');
+            }
+            if (reason !== 'duplicate' && reason !== 'deleted') {
+                throw new bad_message_error_1.BadMessageError(`unrecognized reason: ${reason}`);
+            }
+        }
+        if (genericMessage.length > 4) {
+            throw new bad_message_error_1.BadMessageError('extra elements detected');
+        }
+        return genericMessage;
+    }
+    throw new bad_message_error_1.BadMessageError('unrecognized event type');
+}
+exports.bufferToRelayMessage = bufferToRelayMessage;
 
 
 /***/ }),
@@ -29071,6 +29172,10 @@ class MemorelayCoordinator {
          */
         this.eventsByCreatedAt = [];
         /**
+         * Set containing the ids of previously deleted events.
+         */
+        this.deletedEventIds = new Set();
+        /**
          * Counter to keep track of the next subscription number to use.
          */
         this.nextSubscriptionNumber = 0;
@@ -29096,6 +29201,20 @@ class MemorelayCoordinator {
         (0, verify_event_1.verifyEvent)(event);
         if (this.hasEvent(event.id)) {
             return false;
+        }
+        if (this.deletedEventIds.has(event.id)) {
+            if (event.kind === nostr_tools_1.Kind.EventDeletion) {
+                // An earlier deletion event named this event as one to delete. At that
+                // time, we had yet to see this event, and so could not have known that
+                // it was an illegal delete-a-deletion event. Now we do know, and so we
+                // can remove it from the set of known deleted event ids.
+                this.deletedEventIds.delete(event.id);
+            }
+            else {
+                // This non-delete event was previously marked for deletion, so we
+                // reject the addition here.
+                return false;
+            }
         }
         this.eventsMap.set(event.id, event);
         const result = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, (a, b) => a.createdAt - b);
@@ -29125,12 +29244,19 @@ class MemorelayCoordinator {
         if (event.kind === nostr_tools_1.Kind.EventDeletion) {
             for (const tag of event.tags) {
                 const [tagType, eventId] = tag;
-                if (tagType === 'e' &&
-                    typeof eventId === 'string' &&
-                    eventId.length === 64 &&
-                    this.eventsMap.has(eventId)) {
-                    this.deleteEvent(eventId);
+                if (tagType !== 'e' ||
+                    typeof eventId !== 'string' ||
+                    eventId.length !== 64) {
+                    // Tag was the wrong kind, or malformed.
+                    continue;
                 }
+                const storedEvent = this.eventsMap.get(eventId);
+                if (storedEvent && storedEvent.kind === nostr_tools_1.Kind.EventDeletion) {
+                    // NIP-09 does not allow deleting a deletion event.
+                    continue;
+                }
+                this.deletedEventIds.add(eventId);
+                this.deleteEvent(eventId);
             }
         }
         return true;
@@ -29234,6 +29360,12 @@ class MemorelayCoordinator {
         }
         this.subscriptionsMap.delete(subscriptionId);
         return true;
+    }
+    /**
+     * Determine whether an event is known to have been deleted.
+     */
+    wasDeleted(eventId) {
+        return this.deletedEventIds.has(eventId);
     }
 }
 exports.MemorelayCoordinator = MemorelayCoordinator;
@@ -29418,11 +29550,32 @@ class MemorelayServer {
      */
     getRelayDocument() {
         return {
-            supported_nips: [1, 9, 11],
+            supported_nips: [1, 9, 11, 20],
         };
     }
 }
 exports.MemorelayServer = MemorelayServer;
+
+
+/***/ }),
+
+/***/ 8060:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Serialize a Nostr message to send as a Buffer.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.messageToBuffer = void 0;
+function messageToBuffer(message) {
+    return Buffer.from(JSON.stringify(message), 'utf8');
+}
+exports.messageToBuffer = messageToBuffer;
 
 
 /***/ }),
@@ -29487,6 +29640,8 @@ exports.readPackageJson = readPackageJson;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Subscriber = void 0;
 const buffer_to_message_1 = __nccwpck_require__(809);
+const message_to_buffer_1 = __nccwpck_require__(8060);
+const nostr_tools_1 = __nccwpck_require__(259);
 class Subscriber {
     /**
      * @param webSocket The connected socket that spawned this Subscriber.
@@ -29534,7 +29689,7 @@ class Subscriber {
         }
         let clientMessage;
         try {
-            clientMessage = (0, buffer_to_message_1.bufferToMessage)(payloadDataBuffer);
+            clientMessage = (0, buffer_to_message_1.bufferToClientMessage)(payloadDataBuffer);
         }
         catch (err) {
             const errorMessage = err.message;
@@ -29562,10 +29717,21 @@ class Subscriber {
         const event = eventMessage[1];
         if (this.memorelay.hasEvent(event.id)) {
             this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
+            this.sendMessage(['OK', event.id, true, 'duplicate:']);
+            return;
+        }
+        if (event.kind !== nostr_tools_1.Kind.EventDeletion &&
+            this.memorelay.wasDeleted(event.id)) {
+            this.logger.log('debug', 'EVENT %s (deleted)', event.id);
+            this.sendMessage(['OK', event.id, false, 'deleted:']);
             return;
         }
         this.logger.log('verbose', 'EVENT %s', event.id);
-        this.memorelay.addEvent(eventMessage[1]);
+        const status = this.memorelay.addEvent(eventMessage[1]);
+        if (!status) {
+            this.logger.log('error', 'FAILED TO ADD EVENT %s', event.id);
+        }
+        this.sendMessage(['OK', event.id, status, '']);
     }
     /**
      * Handle an incoming REQ message.
@@ -29583,12 +29749,12 @@ class Subscriber {
         // subscription for future events is saved.
         const matchingEvents = this.memorelay.matchFilters(filters);
         for (const event of matchingEvents) {
-            this.webSocket.send(Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8'));
+            this.sendMessage(['EVENT', event]);
         }
-        this.webSocket.send(Buffer.from(JSON.stringify(['EOSE', subscriptionId]), 'utf-8'));
+        this.sendMessage(['EOSE', subscriptionId]);
         const newSubscriptionNumber = this.memorelay.subscribe((event) => {
             // TODO(jimbo): What if the WebSocket is disconnected?
-            this.webSocket.send(Buffer.from(JSON.stringify(['EVENT', event]), 'utf-8'));
+            this.sendMessage(['EVENT', event]);
         }, filters);
         this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
     }
@@ -29609,6 +29775,12 @@ class Subscriber {
         }
         this.memorelay.unsubscribe(existingSubscriptionNumber);
         this.subscriptionIdMap.delete(subscriptionId);
+    }
+    /**
+     * Send a message to the connected WebSocket.
+     */
+    sendMessage(message) {
+        this.webSocket.send((0, message_to_buffer_1.messageToBuffer)(message));
     }
 }
 exports.Subscriber = Subscriber;
