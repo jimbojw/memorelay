@@ -381,7 +381,7 @@ describe('Subscriber', () => {
   });
 
   describe('handleEventMessage', () => {
-    it('should log and not forward duplicate events', async () => {
+    it('should log and notify duplicate events', async () => {
       const webSocket = new WebSocket(null);
 
       const webSocketSentData: Buffer[] = [];
@@ -419,7 +419,9 @@ describe('Subscriber', () => {
       expect(actualLogs).toEqual(expectedLogs);
 
       // WebSocket should not have received any sent data.
-      expect(webSocketSentData).toEqual([]);
+      expect(webSocketSentData).toEqual([
+        messageToBuffer(['OK', EXAMPLE_SIGNED_EVENT.id, true, 'duplicate:']),
+      ]);
     });
 
     it('should log and forward previously unseen events', async () => {

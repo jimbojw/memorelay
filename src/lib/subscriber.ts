@@ -105,6 +105,7 @@ export class Subscriber {
     const event = eventMessage[1];
     if (this.memorelay.hasEvent(event.id)) {
       this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
+      this.sendMessage(['OK', event.id, true, 'duplicate:']);
       return;
     }
 
