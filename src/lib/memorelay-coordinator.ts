@@ -51,6 +51,11 @@ export class MemorelayCoordinator {
   private readonly eventsByCreatedAt: CreatedAtEventsRecord[] = [];
 
   /**
+   * Set containing the ids of previously deleted events.
+   */
+  private readonly deletedEventIds = new Set();
+
+  /**
    * Counter to keep track of the next subscription number to use.
    */
   private nextSubscriptionNumber = 0;
@@ -79,6 +84,20 @@ export class MemorelayCoordinator {
 
     if (this.hasEvent(event.id)) {
       return false;
+    }
+
+    if (this.deletedEventIds.has(event.id)) {
+      if (event.kind === Kind.EventDeletion) {
+        // An earlier deletion event named this event as one to delete. At that
+        // time, we had yet to see this event, and so could not have known that
+        // it was an illegal delete-a-deletion event. Now we do know, and so we
+        // can remove it from the set of known deleted event ids.
+        this.deletedEventIds.delete(event.id);
+      } else {
+        // This non-delete event was previously marked for deletion, so we
+        // reject the addition here.
+        return false;
+      }
     }
 
     this.eventsMap.set(event.id, event);
@@ -119,13 +138,23 @@ export class MemorelayCoordinator {
       for (const tag of event.tags) {
         const [tagType, eventId] = tag;
         if (
-          tagType === 'e' &&
-          typeof eventId === 'string' &&
-          eventId.length === 64 &&
-          this.eventsMap.has(eventId)
+          tagType !== 'e' ||
+          typeof eventId !== 'string' ||
+          eventId.length !== 64
         ) {
-          this.deleteEvent(eventId);
+          // Tag was the wrong kind, or malformed.
+          continue;
         }
+
+        const storedEvent = this.eventsMap.get(eventId);
+        if (storedEvent && storedEvent.kind === Kind.EventDeletion) {
+          // NIP-09 does not allow deleting a deletion event.
+          continue;
+        }
+
+        this.deletedEventIds.add(eventId);
+
+        this.deleteEvent(eventId);
       }
     }
 

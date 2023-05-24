@@ -290,6 +290,49 @@ describe('MemorelayCoordinator', () => {
         expect(coordinator.hasEvent(firstTextEvent.id)).toBe(false);
         expect(coordinator.hasEvent(secondTextEvent.id)).toBe(true);
       });
+
+      it('should cause later matching events to be rejected', () => {
+        const coordinator = new MemorelayCoordinator();
+
+        const secretKey = generatePrivateKey();
+        const pubkey = getPublicKey(secretKey);
+
+        const startTime = Math.floor(Date.now() / 1000);
+
+        const targetEvent = signEvent(
+          {
+            kind: Kind.Text,
+            created_at: startTime + 10,
+            tags: [],
+            content: 'TARGET TEXT EVENT',
+            pubkey,
+          },
+          secretKey
+        );
+
+        // DO NOT add the subject event yet.
+        expect(coordinator.hasEvent(targetEvent.id)).toBe(false);
+
+        const deleteEvent = signEvent(
+          {
+            kind: Kind.EventDeletion,
+            created_at: startTime + 30,
+            tags: [['e', targetEvent.id]],
+            content: 'DELETE BOTH EVENTS',
+            pubkey,
+          },
+          secretKey
+        );
+
+        coordinator.addEvent(deleteEvent);
+        expect(coordinator.hasEvent(deleteEvent.id)).toBe(true);
+
+        // Now attempt to add the event that's already marked for deletion.
+        coordinator.addEvent(targetEvent);
+
+        // Confirm that the target event was not added.
+        expect(coordinator.hasEvent(targetEvent.id)).toBe(false);
+      });
     });
   });
 
