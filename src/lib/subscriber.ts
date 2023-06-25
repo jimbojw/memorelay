@@ -37,7 +37,7 @@ export class Subscriber {
    */
   constructor(
     private readonly webSocket: WebSocket,
-    private readonly incomingMessage: IncomingMessage,
+    incomingMessage: IncomingMessage,
     private readonly logger: Logger,
     private readonly memorelay: MemorelayCoordinator
   ) {
