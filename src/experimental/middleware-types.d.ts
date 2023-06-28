@@ -5,23 +5,25 @@
  * @fileoverview Type information for Memorelay middleware.
  */
 
-import { RawData, WebSocket } from 'ws';
+import { RawData } from 'ws';
+import { MemorelayClient } from './memorelay-client';
 
 /**
- * Signature for the next() Callback function for WebSocketRawMessageHandler.
+ * Signature for the next() Callback function for RawMessageHandler.
  *
  * @param status Set to 'done' if no further middleware should be invoked.
  * @param buffer Result of processing the RawData into a unified Buffer.
  * @param isBinary Whether the buffer contains binary data.
+ * @see RawMessageHandler
  */
-export type WebSocketRawMessageHandlerNextFunction = (
+export type RawMessageHandlerNextFunction = (
   status?: 'done',
   buffer?: Buffer,
   isBinary?: boolean
 ) => void;
 
 /**
- * WebSocket raw message middleware signature.
+ * Middleware signature for handling raw 'message' events from clients.
  *
  * When a ws WebSocket receives a 'message' event, it comes with two parameters:
  *
@@ -34,14 +36,19 @@ export type WebSocketRawMessageHandlerNextFunction = (
  * This middleware function allows the implementer to decide whether and how to
  * proceed by calling the next() function with appropriate parameters.
  *
- * @param webSocket The WebSocket that emitted the 'message' event.
+ * In addition to the event payload (data and isBinary), the middleware handler
+ * function will be provided the MemorelayClient object whose webSocket emitted
+ * the event.
+ *
+ * @param client MemorelayClient whose WebSocket emitted the 'message' event.
  * @param data The incoming raw data.
  * @param isBinary Whether the client flagged this content as binary.
- * @see WebSocketRawMessageHandlerNextFunction
+ * @param next Function to invoke when finished.
+ * @see RawMessageHandlerNextFunction
  */
-export type WebSocketRawMessageHandler = (
-  webSocket: WebSocket,
+export type RawMessageHandler = (
+  client: MemorelayClient,
   data: RawData,
   isBinary: boolean,
-  next: WebSocketRawMessageHandlerNextFunction
+  next: RawMessageHandlerNextFunction
 ) => void;

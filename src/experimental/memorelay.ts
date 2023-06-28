@@ -14,8 +14,8 @@ import { EventEmitter } from 'events';
 
 import { RelayInformationDocument } from '../lib/relay-information-document';
 import {
-  WebSocketRawMessageHandler,
-  WebSocketRawMessageHandlerNextFunction,
+  RawMessageHandler,
+  RawMessageHandlerNextFunction,
 } from './middleware-types';
 import { MemorelayClient } from './memorelay-client';
 
@@ -68,10 +68,9 @@ export class Memorelay extends EventEmitter {
 
   /**
    * Middleware handlers for WebSocket raw 'message' events.
-   * @see WebSocketRawMessageHandler
+   * @see RawMessageHandler
    */
-  private readonly webSocketRawMessageHandlers: WebSocketRawMessageHandler[] =
-    [];
+  private readonly webSocketRawMessageHandlers: RawMessageHandler[] = [];
 
   constructor() {
     super();
@@ -112,19 +111,14 @@ export class Memorelay extends EventEmitter {
       const promise = new Promise<Results>((resolveArg) => {
         resolve = resolveArg;
       });
-      const nextFunction: WebSocketRawMessageHandlerNextFunction = (
+      const nextFunction: RawMessageHandlerNextFunction = (
         status?: 'done',
         buffer?: Buffer,
         isBinary?: boolean
       ) => {
         resolve({ status, buffer, isBinary });
       };
-      webSocketRawMessageHandler(
-        memorelayClient.webSocket,
-        data,
-        isBinary,
-        nextFunction
-      );
+      webSocketRawMessageHandler(memorelayClient, data, isBinary, nextFunction);
       const results = await promise;
       if (results.status === 'done') {
         // TODO(jimbo): Use middleware-generated results to proceed.
