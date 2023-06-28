@@ -13,6 +13,7 @@ import {
   RawMessageHandler,
   RawMessageHandlerNextFunction,
 } from './middleware-types';
+import { BadBufferError } from './bad-buffer-error';
 
 export class MemorelayClient extends EventEmitter {
   /**
@@ -40,6 +41,31 @@ export class MemorelayClient extends EventEmitter {
    * Process a raw 'message' by invoking registered middleware handlers.
    */
   async processRawMessage(data: RawData, isBinary: boolean) {
+    const middlewareResult = await this.runRawMessageHandlers(data, isBinary);
+
+    if (middlewareResult) {
+      // TODO(jimbo): Send result buffer to blob parsing step.
+      return;
+    }
+
+    if (!(data instanceof Buffer)) {
+      this.emit('error', new BadBufferError(data, isBinary));
+      return;
+    }
+  }
+
+  /**
+   * Run raw message middleware handlers in order. If any invoke the next()
+   * function with 'done' and provide a buffer, return it.
+   *
+   * @param data The RawData accompanying the WebSocket 'message'.
+   * @param isBinary Whether the WebSocket 'message' was flagged as binary data
+   * by the client.
+   */
+  async runRawMessageHandlers(
+    data: RawData,
+    isBinary: boolean
+  ): Promise<false | { buffer: Buffer; isBinary: boolean }> {
     interface Results {
       status?: 'done';
       buffer?: Buffer;
@@ -60,11 +86,17 @@ export class MemorelayClient extends EventEmitter {
       rawMessageHandler(data, isBinary, nextFunction);
       const results = await promise;
       if (results.status === 'done') {
-        // TODO(jimbo): Use middleware-generated results to proceed.
-        break;
+        if (!results.buffer) {
+          throw new Error('buffer missing');
+        }
+        return {
+          buffer: results.buffer,
+          isBinary: results.isBinary ?? isBinary,
+        };
       }
     }
 
-    // TODO(jimbo): Proceed to next phase of message handling.
+    // None of middleware called next('done',...).
+    return false;
   }
 }
