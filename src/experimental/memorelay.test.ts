@@ -201,6 +201,22 @@ describe('Memorelay', () => {
         handlerFunction(request, socket, head);
 
         expect(mockWSSHandleUpgradeFn.mock.calls).toHaveLength(1);
+
+        const connectedCallbackFn = (
+          mockWSSHandleUpgradeFn.mock.calls as [
+            Request,
+            Socket,
+            Buffer,
+            () => void
+          ][]
+        )[0][3] as () => void;
+
+        const mockEmitFn = jest.fn();
+        memorelay[WEBSOCKET_SERVER].emit = mockEmitFn;
+
+        connectedCallbackFn();
+
+        expect(mockEmitFn.mock.calls).toHaveLength(1);
       });
     });
 
