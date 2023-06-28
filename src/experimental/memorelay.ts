@@ -67,10 +67,11 @@ export class Memorelay extends EventEmitter {
   private readonly webSocketClientMap = new Map<WebSocket, MemorelayClient>();
 
   /**
-   * Middleware handlers for WebSocket raw 'message' events.
+   * Middleware handlers for WebSocket raw 'message' events. API users can
+   * modify this list directly.
    * @see RawMessageHandler
    */
-  private readonly webSocketRawMessageHandlers: RawMessageHandler[] = [];
+  readonly rawMessageHandlers: RawMessageHandler[] = [];
 
   constructor() {
     super();
@@ -80,7 +81,7 @@ export class Memorelay extends EventEmitter {
         if (this.webSocketClientMap.has(webSocket)) {
           throw new Error('duplicate WebSocket detected');
         }
-        const memorelayClient: MemorelayClient = { webSocket, request };
+        const memorelayClient = new MemorelayClient(webSocket, request);
         this.webSocketClientMap.set(webSocket, memorelayClient);
         webSocket.on('error', (err: unknown) => {
           this.emit('websocket-error', err, webSocket, request);
@@ -106,7 +107,7 @@ export class Memorelay extends EventEmitter {
       buffer?: Buffer;
       isBinary?: boolean;
     }
-    for (const webSocketRawMessageHandler of this.webSocketRawMessageHandlers) {
+    for (const webSocketRawMessageHandler of this.rawMessageHandlers) {
       let resolve: (results: Results) => void;
       const promise = new Promise<Results>((resolveArg) => {
         resolve = resolveArg;

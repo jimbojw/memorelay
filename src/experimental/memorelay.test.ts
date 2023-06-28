@@ -329,7 +329,10 @@ describe('Memorelay', () => {
         mockProcessFn.mock.calls as [MemorelayClient, Buffer, boolean][]
       )[0];
 
-      expect(params).toEqual([{ webSocket, request }, data, false]);
+      expect(params[0].webSocket).toBe(webSocket);
+      expect(params[0].request).toBe(request);
+      expect(params[1]).toBe(data);
+      expect(params[2]).toBe(false);
     });
   });
 });
