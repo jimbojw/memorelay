@@ -6,7 +6,6 @@
  */
 
 import { RawData } from 'ws';
-import { MemorelayClient } from './memorelay-client';
 
 /**
  * Signature for the next() Callback function for RawMessageHandler.
@@ -36,18 +35,12 @@ export type RawMessageHandlerNextFunction = (
  * This middleware function allows the implementer to decide whether and how to
  * proceed by calling the next() function with appropriate parameters.
  *
- * In addition to the event payload (data and isBinary), the middleware handler
- * function will be provided the MemorelayClient object whose webSocket emitted
- * the event.
- *
- * @param client MemorelayClient whose WebSocket emitted the 'message' event.
  * @param data The incoming raw data.
  * @param isBinary Whether the client flagged this content as binary.
  * @param next Function to invoke when finished.
  * @see RawMessageHandlerNextFunction
  */
 export type RawMessageHandler = (
-  client: MemorelayClient,
   data: RawData,
   isBinary: boolean,
   next: RawMessageHandlerNextFunction

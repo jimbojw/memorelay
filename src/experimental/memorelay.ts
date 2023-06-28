@@ -9,14 +9,10 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { Socket } from 'net';
 import { pathToRegexp } from 'path-to-regexp';
-import { RawData, WebSocket, WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
 
 import { RelayInformationDocument } from '../lib/relay-information-document';
-import {
-  RawMessageHandler,
-  RawMessageHandlerNextFunction,
-} from './middleware-types';
 import { MemorelayClient } from './memorelay-client';
 
 /**
@@ -46,8 +42,7 @@ export const WEBSOCKET_SERVER = Symbol('webSocketServer');
  *   allow upstream code to alter the data flow. This capability also powers
  *   internal mechanisms such as implementing Nostr NIP features.
  *
- * @event websocket-error An 'error' event raised by a WebSocket. Params: err,
- * webSocket, request.
+ * @event connection A client has connected.
  */
 export class Memorelay extends EventEmitter {
   /**
@@ -66,13 +61,6 @@ export class Memorelay extends EventEmitter {
    */
   private readonly webSocketClientMap = new Map<WebSocket, MemorelayClient>();
 
-  /**
-   * Middleware handlers for WebSocket raw 'message' events. API users can
-   * modify this list directly.
-   * @see RawMessageHandler
-   */
-  readonly rawMessageHandlers: RawMessageHandler[] = [];
-
   constructor() {
     super();
     this.webSocketServer.on(
@@ -83,50 +71,9 @@ export class Memorelay extends EventEmitter {
         }
         const memorelayClient = new MemorelayClient(webSocket, request);
         this.webSocketClientMap.set(webSocket, memorelayClient);
-        webSocket.on('error', (err: unknown) => {
-          this.emit('websocket-error', err, webSocket, request);
-        });
-        webSocket.on('message', (data: RawData, isBinary: boolean) => {
-          void this.processWebSocketRawMessage(memorelayClient, data, isBinary);
-        });
+        this.emit('connection', memorelayClient);
       }
     );
-  }
-
-  /**
-   * Process a WebSocket raw 'message' by invoking registered middleware
-   * handlers.
-   */
-  async processWebSocketRawMessage(
-    memorelayClient: MemorelayClient,
-    data: RawData,
-    isBinary: boolean
-  ) {
-    interface Results {
-      status?: 'done';
-      buffer?: Buffer;
-      isBinary?: boolean;
-    }
-    for (const webSocketRawMessageHandler of this.rawMessageHandlers) {
-      let resolve: (results: Results) => void;
-      const promise = new Promise<Results>((resolveArg) => {
-        resolve = resolveArg;
-      });
-      const nextFunction: RawMessageHandlerNextFunction = (
-        status?: 'done',
-        buffer?: Buffer,
-        isBinary?: boolean
-      ) => {
-        resolve({ status, buffer, isBinary });
-      };
-      webSocketRawMessageHandler(memorelayClient, data, isBinary, nextFunction);
-      const results = await promise;
-      if (results.status === 'done') {
-        // TODO(jimbo): Use middleware-generated results to proceed.
-        break;
-      }
-    }
-    console.log(memorelayClient, isBinary, data);
   }
 
   /**
