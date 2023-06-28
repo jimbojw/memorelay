@@ -14,8 +14,10 @@ import {
 } from 'node-mocks-http';
 import { Socket } from 'net';
 import { Request, Response } from 'express';
+import { EventEmitter } from 'events';
 
 import { Memorelay, WEBSOCKET_SERVER } from './memorelay';
+import { MemorelayClient } from './memorelay-client';
 
 describe('Memorelay', () => {
   it('should be a constructor function', () => {
@@ -244,6 +246,90 @@ describe('Memorelay', () => {
 
         expect(mockWSSHandleUpgradeFn.mock.calls).toHaveLength(0);
       });
+    });
+  });
+
+  describe('webSocketServer#connection', () => {
+    it('should create a client for a new WebSocket connection', () => {
+      const memorelay = new Memorelay();
+
+      const request = {} as Request;
+
+      const mockOnFn = jest.fn();
+      const webSocket = { on: mockOnFn } as unknown as WebSocket;
+
+      memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+
+      expect(mockOnFn.mock.calls).toHaveLength(2);
+
+      const eventsListened = (mockOnFn.mock.calls as [string][]).map(
+        ([eventType]) => eventType
+      );
+
+      // Expect Memorelay to listen for 'error' and 'message' events from the
+      // upgraded ws WebSocket.
+      expect(eventsListened).toContain('error');
+      expect(eventsListened).toContain('message');
+    });
+
+    it('should throw if a duplicate client is detected', () => {
+      const memorelay = new Memorelay();
+      const request = {} as Request;
+      const webSocket = { on: jest.fn() } as unknown as WebSocket;
+
+      memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+
+      expect(() => {
+        memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+      }).toThrow('duplicate');
+    });
+  });
+
+  describe('webSocket#error', () => {
+    it('should trigger a Memorelay#websocket-error', () => {
+      const memorelay = new Memorelay();
+      const request = {} as Request;
+      const webSocket = new EventEmitter();
+
+      memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+
+      const mockErrorHandler = jest.fn();
+      memorelay.on('websocket-error', mockErrorHandler);
+
+      const error = new Error();
+      webSocket.emit('error', error);
+
+      expect(mockErrorHandler.mock.calls).toHaveLength(1);
+
+      const params = (
+        mockErrorHandler.mock.calls as [Error, WebSocket, Request][]
+      )[0];
+
+      expect(params).toEqual([error, webSocket, request]);
+    });
+  });
+
+  describe('webSocket#message', () => {
+    it('should attempt to parse raw message', () => {
+      const memorelay = new Memorelay();
+      const request = {} as Request;
+      const webSocket = new EventEmitter();
+
+      memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+
+      const mockProcessFn = jest.fn();
+      memorelay.processWebSocketRawMessage = mockProcessFn;
+
+      const data = Buffer.from('MESSAGE_DATA');
+      webSocket.emit('message', data, false);
+
+      expect(mockProcessFn.mock.calls).toHaveLength(1);
+
+      const params = (
+        mockProcessFn.mock.calls as [MemorelayClient, Buffer, boolean][]
+      )[0];
+
+      expect(params).toEqual([{ webSocket, request }, data, false]);
     });
   });
 });
