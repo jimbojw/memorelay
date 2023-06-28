@@ -7,8 +7,8 @@
 
 const skipWords = `
 comparator dotenv ecma fileoverview fs lang localhost jsx memorelay microtask
-msg nostr pathname printf pubkey readonly req sig stderr stdin stdout tsconfig
-tsx unparseable utf ws wss
+msg nostr pathname printf pubkey readonly req sig stderr stdin stdout
+transformative tsconfig tsx unparseable upgradeable utf ws wss
 `.match(/\w+/g);
 
 module.exports = {
