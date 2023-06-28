@@ -63,6 +63,50 @@ describe('Memorelay', () => {
       expect(response.statusCode).toBe(200);
       expect(response._isEndCalled()).toBe(true);
       expect(response._getData()).toEqual(memorelay.getRelayDocument());
+
+      const headers = response._getHeaders();
+
+      expect(headers['access-control-allow-methods']).toBeDefined();
+      expect(headers['access-control-allow-methods']).toContain('GET');
+      expect(headers['access-control-allow-methods']).toContain('HEAD');
+      expect(headers['access-control-allow-methods']).toContain('OPTIONS');
+
+      expect(headers['access-control-allow-origin']).toBeDefined();
+    });
+
+    it('should respond to preflight requests', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.sendRelayDocument;
+
+      const request: MockRequest<Request> = createRequest({
+        method: 'OPTIONS',
+        url: '/',
+        headers: {
+          accept: 'application/nostr+json',
+          'access-control-request-headers': 'Accept',
+        },
+      });
+      const response: MockResponse<Response> = createResponse();
+
+      const nextFunction = jest.fn();
+
+      handlerFunction(request, response, nextFunction);
+
+      expect(nextFunction.mock.calls).toHaveLength(1);
+
+      expect(response.statusCode).toBe(200);
+      expect(response._isEndCalled()).toBe(false);
+
+      const headers = response._getHeaders();
+
+      expect(headers['access-control-allow-headers']).toBeDefined();
+
+      expect(headers['access-control-allow-methods']).toBeDefined();
+      expect(headers['access-control-allow-methods']).toContain('GET');
+      expect(headers['access-control-allow-methods']).toContain('HEAD');
+      expect(headers['access-control-allow-methods']).toContain('OPTIONS');
+
+      expect(headers['access-control-allow-origin']).toBeDefined();
     });
 
     it('should reject unsupported methods', () => {
@@ -86,6 +130,29 @@ describe('Memorelay', () => {
         expect(response.statusCode).toBe(501);
         expect(response._isEndCalled()).toBe(true);
       });
+    });
+
+    it('should ignore unrelated requests', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.sendRelayDocument;
+
+      (['GET', 'HEAD', 'PUT', 'POST', 'DELETE'] as RequestMethod[]).map(
+        (method) => {
+          const request: MockRequest<Request> = createRequest({
+            method,
+            url: '/',
+            // NOTE: No 'Accept' header specified.
+          });
+          const response: MockResponse<Response> = createResponse();
+
+          const nextFunction = jest.fn();
+
+          handlerFunction(request, response, nextFunction);
+
+          expect(response._isEndCalled()).toBe(false);
+          expect(nextFunction.mock.calls).toHaveLength(1);
+        }
+      );
     });
   });
 });
