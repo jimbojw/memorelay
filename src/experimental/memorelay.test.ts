@@ -12,9 +12,10 @@ import {
   MockResponse,
   RequestMethod,
 } from 'node-mocks-http';
+import { Socket } from 'net';
 import { Request, Response } from 'express';
 
-import { Memorelay } from './memorelay';
+import { Memorelay, WEBSOCKET_SERVER } from './memorelay';
 
 describe('Memorelay', () => {
   it('should be a constructor function', () => {
@@ -153,6 +154,80 @@ describe('Memorelay', () => {
           expect(nextFunction.mock.calls).toHaveLength(1);
         }
       );
+    });
+  });
+
+  describe('handleUpgrade', () => {
+    it('should return a handler function', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.handleUpgrade();
+      expect(typeof handlerFunction).toBe('function');
+    });
+
+    it('should throw if request url is missing', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.handleUpgrade();
+
+      const request: MockRequest<Request> = createRequest({});
+
+      const socket = {} as Socket;
+      const head = Buffer.from('');
+
+      expect(() => {
+        handlerFunction(request, socket, head);
+      }).toThrow('url');
+    });
+
+    it('should attempt to upgrade a socket when paths match', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.handleUpgrade('/foo');
+
+      ['/foo', '/foo/', '/foo?bar=baz', '/foo#hash'].map((url) => {
+        const request: MockRequest<Request> = createRequest({
+          method: 'GET',
+          url,
+          headers: {
+            Connection: 'upgrade',
+            'Sec-Websocket-Key': 'FAKE_WEBSOCKET_KEY',
+            'Sec-Websocket-Version': '13',
+          },
+        });
+        const socket = {} as Socket;
+        const head = Buffer.from('');
+
+        const mockWSSHandleUpgradeFn = jest.fn();
+        memorelay[WEBSOCKET_SERVER].handleUpgrade = mockWSSHandleUpgradeFn;
+
+        handlerFunction(request, socket, head);
+
+        expect(mockWSSHandleUpgradeFn.mock.calls).toHaveLength(1);
+      });
+    });
+
+    it('should not attempt to upgrade a socket when paths differ', () => {
+      const memorelay = new Memorelay();
+      const handlerFunction = memorelay.handleUpgrade('/foo');
+
+      ['/', '/bar', '/foo/bar', '/?/foo', '/xxx#/foo'].map((url) => {
+        const request: MockRequest<Request> = createRequest({
+          method: 'GET',
+          url,
+          headers: {
+            Connection: 'upgrade',
+            'Sec-Websocket-Key': 'FAKE_WEBSOCKET_KEY',
+            'Sec-Websocket-Version': '13',
+          },
+        });
+        const socket = {} as Socket;
+        const head = Buffer.from('');
+
+        const mockWSSHandleUpgradeFn = jest.fn();
+        memorelay[WEBSOCKET_SERVER].handleUpgrade = mockWSSHandleUpgradeFn;
+
+        handlerFunction(request, socket, head);
+
+        expect(mockWSSHandleUpgradeFn.mock.calls).toHaveLength(0);
+      });
     });
   });
 });
