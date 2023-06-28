@@ -14,7 +14,7 @@
     "start": "ts-node ./src/bin.ts",
     "start:dev": "nodemon ./src/bin.ts",
     "test:ci": "jest --testTimeout=15000",
-    "test:dev": "jest --watchAll"
+    "test:dev": "jest --watchAll --coverage"
   },
   "repository": {
     "type": "git",
