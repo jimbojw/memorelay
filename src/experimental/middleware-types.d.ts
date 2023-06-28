@@ -15,11 +15,9 @@ import { RawData } from 'ws';
  * @param isBinary Whether the buffer contains binary data.
  * @see RawMessageHandler
  */
-export type RawMessageHandlerNextFunction = (
-  status?: 'done',
-  buffer?: Buffer,
-  isBinary?: boolean
-) => void;
+export type RawMessageHandlerNextFunction =
+  | (() => void)
+  | ((status: 'done', buffer: Buffer, isBinary?: boolean) => void);
 
 /**
  * Middleware signature for handling raw 'message' events from clients.
