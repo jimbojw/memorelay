@@ -30,6 +30,11 @@ export type UpgradeHandler = (
 ) => void;
 
 /**
+ * Symbol for accessing the internal WebSocket server instance.
+ */
+export const WEBSOCKET_SERVER = Symbol('webSocketServer');
+
+/**
  * Memorelay main class. Allows for configurable Nostr relay behavior.
  *
  * Interaction modes:
@@ -45,7 +50,16 @@ export type UpgradeHandler = (
  * webSocket, request.
  */
 export class Memorelay extends EventEmitter {
+  /**
+   * WebSocket server for handling requests.
+   */
   private readonly webSocketServer = new WebSocketServer({ noServer: true });
+
+  /**
+   * Expose webSocketServer for testing.
+   * @see WEBSOCKET_SERVER
+   */
+  readonly [WEBSOCKET_SERVER] = this.webSocketServer;
 
   /**
    * Mapping from WebSocket instances to MemorelayClient objects.
@@ -198,17 +212,13 @@ export class Memorelay extends EventEmitter {
     const regex = pathToRegexp(path);
 
     return (request: IncomingMessage, socket: Socket, head: Buffer) => {
-      if (!request.headers.host) {
-        throw new Error('host header missing');
-      }
       if (!request.url) {
         throw new Error('url missing');
       }
 
-      const { pathname } = new URL(
-        request.url,
-        `http://${request.headers.host}`
-      );
+      // NOTE: The WHATWG URL standard requires a base, but its value doesn't
+      // matter to us since we only need the path.
+      const { pathname } = new URL(request.url, 'http://dummy');
       if (!regex.test(pathname)) {
         // Nothing to do here. The incoming message URL does not match.
         return;
