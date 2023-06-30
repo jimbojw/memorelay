@@ -17,6 +17,11 @@ export class BasicEvent<
   DetailsType = unknown
 > {
   /**
+   * MUST MATCH EVENT TYPE.
+   */
+  static type: string;
+
+  /**
    * Whether any recipient has called preventDefault();
    */
   private isDefaultPrevented = false;
