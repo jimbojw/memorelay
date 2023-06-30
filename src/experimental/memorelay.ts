@@ -10,10 +10,16 @@ import { IncomingMessage } from 'http';
 import { Socket } from 'net';
 import { pathToRegexp } from 'path-to-regexp';
 import { WebSocket, WebSocketServer } from 'ws';
-import { EventEmitter } from 'events';
 
 import { RelayInformationDocument } from '../lib/relay-information-document';
 import { MemorelayClient } from './memorelay-client';
+import { WebSocketServerConnectionEvent } from './events/web-socket-server-events';
+import { MemorelayClientCreatedEvent } from './events/memorelay-events';
+import { DuplicateWebSocketError } from './errors/duplicate-web-socket-error';
+import {
+  BasicEventEmitter,
+  BasicEventHandler,
+} from './events/basic-event-emitter';
 
 /**
  * Handler for an 'upgrade' event, which signals that a connected HTTP client is
@@ -32,19 +38,8 @@ export const WEBSOCKET_SERVER = Symbol('webSocketServer');
 
 /**
  * Memorelay main class. Allows for configurable Nostr relay behavior.
- *
- * Interaction modes:
- *
- * - Events - Instances of this class will emit events to which the upstream
- *   code can listen. By their nature, events are asynchronous and are meant to
- *   be informative, not transformative.
- * - Middleware - Memorelay instances offer Express-style middleware hooks to
- *   allow upstream code to alter the data flow. This capability also powers
- *   internal mechanisms such as implementing Nostr NIP features.
- *
- * @event connection A client has connected.
  */
-export class Memorelay extends EventEmitter {
+export class Memorelay extends BasicEventEmitter {
   /**
    * WebSocket server for handling requests.
    */
@@ -61,18 +56,71 @@ export class Memorelay extends EventEmitter {
    */
   private readonly webSocketClientMap = new Map<WebSocket, MemorelayClient>();
 
-  constructor() {
-    super();
-    this.webSocketServer.on(
-      'connection',
-      (webSocket: WebSocket, request: IncomingMessage) => {
-        if (this.webSocketClientMap.has(webSocket)) {
-          throw new Error('duplicate WebSocket detected');
-        }
-        const memorelayClient = new MemorelayClient(webSocket, request);
-        this.webSocketClientMap.set(webSocket, memorelayClient);
-        this.emit('connection', memorelayClient);
-      }
+  /**
+   * Bound event listeners. Will be connected to their respective targets when
+   * connect() is called.
+   */
+  protected readonly handlers: BasicEventHandler[] = [
+    /**
+     * When the Memorelay's WebSocketServer emits a 'connection' event, wrap it
+     * in a WebSocketServerConnectionEvent and emit that. This gives other
+     * listeners a chance to preventDefault().
+     */
+    {
+      target: this.webSocketServer,
+      type: 'connection',
+      handler: (webSocket: WebSocket, request: IncomingMessage) => {
+        this.emitBasic(
+          new WebSocketServerConnectionEvent({ webSocket, request })
+        );
+      },
+    },
+
+    {
+      target: this,
+      type: WebSocketServerConnectionEvent.type,
+      handler: (event: WebSocketServerConnectionEvent) => {
+        this.handleWebSocketServerConnection(event);
+      },
+    },
+
+    {
+      target: this,
+      type: MemorelayClientCreatedEvent.type,
+      handler: (event: MemorelayClientCreatedEvent) => {
+        !event.defaultPrevented && event.details.memorelayClient.init();
+      },
+    },
+  ];
+
+  /**
+   * Handler for self-emitted, WebSocketServerConnectionEvents which wrap
+   * underlying WebSocket 'connection' events. This provides an opportunity for
+   * other listeners to call preventDefault().
+   *
+   * @param event
+   * @returns
+   */
+  handleWebSocketServerConnection(event: WebSocketServerConnectionEvent) {
+    if (event.defaultPrevented) {
+      return; // Client creation was prevented by a listener.
+    }
+
+    const { webSocket, request } = event.details;
+
+    if (this.webSocketClientMap.has(webSocket)) {
+      const error = new DuplicateWebSocketError(webSocket);
+      this.emit(error.type, error);
+      return;
+    }
+
+    const memorelayClient = new MemorelayClient(webSocket, request);
+    this.webSocketClientMap.set(webSocket, memorelayClient);
+
+    this.emitBasic(
+      new MemorelayClientCreatedEvent({
+        memorelayClient,
+      })
     );
   }
 
@@ -100,36 +148,36 @@ export class Memorelay extends EventEmitter {
    * @return Express request handler.
    */
   get sendRelayDocument(): RequestHandler {
-    return (req: Request, res: Response, next: NextFunction) => {
-      if (req.header('Accept') !== 'application/nostr+json') {
+    return (request: Request, response: Response, next: NextFunction) => {
+      if (request.header('Accept') !== 'application/nostr+json') {
         next();
         return;
       }
 
       if (
-        req.method !== 'HEAD' &&
-        req.method !== 'GET' &&
-        req.method !== 'OPTIONS'
+        request.method !== 'HEAD' &&
+        request.method !== 'GET' &&
+        request.method !== 'OPTIONS'
       ) {
-        res
+        response
           .status(501)
-          .send({ error: `Method not implemented: ${req.method}` });
+          .send({ error: `Method not implemented: ${request.method}` });
         return;
       }
 
-      if (req.header('Access-Control-Request-Headers')) {
+      if (request.header('Access-Control-Request-Headers')) {
         // TODO(jimbo): Should the list of allowed headers be restricted?
-        res.set('Access-Control-Allow-Headers', '*');
+        response.set('Access-Control-Allow-Headers', '*');
       }
-      res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-      res.set('Access-Control-Allow-Origin', '*');
+      response.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      response.set('Access-Control-Allow-Origin', '*');
 
-      if (req.method === 'OPTIONS') {
+      if (request.method === 'OPTIONS') {
         next();
         return;
       }
 
-      res
+      response
         .set('Content-Type', 'application/nostr+json')
         .status(200)
         .send(this.getRelayDocument());
@@ -144,7 +192,7 @@ export class Memorelay extends EventEmitter {
    *   const memorelay = new Memorelay();
    *   const app = express();
    *   const server = app.listen(PORT);
-   *   server.on('upgrade', memorelay.handleUpgrade()));
+   *   server.on('upgrade', memorelay.handleUpgrade());
    *
    * @param path Optional Express path to match. Defaults to '/'.
    * @returns Upgrade handler function.

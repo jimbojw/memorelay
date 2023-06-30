@@ -7,22 +7,18 @@
 
 import { RawData, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
-import { EventEmitter } from 'events';
 
-import {
-  RawMessageHandler,
-  RawMessageHandlerNextFunction,
-} from './middleware-types';
-import { BadBufferError } from './bad-buffer-error';
+import { bufferToClientMessage } from '../lib/buffer-to-message';
+import { BadMessageError } from '../lib/bad-message-error';
+import { WebSocketMessageEvent } from './events/web-socket-events';
+import { BasicEventEmitter } from './events/basic-event-emitter';
+import { MemorelayClientMessageEvent } from './events/memorelay-client-events';
 
-export class MemorelayClient extends EventEmitter {
-  /**
-   * Middleware handlers for WebSocket raw 'message' events. API users can
-   * modify this list directly.
-   * @see RawMessageHandler
-   */
-  readonly rawMessageHandlers: RawMessageHandler[] = [];
-
+/**
+ * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
+ * receives raw message events from the socket, and sends encoded messages back.
+ */
+export class MemorelayClient extends BasicEventEmitter {
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.
@@ -32,71 +28,47 @@ export class MemorelayClient extends EventEmitter {
     readonly request: IncomingMessage
   ) {
     super();
-    webSocket.on('message', (data: RawData, isBinary: boolean) => {
-      void this.processRawMessage(data, isBinary);
+  }
+
+  /**
+   * Initialize client by attaching listeners.
+   */
+  init() {
+    this.webSocket.on('message', (data: RawData, isBinary: boolean) => {
+      this.emitBasic(new WebSocketMessageEvent({ data, isBinary }));
     });
+
+    this.on('web-socket-message', (event: WebSocketMessageEvent) => {
+      this.handleWebSocketMessage(event);
+    });
+
+    // TODO(jimbo): Listen for more WebSocket events.
+    // TODO(jimbo): Emit an 'init' event.
   }
 
   /**
-   * Process a raw 'message' by invoking registered middleware handlers.
-   */
-  async processRawMessage(data: RawData, isBinary: boolean) {
-    const middlewareResult = await this.runRawMessageHandlers(data, isBinary);
-
-    if (middlewareResult) {
-      // TODO(jimbo): Send result buffer to blob parsing step.
-      return;
-    }
-
-    if (!(data instanceof Buffer)) {
-      this.emit('error', new BadBufferError(data, isBinary));
-      return;
-    }
-  }
-
-  /**
-   * Run raw message middleware handlers in order. If any invoke the next()
-   * function with 'done' and provide a buffer, return it.
+   * Handly a previously emitted WebSocketMessageEvent. By sending the raw
+   * WebSocket 'message' event through this process, the client gives other
+   * listeners a chance to call preventDefault() first.
    *
-   * @param data The RawData accompanying the WebSocket 'message'.
-   * @param isBinary Whether the WebSocket 'message' was flagged as binary data
-   * by the client.
+   * @param event Wrapped WebSocket message event.
    */
-  async runRawMessageHandlers(
-    data: RawData,
-    isBinary: boolean
-  ): Promise<false | { buffer: Buffer; isBinary: boolean }> {
-    interface Results {
-      status?: 'done';
-      buffer?: Buffer;
-      isBinary?: boolean;
-    }
-    for (const rawMessageHandler of this.rawMessageHandlers) {
-      let resolve: (results: Results) => void;
-      const promise = new Promise<Results>((resolveArg) => {
-        resolve = resolveArg;
-      });
-      const nextFunction: RawMessageHandlerNextFunction = (
-        status?: 'done',
-        buffer?: Buffer,
-        isBinary?: boolean
-      ) => {
-        resolve({ status, buffer, isBinary });
-      };
-      rawMessageHandler(data, isBinary, nextFunction);
-      const results = await promise;
-      if (results.status === 'done') {
-        if (!results.buffer) {
-          throw new Error('buffer missing');
-        }
-        return {
-          buffer: results.buffer,
-          isBinary: results.isBinary ?? isBinary,
-        };
-      }
+  handleWebSocketMessage(event: WebSocketMessageEvent) {
+    if (event.defaultPrevented) {
+      return; // Default behavior was prevented.
     }
 
-    // None of middleware called next('done',...).
-    return false;
+    const { data } = event.details;
+    const buffer = Array.isArray(data) ? Buffer.concat(data) : (data as Buffer);
+
+    try {
+      const clientMessage = bufferToClientMessage(buffer);
+      this.emitBasic(new MemorelayClientMessageEvent({ clientMessage }));
+    } catch (error) {
+      if (!(error instanceof BadMessageError)) {
+        throw error; // Unexpected error type. Fail hard.
+      }
+      this.emitError(error);
+    }
   }
 }

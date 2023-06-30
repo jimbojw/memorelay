@@ -14,9 +14,12 @@ import {
 } from 'node-mocks-http';
 import { Socket } from 'net';
 import { Request, Response } from 'express';
+import { WebSocket } from 'ws';
 
 import { Memorelay, WEBSOCKET_SERVER } from './memorelay';
-import { MemorelayClient } from './memorelay-client';
+import { WebSocketServerConnectionEvent } from './events/web-socket-server-events';
+import { MemorelayClientCreatedEvent } from './events/memorelay-events';
+import { DuplicateWebSocketError } from './errors/duplicate-web-socket-error';
 
 describe('Memorelay', () => {
   it('should be a constructor function', () => {
@@ -249,33 +252,131 @@ describe('Memorelay', () => {
   });
 
   describe('webSocketServer#connection', () => {
-    it('should create a client for a new WebSocket connection', () => {
-      const memorelay = new Memorelay();
+    it('should emit a preventable event on new WebSocket connection', () => {
+      const memorelay = new Memorelay().connect();
       const request = {} as Request;
       const webSocket = { on: jest.fn() } as unknown as WebSocket;
 
-      const mockConnectionHandler = jest.fn<unknown, [MemorelayClient]>();
-      memorelay.on('connection', mockConnectionHandler);
+      const mockConnectionHandler = jest.fn<
+        unknown,
+        [WebSocketServerConnectionEvent]
+      >();
+      memorelay.on('web-socket-server-connection', mockConnectionHandler);
 
       memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
 
       expect(mockConnectionHandler.mock.calls).toHaveLength(1);
 
-      const client = mockConnectionHandler.mock.calls[0][0];
-      expect(client.webSocket).toBe(webSocket);
-      expect(client.request).toBe(request);
+      const { details } = mockConnectionHandler.mock.calls[0][0];
+      expect(details.webSocket).toBe(webSocket);
+      expect(details.request).toBe(request);
     });
+  });
 
-    it('should throw if a duplicate client is detected', () => {
-      const memorelay = new Memorelay();
+  describe('#WebSocketServerConnectionEvent', () => {
+    it('should invoke handleWebSocketServerConnection()', () => {
+      const memorelay = new Memorelay().connect();
       const request = {} as Request;
       const webSocket = { on: jest.fn() } as unknown as WebSocket;
 
-      memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
+      const mockHandleWebSocketServerConnectionFn = jest.fn<
+        unknown,
+        [WebSocketServerConnectionEvent]
+      >();
+      memorelay.handleWebSocketServerConnection =
+        mockHandleWebSocketServerConnectionFn;
 
-      expect(() => {
-        memorelay[WEBSOCKET_SERVER].emit('connection', webSocket, request);
-      }).toThrow('duplicate');
+      memorelay.emitBasic(
+        new WebSocketServerConnectionEvent({ webSocket, request })
+      );
+
+      expect(mockHandleWebSocketServerConnectionFn.mock.calls).toHaveLength(1);
+
+      const { details } =
+        mockHandleWebSocketServerConnectionFn.mock.calls[0][0];
+      expect(details.webSocket).toBe(webSocket);
+      expect(details.request).toBe(request);
+    });
+  });
+
+  describe('handleWebSocketServerConnection', () => {
+    it('should create and emit a MemorelayClient', () => {
+      const memorelay = new Memorelay().connect();
+      const request = {} as Request;
+      const webSocket = { on: jest.fn() } as unknown as WebSocket;
+
+      const mockMemorelayClientCreatedHandler = jest.fn<
+        unknown,
+        [MemorelayClientCreatedEvent]
+      >();
+      memorelay.on(
+        MemorelayClientCreatedEvent.type,
+        mockMemorelayClientCreatedHandler
+      );
+
+      memorelay.handleWebSocketServerConnection(
+        new WebSocketServerConnectionEvent({ webSocket, request })
+      );
+
+      expect(mockMemorelayClientCreatedHandler.mock.calls).toHaveLength(1);
+
+      const { memorelayClient } =
+        mockMemorelayClientCreatedHandler.mock.calls[0][0].details;
+      expect(memorelayClient.webSocket).toBe(webSocket);
+      expect(memorelayClient.request).toBe(request);
+    });
+
+    it('should do nothing when event defaultPrevented is true', () => {
+      const memorelay = new Memorelay().connect();
+      const request = {} as Request;
+      const webSocket = { on: jest.fn() } as unknown as WebSocket;
+
+      const mockMemorelayClientCreatedHandler = jest.fn<
+        unknown,
+        [MemorelayClientCreatedEvent]
+      >();
+      memorelay.on(
+        MemorelayClientCreatedEvent.type,
+        mockMemorelayClientCreatedHandler
+      );
+
+      const webSocketServerConnectionEvent = new WebSocketServerConnectionEvent(
+        { webSocket, request }
+      );
+      webSocketServerConnectionEvent.preventDefault();
+
+      memorelay.handleWebSocketServerConnection(webSocketServerConnectionEvent);
+
+      expect(mockMemorelayClientCreatedHandler.mock.calls).toHaveLength(0);
+    });
+
+    it('should trigger an error on duplicate WebSocket', () => {
+      const memorelay = new Memorelay().connect();
+      const request = {} as Request;
+      const webSocket = { on: jest.fn() } as unknown as WebSocket;
+
+      const mockDuplicateWebSocketErrorHandler = jest.fn<
+        unknown,
+        [DuplicateWebSocketError]
+      >();
+      memorelay.on(
+        DuplicateWebSocketError.type,
+        mockDuplicateWebSocketErrorHandler
+      );
+
+      memorelay.handleWebSocketServerConnection(
+        new WebSocketServerConnectionEvent({ webSocket, request })
+      );
+
+      memorelay.handleWebSocketServerConnection(
+        new WebSocketServerConnectionEvent({ webSocket, request })
+      );
+
+      expect(mockDuplicateWebSocketErrorHandler.mock.calls).toHaveLength(1);
+
+      const duplicateWebSocketError =
+        mockDuplicateWebSocketErrorHandler.mock.calls[0][0];
+      expect(duplicateWebSocketError).toBeInstanceOf(DuplicateWebSocketError);
     });
   });
 });
