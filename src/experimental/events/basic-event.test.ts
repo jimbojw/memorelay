@@ -10,17 +10,17 @@ import { BasicEvent } from './basic-event';
 describe('BasicEvent', () => {
   it('should be a constructor function', () => {
     expect(typeof BasicEvent).toBe('function');
-    const basicEvent = new BasicEvent('test');
+    const basicEvent = new BasicEvent('test', undefined);
     expect(basicEvent).toBeInstanceOf(BasicEvent);
   });
 
   it('should have type match constructor param', () => {
-    const basicEvent = new BasicEvent('abcde');
+    const basicEvent = new BasicEvent('abcde', undefined);
     expect(basicEvent.type).toBe('abcde');
   });
 
   it('should have undefined details if unspecified', () => {
-    const basicEvent = new BasicEvent('test');
+    const basicEvent = new BasicEvent('test', undefined);
     expect(basicEvent.details).toBeUndefined();
   });
 
@@ -31,19 +31,19 @@ describe('BasicEvent', () => {
   });
 
   it('should not have default prevented to begin with', () => {
-    const basicEvent = new BasicEvent('test');
+    const basicEvent = new BasicEvent('test', undefined);
     expect(basicEvent.defaultPrevented).toBe(false);
   });
 
   describe('preventDefault()', () => {
     it('should cause default prevented to be true', () => {
-      const basicEvent = new BasicEvent('test');
+      const basicEvent = new BasicEvent('test', undefined);
       basicEvent.preventDefault();
       expect(basicEvent.defaultPrevented).toBe(true);
     });
 
     it('should allow multiple calls without further effect', () => {
-      const basicEvent = new BasicEvent('test');
+      const basicEvent = new BasicEvent('test', undefined);
       basicEvent.preventDefault();
       basicEvent.preventDefault();
       basicEvent.preventDefault();

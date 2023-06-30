@@ -12,7 +12,7 @@
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent
  */
-export class BasicEvent<T = unknown> {
+export class BasicEvent<T> {
   /**
    * Whether any recipient has called preventDefault();
    */
@@ -22,7 +22,7 @@ export class BasicEvent<T = unknown> {
    * @param type The name of the event, case-sensitive.
    * @param details Optional object containing information about this event.
    */
-  constructor(readonly type: string, readonly details?: T) {}
+  constructor(readonly type: string, readonly details: T) {}
 
   /**
    * Same concept as the DOM standard Event's defaultPrevented getter.
