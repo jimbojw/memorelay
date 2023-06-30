@@ -10,15 +10,35 @@ import { IncomingMessage } from 'http';
 
 import { bufferToClientMessage } from '../lib/buffer-to-message';
 import { BadMessageError } from '../lib/bad-message-error';
-import { WebSocketMessageEvent } from './events/web-socket-events';
-import { BasicEventEmitter } from './events/basic-event-emitter';
-import { MemorelayClientMessageEvent } from './events/memorelay-client-events';
+import { WebSocketMessageEvent } from './events/web-socket-message-event';
+import {
+  BasicEventEmitter,
+  BasicEventHandler,
+} from './events/basic-event-emitter';
+import { IncomingMessageEvent } from './events/incoming-message-event';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
  * receives raw message events from the socket, and sends encoded messages back.
  */
 export class MemorelayClient extends BasicEventEmitter {
+  protected handlers: readonly BasicEventHandler[] = [
+    {
+      target: this.webSocket,
+      type: 'message',
+      handler: (data: RawData, isBinary: boolean) => {
+        this.emitBasic(new WebSocketMessageEvent({ data, isBinary }));
+      },
+    },
+    {
+      target: this,
+      type: WebSocketMessageEvent.type,
+      handler: (event: WebSocketMessageEvent) => {
+        this.handleWebSocketMessage(event);
+      },
+    },
+  ];
+
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.
@@ -30,20 +50,10 @@ export class MemorelayClient extends BasicEventEmitter {
     super();
   }
 
-  /**
-   * Initialize client by attaching listeners.
-   */
-  init() {
-    this.webSocket.on('message', (data: RawData, isBinary: boolean) => {
-      this.emitBasic(new WebSocketMessageEvent({ data, isBinary }));
-    });
-
-    this.on('web-socket-message', (event: WebSocketMessageEvent) => {
-      this.handleWebSocketMessage(event);
-    });
-
-    // TODO(jimbo): Listen for more WebSocket events.
-    // TODO(jimbo): Emit an 'init' event.
+  override connect(): this {
+    super.connect();
+    // TODO(jimbo): Emit some kind of 'connected' event.
+    return this;
   }
 
   /**
@@ -63,7 +73,9 @@ export class MemorelayClient extends BasicEventEmitter {
 
     try {
       const clientMessage = bufferToClientMessage(buffer);
-      this.emitBasic(new MemorelayClientMessageEvent({ clientMessage }));
+      this.emitBasic(
+        new IncomingMessageEvent({ incomingMessage: clientMessage })
+      );
     } catch (error) {
       if (!(error instanceof BadMessageError)) {
         throw error; // Unexpected error type. Fail hard.

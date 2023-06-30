@@ -7,8 +7,8 @@
 
 const skipWords = `
 cbor comparator dotenv ecma fileoverview fs lang localhost jsx memorelay
-microtask msg nostr pathname printf pubkey readonly req sig stderr stdin stdout
-transformative tsconfig tsx uint unparseable upgradeable utf ws wss
+microtask msg nostr pathname printf pubkey readonly req sig stateful stderr
+stdin stdout transformative tsconfig tsx uint unparseable upgradeable utf ws wss
 `.match(/\w+/g);
 
 module.exports = {

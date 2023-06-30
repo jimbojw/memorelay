@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Events emitted by Memorelay.
+ * @fileoverview Event emitted by Memorelay when it creates a MemorelayClient.
  */
 
 import { MemorelayClient } from '../memorelay-client';
@@ -19,8 +19,9 @@ export interface MemorelayClientCreatedEventDetails {
 }
 
 /**
- * Event emitted by a MemorelayClient when its connected WebSocket emits a
- * 'message' event.
+ * Event emitted by Memorelay when it creates a MemorelayClient to wrap a
+ * connected WebSocket. This would typically be in response to a previously
+ * emitted 'connection' event on the Memorelay instance's WebSocketServer.
  */
 export class MemorelayClientCreatedEvent extends BasicEvent<
   'memorelay-client-created',

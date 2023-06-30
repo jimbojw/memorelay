@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Events originating from WebSocketServers.
+ * @fileoverview Wrapper for WebSocketServer 'connection' event.
  */
 
 import { IncomingMessage } from 'http';
@@ -27,7 +27,7 @@ export interface WebSocketServerConnectionEventDetails {
 
 /**
  * Memorelay event emitted when a connected WebSocketServer emits a 'connection'
- * event signaling a newly connected client.
+ * event signaling a newly connected WebSocket.
  *
  * The default next action that Memorelay will take is to create a
  * MemorelayClient and emit a MemorelayClientCreatedEvent. Calling

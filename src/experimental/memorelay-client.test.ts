@@ -9,7 +9,8 @@ import { WebSocket } from 'ws';
 import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
-import { WebSocketMessageEvent } from './events/web-socket-events';
+import { WebSocketMessageEvent } from './events/web-socket-message-event';
+import { BasicEvent } from './events/basic-event';
 
 describe('MemorelayClient', () => {
   it('should be a constructor function', () => {
@@ -26,9 +27,9 @@ describe('MemorelayClient', () => {
     it('should emit a WebSocketMessageEvent', () => {
       const request = {} as Request;
       const webSocket = new EventEmitter() as WebSocket;
-      const memorelayClient = new MemorelayClient(webSocket, request);
+      const memorelayClient = new MemorelayClient(webSocket, request).connect();
 
-      const mockEmitBasicFn = jest.fn();
+      const mockEmitBasicFn = jest.fn<BasicEvent, [WebSocketMessageEvent]>();
       memorelayClient.emitBasic = mockEmitBasicFn;
 
       const data = Buffer.from('MESSAGE_DATA');
@@ -36,11 +37,9 @@ describe('MemorelayClient', () => {
 
       expect(mockEmitBasicFn.mock.calls).toHaveLength(1);
 
-      const event = (
-        mockEmitBasicFn.mock.calls as [WebSocketMessageEvent][]
-      )[0][0];
-
-      expect(event).toBeInstanceOf(WebSocketMessageEvent);
+      expect(mockEmitBasicFn.mock.calls[0][0]).toBeInstanceOf(
+        WebSocketMessageEvent
+      );
     });
   });
 });

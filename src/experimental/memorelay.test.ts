@@ -17,8 +17,8 @@ import { Request, Response } from 'express';
 import { WebSocket } from 'ws';
 
 import { Memorelay, WEBSOCKET_SERVER } from './memorelay';
-import { WebSocketServerConnectionEvent } from './events/web-socket-server-events';
-import { MemorelayClientCreatedEvent } from './events/memorelay-events';
+import { WebSocketServerConnectionEvent } from './events/web-socket-server-connection-event';
+import { MemorelayClientCreatedEvent } from './events/memorelay-client-created-event';
 import { DuplicateWebSocketError } from './errors/duplicate-web-socket-error';
 
 describe('Memorelay', () => {

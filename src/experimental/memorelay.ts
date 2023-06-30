@@ -13,8 +13,8 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 import { RelayInformationDocument } from '../lib/relay-information-document';
 import { MemorelayClient } from './memorelay-client';
-import { WebSocketServerConnectionEvent } from './events/web-socket-server-events';
-import { MemorelayClientCreatedEvent } from './events/memorelay-events';
+import { WebSocketServerConnectionEvent } from './events/web-socket-server-connection-event';
+import { MemorelayClientCreatedEvent } from './events/memorelay-client-created-event';
 import { DuplicateWebSocketError } from './errors/duplicate-web-socket-error';
 import {
   BasicEventEmitter,
@@ -88,7 +88,7 @@ export class Memorelay extends BasicEventEmitter {
       target: this,
       type: MemorelayClientCreatedEvent.type,
       handler: (event: MemorelayClientCreatedEvent) => {
-        !event.defaultPrevented && event.details.memorelayClient.init();
+        !event.defaultPrevented && event.details.memorelayClient.connect();
       },
     },
   ];

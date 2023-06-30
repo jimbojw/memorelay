@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Events having to do with raw WebSockets.
+ * @fileoverview Wrapper for WebSocket 'message' event.
  */
 
 import { RawData } from 'ws';
