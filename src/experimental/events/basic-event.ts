@@ -6,13 +6,23 @@
  */
 
 /**
- * Base class from which more specific Memorelay events inherit.
+ * A Memorelay BasicEvent takes its design from the DOM native CustomEvent. It
+ * supports basic DOM Event functionality such as preventDefault(), and carries
+ * an arbitrary, optional payload object.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent
  */
-export class BasicEvent {
+export class BasicEvent<T = unknown> {
   /**
    * Whether any recipient has called preventDefault();
    */
   private isDefaultPrevented = false;
+
+  /**
+   * @param type The name of the event, case-sensitive.
+   * @param details Optional object containing information about this event.
+   */
+  constructor(readonly type: string, readonly details?: T) {}
 
   /**
    * Same concept as the DOM standard Event's defaultPrevented getter.
