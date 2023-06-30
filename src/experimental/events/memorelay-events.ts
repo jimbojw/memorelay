@@ -26,7 +26,7 @@ export class MemorelayClientCreatedEvent extends BasicEvent<
   'memorelay-client-created',
   MemorelayClientCreatedEventDetails
 > {
-  static type = 'memorelay-client-created';
+  static readonly type = 'memorelay-client-created';
   constructor(details: MemorelayClientCreatedEventDetails) {
     super('memorelay-client-created', details);
   }

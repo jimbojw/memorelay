@@ -36,7 +36,7 @@ export class WebSocketMessageEvent extends BasicEvent<
   'web-socket-message',
   WebSocketMessageEventDetails
 > {
-  static type = 'web-socket-message';
+  static readonly type = 'web-socket-message';
   constructor(details: WebSocketMessageEventDetails) {
     super('web-socket-message', details);
   }

@@ -38,7 +38,7 @@ export class WebSocketServerConnectionEvent extends BasicEvent<
   'web-socket-server-connection',
   WebSocketServerConnectionEventDetails
 > {
-  static type = 'web-socket-server-connection';
+  static readonly type = 'web-socket-server-connection';
   constructor(details: WebSocketServerConnectionEventDetails) {
     super('web-socket-server-connection', details);
   }
