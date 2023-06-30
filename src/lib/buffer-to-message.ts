@@ -60,21 +60,33 @@ export function bufferToGenericMessage(payloadRawData: Buffer): GenericMessage {
     throw new BadMessageError('unparseable message');
   }
 
-  if (!Array.isArray(payloadJson)) {
+  return checkGenericMessage(payloadJson);
+}
+
+/**
+ * Check whether an unknown object conforms to the basic Nostr structure of a
+ * message. If the object does not conform, this function throws a
+ * BatMessageError to indicate in what way it failed.
+ * @param object The object to check.
+ * @returns The tested object, cast as a GenericMessage.
+ * @throws BadMessageError if the object is not a message.
+ */
+export function checkGenericMessage(maybeMessage: unknown): GenericMessage {
+  if (!Array.isArray(maybeMessage)) {
     throw new BadMessageError('message was not an array');
   }
 
-  if (!payloadJson.length) {
+  if (!maybeMessage.length) {
     throw new BadMessageError('message type missing');
   }
 
-  const eventType: unknown = payloadJson[0];
+  const eventType: unknown = maybeMessage[0];
 
   if (typeof eventType !== 'string') {
     throw new BadMessageError('message type was not a string');
   }
 
-  return payloadJson as unknown as GenericMessage;
+  return maybeMessage as GenericMessage;
 }
 
 /**

@@ -6,6 +6,7 @@
  */
 
 export class BadMessageError extends Error {
+  readonly type = 'bad-message-error';
   constructor(private readonly reason: string) {
     super();
   }
