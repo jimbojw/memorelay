@@ -6,9 +6,9 @@
  */
 
 const skipWords = `
-comparator dotenv ecma fileoverview fs lang localhost jsx memorelay microtask
-msg nostr pathname printf pubkey readonly req sig stderr stdin stdout
-transformative tsconfig tsx unparseable upgradeable utf ws wss
+cbor comparator dotenv ecma fileoverview fs lang localhost jsx memorelay
+microtask msg nostr pathname printf pubkey readonly req sig stderr stdin stdout
+transformative tsconfig tsx uint unparseable upgradeable utf ws wss
 `.match(/\w+/g);
 
 module.exports = {
@@ -33,6 +33,10 @@ module.exports = {
       plugins: ['@typescript-eslint'],
       rules: {
         '@typescript-eslint/no-confusing-void-expression': 'error',
+        '@typescript-eslint/no-explicit-any': [
+          'error',
+          { ignoreRestArgs: true },
+        ],
         '@typescript-eslint/prefer-readonly': 'error',
       },
     },
