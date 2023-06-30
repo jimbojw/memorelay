@@ -14,11 +14,15 @@ import { WebSocket } from 'ws';
  */
 export class DuplicateWebSocketError extends Error {
   static type = 'duplicate-websocket-error';
-  readonly type = 'duplicate-websocket-error';
+
   constructor(
     readonly webSocket: WebSocket,
     message = 'duplicate websocket detected'
   ) {
     super(message);
+  }
+
+  get type() {
+    return DuplicateWebSocketError.type;
   }
 }
