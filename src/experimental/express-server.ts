@@ -9,6 +9,7 @@
 import express, { Request, Response } from 'express';
 
 import { Memorelay } from './memorelay';
+import { relayInformationDocument } from './relay-information-document';
 
 const PORT = 3000;
 
@@ -16,7 +17,7 @@ const memorelay = new Memorelay();
 
 const app = express();
 
-app.use('/', memorelay.sendRelayDocument);
+app.use('/', relayInformationDocument(memorelay));
 
 app.get('/', (req: Request, res: Response) => {
   res.send('HELLO WORLD');

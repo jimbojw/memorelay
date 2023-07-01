@@ -5,13 +5,11 @@
  * @fileoverview Memorelay entry point.
  */
 
-import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { Socket } from 'net';
 import { pathToRegexp } from 'path-to-regexp';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { RelayInformationDocument } from '../lib/relay-information-document';
 import { MemorelayClient } from './memorelay-client';
 import { WebSocketServerConnectionEvent } from './events/web-socket-server-connection-event';
 import { MemorelayClientCreatedEvent } from './events/memorelay-client-created-event';
@@ -122,66 +120,6 @@ export class Memorelay extends BasicEventEmitter {
         memorelayClient,
       })
     );
-  }
-
-  /**
-   * Generate and return the NIP-11 relay information document.
-   * @see https://github.com/nostr-protocol/nips/blob/master/11.md
-   */
-  getRelayDocument(): RelayInformationDocument {
-    return {
-      supported_nips: [1, 9, 11, 20],
-    };
-  }
-
-  /**
-   * Return an Express middleware function for handling NIP-11 Nostr relay
-   * document requests.
-   *
-   * Usage:
-   *
-   *   const memorelay = new Memorelay();
-   *   const app = express();
-   *   app.use('/', memorelay.sendRelayDocument);
-   *
-   * @see https://github.com/nostr-protocol/nips/blob/master/11.md
-   * @return Express request handler.
-   */
-  get sendRelayDocument(): RequestHandler {
-    return (request: Request, response: Response, next: NextFunction) => {
-      if (request.header('Accept') !== 'application/nostr+json') {
-        next();
-        return;
-      }
-
-      if (
-        request.method !== 'HEAD' &&
-        request.method !== 'GET' &&
-        request.method !== 'OPTIONS'
-      ) {
-        response
-          .status(501)
-          .send({ error: `Method not implemented: ${request.method}` });
-        return;
-      }
-
-      if (request.header('Access-Control-Request-Headers')) {
-        // TODO(jimbo): Should the list of allowed headers be restricted?
-        response.set('Access-Control-Allow-Headers', '*');
-      }
-      response.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-      response.set('Access-Control-Allow-Origin', '*');
-
-      if (request.method === 'OPTIONS') {
-        next();
-        return;
-      }
-
-      response
-        .set('Content-Type', 'application/nostr+json')
-        .status(200)
-        .send(this.getRelayDocument());
-    };
   }
 
   /**

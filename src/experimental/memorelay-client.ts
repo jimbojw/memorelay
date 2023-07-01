@@ -57,7 +57,7 @@ export class MemorelayClient extends BasicEventEmitter {
   }
 
   /**
-   * Handly a previously emitted WebSocketMessageEvent. By sending the raw
+   * Handle a previously emitted WebSocketMessageEvent. By sending the raw
    * WebSocket 'message' event through this process, the client gives other
    * listeners a chance to call preventDefault() first.
    *
