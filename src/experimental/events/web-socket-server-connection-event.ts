@@ -10,6 +10,9 @@ import { WebSocket } from 'ws';
 
 import { BasicEvent } from './basic-event';
 
+export const WEB_SOCKET_SERVER_CONNECTION_EVENT_TYPE =
+  'web-socket-server-connection';
+
 /**
  * @see WebSocketServerConnectionEvent
  */
@@ -35,11 +38,12 @@ export interface WebSocketServerConnectionEventDetails {
  * being created.
  */
 export class WebSocketServerConnectionEvent extends BasicEvent<
-  'web-socket-server-connection',
+  typeof WEB_SOCKET_SERVER_CONNECTION_EVENT_TYPE,
   WebSocketServerConnectionEventDetails
 > {
-  static readonly type = 'web-socket-server-connection';
+  static readonly type: typeof WEB_SOCKET_SERVER_CONNECTION_EVENT_TYPE =
+    WEB_SOCKET_SERVER_CONNECTION_EVENT_TYPE;
   constructor(details: WebSocketServerConnectionEventDetails) {
-    super('web-socket-server-connection', details);
+    super(WEB_SOCKET_SERVER_CONNECTION_EVENT_TYPE, details);
   }
 }

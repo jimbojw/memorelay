@@ -8,6 +8,8 @@
 import { ClientMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
+export const INCOMING_MESSAGE_EVENT_TYPE = 'incoming-message';
+
 /**
  * @see IncomingMessageEvent
  */
@@ -24,11 +26,12 @@ export interface IncomingMessageEventDetails {
  * previously received WebSocket 'message' event.
  */
 export class IncomingMessageEvent extends BasicEvent<
-  'incoming-message',
+  typeof INCOMING_MESSAGE_EVENT_TYPE,
   IncomingMessageEventDetails
 > {
-  static readonly type = 'incoming-message';
+  static readonly type: typeof INCOMING_MESSAGE_EVENT_TYPE =
+    INCOMING_MESSAGE_EVENT_TYPE;
   constructor(details: IncomingMessageEventDetails) {
-    super('incoming-message', details);
+    super(INCOMING_MESSAGE_EVENT_TYPE, details);
   }
 }

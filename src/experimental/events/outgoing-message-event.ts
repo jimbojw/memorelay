@@ -8,6 +8,8 @@
 import { RelayMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
+export const OUTGOING_MESSAGE_EVENT_TYPE = 'outgoing-message';
+
 /**
  * @see OutgoingMessageEvent
  */
@@ -24,10 +26,11 @@ export interface OutgoingMessageEventDetails {
  * push it down the wire.
  */
 export class OutgoingMessageEvent extends BasicEvent<
-  'outgoing-message',
+  typeof OUTGOING_MESSAGE_EVENT_TYPE,
   OutgoingMessageEventDetails
 > {
-  static readonly type = 'outgoing-message';
+  static readonly type: typeof OUTGOING_MESSAGE_EVENT_TYPE =
+    OUTGOING_MESSAGE_EVENT_TYPE;
   constructor(details: OutgoingMessageEventDetails) {
     super('outgoing-message', details);
   }

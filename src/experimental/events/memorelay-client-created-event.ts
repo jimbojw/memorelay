@@ -8,6 +8,8 @@
 import { MemorelayClient } from '../memorelay-client';
 import { BasicEvent } from './basic-event';
 
+export const MEMORELAY_CLIENT_CREATED_EVENT_TYPE = 'memorelay-client-created';
+
 /**
  * @see MemorelayClientCreatedEvent
  */
@@ -24,11 +26,12 @@ export interface MemorelayClientCreatedEventDetails {
  * emitted 'connection' event on the Memorelay instance's WebSocketServer.
  */
 export class MemorelayClientCreatedEvent extends BasicEvent<
-  'memorelay-client-created',
+  typeof MEMORELAY_CLIENT_CREATED_EVENT_TYPE,
   MemorelayClientCreatedEventDetails
 > {
-  static readonly type = 'memorelay-client-created';
+  static readonly type: typeof MEMORELAY_CLIENT_CREATED_EVENT_TYPE =
+    MEMORELAY_CLIENT_CREATED_EVENT_TYPE;
   constructor(details: MemorelayClientCreatedEventDetails) {
-    super('memorelay-client-created', details);
+    super(MEMORELAY_CLIENT_CREATED_EVENT_TYPE, details);
   }
 }
