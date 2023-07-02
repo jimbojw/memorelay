@@ -99,56 +99,90 @@ export function bufferToClientMessage(payloadRawData: Buffer): ClientMessage {
   const eventType: unknown = genericMessage[0];
 
   if (eventType === 'EVENT') {
-    if (genericMessage.length < 2) {
-      throw new BadMessageError('event missing');
-    }
-
-    if (genericMessage.length > 2) {
-      throw new BadMessageError('extra elements detected');
-    }
-
-    const payloadEvent = genericMessage[1] as NostrEvent;
-
-    if (!validateEvent(payloadEvent)) {
-      throw new BadMessageError('event invalid');
-    }
-
-    if (!payloadEvent.sig) {
-      throw new BadMessageError('event signature missing');
-    }
-
-    if (!verifySignature(payloadEvent)) {
-      throw new BadMessageError('bad signature');
-    }
-
-    return genericMessage as EventMessage;
+    return checkEventMessage(genericMessage);
   }
 
   if (eventType === 'REQ') {
-    checkSubscriptionId(genericMessage[1]);
-
-    try {
-      for (let i = 2; i < genericMessage.length; i++) {
-        verifyFilter(genericMessage[i]);
-      }
-    } catch (err) {
-      throw new BadMessageError((err as Error).message);
-    }
-
-    return genericMessage as ReqMessage;
+    return checkReqMessage(genericMessage);
   }
 
   if (eventType === 'CLOSE') {
-    checkSubscriptionId(genericMessage[1]);
-
-    if (genericMessage.length > 2) {
-      throw new BadMessageError('extra elements detected');
-    }
-
-    return genericMessage as CloseMessage;
+    return checkCloseMessage(genericMessage);
   }
 
   throw new BadMessageError('unrecognized event type');
+}
+
+/**
+ * Given a GenericMessage, check whether it conforms to the EVENT message type.
+ * @param genericMessage Potential EventMessage to check.
+ * @returns The same incoming genericMessage, but cast as EventMessage.
+ * @throws BadMessageError if the incoming genericMessage is malformed.
+ */
+export function checkEventMessage(
+  genericMessage: GenericMessage
+): EventMessage {
+  if (genericMessage.length < 2) {
+    throw new BadMessageError('event missing');
+  }
+
+  if (genericMessage.length > 2) {
+    throw new BadMessageError('extra elements detected');
+  }
+
+  const payloadEvent = genericMessage[1] as NostrEvent;
+
+  if (!validateEvent(payloadEvent)) {
+    throw new BadMessageError('event invalid');
+  }
+
+  if (!payloadEvent.sig) {
+    throw new BadMessageError('event signature missing');
+  }
+
+  if (!verifySignature(payloadEvent)) {
+    throw new BadMessageError('bad signature');
+  }
+
+  return genericMessage as EventMessage;
+}
+
+/**
+ * Given a GenericMessage, check whether it conforms to the REQ message type.
+ * @param genericMessage Potential ReqMessage to check.
+ * @returns The same incoming genericMessage, but cast as ReqMessage.
+ * @throws BadMessageError if the incoming genericMessage is malformed.
+ */
+export function checkReqMessage(genericMessage: GenericMessage): ReqMessage {
+  checkSubscriptionId(genericMessage[1]);
+
+  try {
+    for (let i = 2; i < genericMessage.length; i++) {
+      verifyFilter(genericMessage[i]);
+    }
+  } catch (err) {
+    throw new BadMessageError((err as Error).message);
+  }
+
+  return genericMessage as ReqMessage;
+}
+
+/**
+ * Given a GenericMessage, check whether it conforms to the CLOSE message type.
+ * @param genericMessage Potential CloseMessage to check.
+ * @returns The same incoming genericMessage, but cast as CloseMessage.
+ * @throws BadMessageError if the incoming genericMessage is malformed.
+ */
+export function checkCloseMessage(
+  genericMessage: GenericMessage
+): CloseMessage {
+  checkSubscriptionId(genericMessage[1]);
+
+  if (genericMessage.length > 2) {
+    throw new BadMessageError('extra elements detected');
+  }
+
+  return genericMessage as CloseMessage;
 }
 
 /**

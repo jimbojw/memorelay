@@ -6,8 +6,9 @@
  */
 
 import { MemorelayHub } from './memorelay-hub';
-import { createClients } from './create-clients';
-import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
+import { createClients } from './plugins/create-clients';
+import { parseIncomingJsonMessages } from './plugins/parse-incoming-json-messages';
+import { validateIncomingEventMessages } from './plugins/validate-incoming-event-messages';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
@@ -23,8 +24,16 @@ export class Memorelay extends MemorelayHub {
    */
   connect(): this {
     super.connect();
+
+    // Upgrade connected WebSockets to full MemorelayClient instances.
     createClients(this);
+
+    // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
     parseIncomingJsonMessages(this);
+
+    // Validate and upgrade incoming generic messages that are EVENT messages.
+    validateIncomingEventMessages(this);
+
     return this;
   }
 }
