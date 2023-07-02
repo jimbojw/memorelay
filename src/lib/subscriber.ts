@@ -31,17 +31,17 @@ export class Subscriber {
 
   /**
    * @param webSocket The connected socket that spawned this Subscriber.
-   * @param incomingMessage Incoming HTTP message details.
+   * @param request Incoming HTTP message details.
    * @param logger
    * @param memorelay Backing Memorelay for handling events.
    */
   constructor(
     private readonly webSocket: WebSocket,
-    incomingMessage: IncomingMessage,
+    request: IncomingMessage,
     private readonly logger: Logger,
     private readonly memorelay: MemorelayCoordinator
   ) {
-    const { headers, url: path } = incomingMessage;
+    const { headers, url: path } = request;
     const secWebsocketKey = headers['sec-websocket-key'];
     const url = `${headers.host ?? ''}${path ?? '/'}`;
 

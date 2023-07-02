@@ -131,18 +131,18 @@ export class MemorelayServer {
    * Accept an incoming WebSocket connection. Should generally only be called by
    * the WebSocketServer's 'connection' event handler.
    * @param webSocket The WebSocket client that has connected.
-   * @param incomingMessage The incoming http request.
+   * @param request The incoming http request.
    * @returns The connected Subscriber object.
    * @throws If the webSocket is already connected.
    */
-  connect(webSocket: WebSocket, incomingMessage: IncomingMessage): Subscriber {
+  connect(webSocket: WebSocket, request: IncomingMessage): Subscriber {
     if (this.subscribers.has(webSocket)) {
       throw new Error('websocket is already connected');
     }
 
     const subscriber = new Subscriber(
       webSocket,
-      incomingMessage,
+      request,
       this.logger,
       this.coordinator
     );

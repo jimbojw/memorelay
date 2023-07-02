@@ -13,7 +13,7 @@ import { Socket } from 'net';
  * requesting to upgrade the connection to a WebSocket.
  */
 export type UpgradeHandler = (
-  incomingMessage: IncomingMessage,
+  request: IncomingMessage,
   socket: Socket,
   head: Buffer
 ) => void;
