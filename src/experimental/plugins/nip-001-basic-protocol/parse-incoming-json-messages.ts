@@ -9,7 +9,7 @@
 import { BadMessageError } from '../../../lib/bad-message-error';
 import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
-import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 
@@ -21,7 +21,7 @@ import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
  * indicating which kind of message it is.  Remaining array elements depend on
  * the type of message and other factors.
  * @param hub Event hub for inter-component communication.
- * @event IncomingMessageEvent When a message payload buffer could be parsed.
+ * @event IncomingGenericMessageEvent When a payload buffer could be parsed.
  * @event BadMessageError When a message payload buffer could not be parsed.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
@@ -47,9 +47,9 @@ export function parseIncomingJsonMessages(hub: BasicEventEmitter) {
         : (data as Buffer);
 
       try {
-        const incomingMessage = bufferToGenericMessage(buffer);
+        const genericMessage = bufferToGenericMessage(buffer);
         memorelayClient.emitBasic(
-          new IncomingMessageEvent({ incomingMessage })
+          new IncomingGenericMessageEvent({ genericMessage })
         );
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);

@@ -10,7 +10,7 @@ import { BadMessageError } from '../../../lib/bad-message-error';
 import { checkReqMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
-import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 
 /**
@@ -28,26 +28,28 @@ export function validateIncomingReqMessages(hub: BasicEventEmitter) {
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.on(IncomingMessageEvent.type, handleIncomingMessage);
+    memorelayClient.on(IncomingGenericMessageEvent.type, handleIncomingMessage);
 
-    function handleIncomingMessage(incomingMessageEvent: IncomingMessageEvent) {
-      if (incomingMessageEvent.defaultPrevented) {
+    function handleIncomingMessage(
+      incomingGenericMessageEvent: IncomingGenericMessageEvent
+    ) {
+      if (incomingGenericMessageEvent.defaultPrevented) {
         return; // Preempted by another handler.
       }
 
-      const { incomingMessage } = incomingMessageEvent.details;
+      const { genericMessage } = incomingGenericMessageEvent.details;
 
-      if (incomingMessage[0] !== 'REQ') {
+      if (genericMessage[0] !== 'REQ') {
         return; // The incoming message is not a 'REQ' message.
       }
 
       try {
-        const reqMessage = checkReqMessage(incomingMessage);
+        const reqMessage = checkReqMessage(genericMessage);
         memorelayClient.emitBasic(new IncomingReqMessageEvent({ reqMessage }));
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);
       } finally {
-        incomingMessageEvent.preventDefault();
+        incomingGenericMessageEvent.preventDefault();
       }
     }
   }

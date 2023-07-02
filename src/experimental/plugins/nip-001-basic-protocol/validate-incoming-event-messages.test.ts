@@ -6,7 +6,7 @@
  */
 
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
-import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
@@ -22,12 +22,12 @@ describe('validateIncomingEventMessages()', () => {
     memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
 
     const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
-    const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', nostrEvent],
+    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+      genericMessage: ['EVENT', nostrEvent],
     });
-    memorelayClient.emitBasic(incomingMessageEvent);
+    memorelayClient.emitBasic(incomingGenericMessageEvent);
 
-    expect(incomingMessageEvent.defaultPrevented).toBe(true);
+    expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(1);
     const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
@@ -47,11 +47,11 @@ describe('validateIncomingEventMessages()', () => {
     memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
 
     const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
-    const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', nostrEvent],
+    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+      genericMessage: ['EVENT', nostrEvent],
     });
-    incomingMessageEvent.preventDefault();
-    memorelayClient.emitBasic(incomingMessageEvent);
+    incomingGenericMessageEvent.preventDefault();
+    memorelayClient.emitBasic(incomingGenericMessageEvent);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
@@ -64,12 +64,12 @@ describe('validateIncomingEventMessages()', () => {
     const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
     memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
 
-    const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['UNKNOWN', 12345],
+    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+      genericMessage: ['UNKNOWN', 12345],
     });
-    memorelayClient.emitBasic(incomingMessageEvent);
+    memorelayClient.emitBasic(incomingGenericMessageEvent);
 
-    expect(incomingMessageEvent.defaultPrevented).toBe(false);
+    expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
@@ -82,12 +82,12 @@ describe('validateIncomingEventMessages()', () => {
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
     memorelayClient.on(BadMessageError.type, mockErrorHandler);
 
-    const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', 12345],
+    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+      genericMessage: ['EVENT', 12345],
     });
-    memorelayClient.emitBasic(incomingMessageEvent);
+    memorelayClient.emitBasic(incomingGenericMessageEvent);
 
-    expect(incomingMessageEvent.defaultPrevented).toBe(true);
+    expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
     expect(mockErrorHandler.mock.calls).toHaveLength(1);
     const badMessageError = mockErrorHandler.mock.calls[0][0];

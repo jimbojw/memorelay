@@ -9,7 +9,7 @@ import { decode, encode } from 'cborg';
 
 import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { ClientMessage, GenericMessage } from '../../../lib/message-types';
@@ -37,7 +37,7 @@ function handleMemorelayClientCreatedEvent({
   let isCborEnabled = false;
 
   memorelayClient.on(WebSocketMessageEvent.type, handleWebSocketMessage);
-  memorelayClient.on(IncomingMessageEvent.type, handleIncomingMessage);
+  memorelayClient.on(IncomingGenericMessageEvent.type, handleIncomingMessage);
   memorelayClient.on(OutgoingMessageEvent.type, handleOutgoingMessage);
 
   /**
@@ -102,10 +102,10 @@ function handleMemorelayClientCreatedEvent({
       // parse the buffer as utf-8 JSON.
       event.preventDefault();
 
-      // Emit a IncomingMessageEvent with the CBOR-decoded client
+      // Emit an IncomingGenericMessageEvent with the CBOR-decoded client
       // message.
       memorelayClient.emitBasic(
-        new IncomingMessageEvent({ incomingMessage: clientMessage })
+        new IncomingGenericMessageEvent({ genericMessage: clientMessage })
       );
     } catch (error) {
       if (!(error instanceof BadMessageError)) {
@@ -122,8 +122,8 @@ function handleMemorelayClientCreatedEvent({
    * indicating that future messages will be CBOR encoded.
    * @event OutgoingMessageEvent NOTICE if CBOR upgrade was received.
    */
-  function handleIncomingMessage(event: IncomingMessageEvent) {
-    const genericMessage: GenericMessage = event.details.incomingMessage;
+  function handleIncomingMessage(event: IncomingGenericMessageEvent) {
+    const genericMessage: GenericMessage = event.details.genericMessage;
 
     if (genericMessage[0] !== 'UPGRADE') {
       return; // Not an UPGRADE message. Ignore.
