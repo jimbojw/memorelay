@@ -5,50 +5,47 @@
  * @fileoverview Tests for validateIncomingEventMessages().
  */
 
-import { validateIncomingEventMessages } from './validate-incoming-event-messages';
+import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingMessageEvent } from '../events/incoming-message-event';
 import { setupHubAndMemorelayClient } from './setup-hub-and-memorelay-client';
-import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
-import { createSignedTestEvent } from './signed-test-event';
+import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BadMessageError } from '../../lib/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
-  it('should validate an EVENT message', () => {
+  it('should validate and re-emit a REQ message', () => {
     const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
-      validateIncomingEventMessages(hub);
+      validateIncomingReqMessages(hub);
     });
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
+    memorelayClient.on(IncomingReqMessageEvent.type, mockMessageHandler);
 
-    const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
     const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', nostrEvent],
+      incomingMessage: ['REQ', 'SUBSCRIPTION_ID'],
     });
     memorelayClient.emitBasic(incomingMessageEvent);
 
     expect(incomingMessageEvent.defaultPrevented).toBe(true);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(1);
-    const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
-    expect(incomingEventMessageEvent).toBeInstanceOf(IncomingEventMessageEvent);
-    expect(incomingEventMessageEvent.details.eventMessage).toEqual([
-      'EVENT',
-      nostrEvent,
+    const incomingReqMessageEvent = mockMessageHandler.mock.calls[0][0];
+    expect(incomingReqMessageEvent).toBeInstanceOf(IncomingReqMessageEvent);
+    expect(incomingReqMessageEvent.details.reqMessage).toEqual([
+      'REQ',
+      'SUBSCRIPTION_ID',
     ]);
   });
 
-  it('should ignore an EVENT message if defaultPrevented', () => {
+  it('should ignore a REQ message if defaultPrevented', () => {
     const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
-      validateIncomingEventMessages(hub);
+      validateIncomingReqMessages(hub);
     });
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
+    memorelayClient.on(IncomingReqMessageEvent.type, mockMessageHandler);
 
-    const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
     const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', nostrEvent],
+      incomingMessage: ['REQ', 'IGNORE_ME'],
     });
     incomingMessageEvent.preventDefault();
     memorelayClient.emitBasic(incomingMessageEvent);
@@ -56,13 +53,13 @@ describe('validateIncomingEventMessages()', () => {
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
 
-  it('should ignore non-EVENT messages', () => {
+  it('should ignore non-REQ messages', () => {
     const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
-      validateIncomingEventMessages(hub);
+      validateIncomingReqMessages(hub);
     });
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
+    memorelayClient.on(IncomingReqMessageEvent.type, mockMessageHandler);
 
     const incomingMessageEvent = new IncomingMessageEvent({
       incomingMessage: ['UNKNOWN', 12345],
@@ -74,16 +71,16 @@ describe('validateIncomingEventMessages()', () => {
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
 
-  it('should emit an error when EVENT message is malformed', () => {
+  it('should emit an error when REQ message is malformed', () => {
     const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
-      validateIncomingEventMessages(hub);
+      validateIncomingReqMessages(hub);
     });
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
     memorelayClient.on(BadMessageError.type, mockErrorHandler);
 
     const incomingMessageEvent = new IncomingMessageEvent({
-      incomingMessage: ['EVENT', 12345],
+      incomingMessage: ['REQ'], // Omit required subscription id.
     });
     memorelayClient.emitBasic(incomingMessageEvent);
 
