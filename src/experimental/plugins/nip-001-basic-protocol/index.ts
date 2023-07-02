@@ -12,11 +12,6 @@ import { validateIncomingCloseMessages } from './validate-incoming-close-message
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 
-export { parseIncomingJsonMessages } from './parse-incoming-json-messages';
-export { validateIncomingCloseMessages } from './validate-incoming-close-messages';
-export { validateIncomingEventMessages } from './validate-incoming-event-messages';
-export { validateIncomingReqMessages } from './validate-incoming-req-messages';
-
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
  * component functionality.
