@@ -8,10 +8,12 @@
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
+import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 
 export { parseIncomingJsonMessages } from './parse-incoming-json-messages';
+export { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 export { validateIncomingEventMessages } from './validate-incoming-event-messages';
 export { validateIncomingReqMessages } from './validate-incoming-req-messages';
 
@@ -27,4 +29,5 @@ export function basicProtocol(hub: BasicEventEmitter) {
   // Validate and upgrade incoming EVENT and REQ messages.
   validateIncomingEventMessages(hub);
   validateIncomingReqMessages(hub);
+  validateIncomingCloseMessages(hub);
 }
