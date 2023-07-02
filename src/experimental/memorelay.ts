@@ -5,30 +5,26 @@
  * @fileoverview Memorelay entry point.
  */
 
-import { MemorelayClientCreatedEvent } from './events/memorelay-client-created-event';
-import { BasicEventHandler } from './events/basic-event-emitter';
 import { MemorelayHub } from './memorelay-hub';
 import { createClients } from './create-clients';
+import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
  */
 export class Memorelay extends MemorelayHub {
-  constructor() {
-    super();
-    createClients(this);
-  }
   /**
-   * Bound event listeners. Will be connected to their respective targets when
-   * connect() is called.
+   * Install default plugins, which will begin listening for various events.
+   *
+   * Connecting is delayed until connect() is called because the underlying
+   * EventEmitter will invoke handlers as they appear. This gives API users a
+   * chance to add their own listeners, which will be invoked first.
+   * @returns
    */
-  protected readonly handlers: BasicEventHandler[] = [
-    {
-      target: this,
-      type: MemorelayClientCreatedEvent.type,
-      handler: (event: MemorelayClientCreatedEvent) => {
-        !event.defaultPrevented && event.details.memorelayClient.connect();
-      },
-    },
-  ];
+  connect(): this {
+    super.connect();
+    createClients(this);
+    parseIncomingJsonMessages(this);
+    return this;
+  }
 }

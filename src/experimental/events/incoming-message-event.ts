@@ -2,10 +2,10 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Events emitted by MemorelayClient instances.
+ * @fileoverview Event to signal an incoming generic Nostr event.
  */
 
-import { ClientMessage } from '../../lib/message-types';
+import { GenericMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
 export const INCOMING_MESSAGE_EVENT_TYPE = 'incoming-message';
@@ -15,14 +15,14 @@ export const INCOMING_MESSAGE_EVENT_TYPE = 'incoming-message';
  */
 export interface IncomingMessageEventDetails {
   /**
-   * The incoming Nostr ClientMessage.
+   * The incoming Nostr message.
    */
-  readonly incomingMessage: ClientMessage;
+  readonly incomingMessage: GenericMessage;
 }
 
 /**
- * Event emitted by a MemorelayClient when it has received a properly formed,
- * incoming, Nostr client message. Generally this will be in response to a
+ * Event emitted when a MemorelayClient has received a properly formed,
+ * incoming, gerenic Nostr message. Generally this will be in response to a
  * previously received WebSocket 'message' event.
  */
 export class IncomingMessageEvent extends BasicEvent<

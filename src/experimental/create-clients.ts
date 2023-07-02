@@ -43,11 +43,15 @@ export function createClients(
       const memorelayClient = new MemorelayClient(webSocket, request);
       webSocketClientMap.set(webSocket, memorelayClient);
 
-      hub.emitBasic(
-        new MemorelayClientCreatedEvent({
-          memorelayClient,
-        })
-      );
+      const memorelayClientCreatedEvent = new MemorelayClientCreatedEvent({
+        memorelayClient,
+      });
+
+      hub.emitBasic(memorelayClientCreatedEvent);
+
+      if (!memorelayClientCreatedEvent.defaultPrevented) {
+        memorelayClient.connect();
+      }
 
       webSocketConnectedEvent.preventDefault();
     }

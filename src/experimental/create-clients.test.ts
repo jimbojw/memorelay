@@ -44,7 +44,8 @@ describe('createClients()', () => {
       hub.on(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
 
       const mockRequest = {} as IncomingMessage;
-      const mockWebSocket = {} as WebSocket;
+      const mockOnFn = jest.fn<unknown, [string, () => void]>();
+      const mockWebSocket = { on: mockOnFn } as unknown as WebSocket;
 
       const webSocketConnectedEvent = new WebSocketConnectedEvent({
         webSocket: mockWebSocket,
@@ -95,8 +96,9 @@ describe('createClients()', () => {
 
       createClients(hub);
 
+      const mockOnFn = jest.fn<unknown, [string, () => void]>();
+      const mockWebSocket = { on: mockOnFn } as unknown as WebSocket;
       const mockRequest = {} as IncomingMessage;
-      const mockWebSocket = {} as WebSocket;
 
       hub.emitBasic(
         new WebSocketConnectedEvent({
