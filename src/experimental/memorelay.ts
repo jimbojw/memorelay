@@ -11,7 +11,7 @@ import {
   parseIncomingJsonMessages,
   validateIncomingEventMessages,
   validateIncomingReqMessages,
-} from './plugins/nip-01-basic-protocol';
+} from './plugins/nip-001-basic-protocol';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
