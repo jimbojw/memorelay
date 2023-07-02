@@ -10,10 +10,13 @@ import express, { Request, Response } from 'express';
 
 import { Memorelay } from './memorelay';
 import { relayInformationDocument } from './plugins/nip-011-relay-information-document/relay-information-document';
+import { loggingPlugin } from './plugins/contrib/logging';
 
 const PORT = 3000;
 
-const memorelay = new Memorelay();
+const memorelay = new Memorelay().connect();
+
+loggingPlugin('silly')(memorelay);
 
 const app = express();
 
