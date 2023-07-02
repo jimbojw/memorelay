@@ -32,7 +32,7 @@ describe('createClients()', () => {
   });
 
   describe('#WebSocketConnectedEvent', () => {
-    it('should trigger MemorelayClientCreatedEvent', () => {
+    it('should trigger MemorelayClientCreatedEvent', async () => {
       const hub = new BasicEventEmitter();
 
       createClients(hub);
@@ -52,6 +52,8 @@ describe('createClients()', () => {
         request: mockRequest,
       });
       hub.emitBasic(webSocketConnectedEvent);
+
+      await Promise.resolve();
 
       expect(mockCreatedHandlerFn.mock.calls).toHaveLength(1);
 

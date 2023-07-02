@@ -10,6 +10,7 @@ import { IncomingMessage } from 'http';
 
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
 import { BasicEventEmitter } from './basic-event-emitter';
+import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
@@ -36,6 +37,11 @@ export class MemorelayClient extends BasicEventEmitter {
     this.webSocket.on('message', (data: RawData, isBinary: boolean) => {
       this.emitBasic(new WebSocketMessageEvent({ data, isBinary }));
     });
+
+    this.webSocket.on('close', (code: number) => {
+      this.emitBasic(new WebSocketCloseEvent({ code }));
+    });
+
     return this;
   }
 }

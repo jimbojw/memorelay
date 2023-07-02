@@ -10,6 +10,8 @@ import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { BadMessageError } from '../../../lib/bad-message-error';
 import { MemorelayClient } from '../../core/memorelay-client';
+import { WebSocketConnectedEvent } from '../../events/web-socket-connected-event';
+import { WebSocketCloseEvent } from '../../events/web-socket-close-event';
 
 /**
  * Rudimentary logging plugin for seeing what's going on under the hood.
@@ -38,14 +40,34 @@ export function loggingPlugin(level = 'warn'): (memorelay: Memorelay) => void {
   });
 
   return (memorelay: Memorelay) => {
+    logWebSocketConnected(memorelay, logger);
+
     logMemorelayClientCreated(memorelay, logger);
+
     memorelay.on(
       MemorelayClientCreatedEvent.type,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+        logWebSocketClose(memorelayClient, logger);
+        logWebSocketError(memorelayClient, logger);
         logBadMessageError(memorelayClient, logger);
       }
     );
   };
+}
+
+function logWebSocketConnected(
+  memorelay: Memorelay,
+  logger: Logger,
+  level = 'silly'
+) {
+  memorelay.on(
+    WebSocketConnectedEvent.type,
+    (webSocketConnectedEvent: WebSocketConnectedEvent) => {
+      const { request } = webSocketConnectedEvent.details;
+      const key = request.headers['sec-websocket-key'];
+      logger.log(level, `socket connected: ${key ?? 'undefined'}`);
+    }
+  );
 }
 
 function logMemorelayClientCreated(
@@ -57,8 +79,9 @@ function logMemorelayClientCreated(
     MemorelayClientCreatedEvent.type,
     (memorelayClientCreatedEvent: MemorelayClientCreatedEvent) => {
       const { request } = memorelayClientCreatedEvent.details.memorelayClient;
-      const key = request.headers['sec-websocket-key'];
-      logger.log(level, `client connected: ${key ?? 'undefined'}`);
+      const secWebSocketKey =
+        request.headers['sec-websocket-key'] ?? 'undefined';
+      logger.log(level, `client connected: ${secWebSocketKey}`);
     }
   );
 }
@@ -74,4 +97,30 @@ function logBadMessageError(
       logger.log(level, badMessageError.message);
     }
   );
+}
+
+function logWebSocketClose(
+  memorelayClient: MemorelayClient,
+  logger: Logger,
+  level = 'silly'
+) {
+  const secWebSocketKey =
+    memorelayClient.request.headers['sec-websocket-key'] ?? 'undefined';
+  memorelayClient.on(
+    WebSocketCloseEvent.type,
+    (webSocketCloseEvent: WebSocketCloseEvent) => {
+      const { code } = webSocketCloseEvent.details;
+      logger.log(level, `socket closed: ${secWebSocketKey} ${code}`);
+    }
+  );
+}
+
+function logWebSocketError(
+  memorelayClient: MemorelayClient,
+  logger: Logger,
+  level = 'debug'
+) {
+  memorelayClient.webSocket.on('error', (error) => {
+    logger.log(level, error);
+  });
 }

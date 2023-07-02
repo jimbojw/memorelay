@@ -47,13 +47,16 @@ export function createClients(
         memorelayClient,
       });
 
-      hub.emitBasic(memorelayClientCreatedEvent);
-
-      if (!memorelayClientCreatedEvent.defaultPrevented) {
-        memorelayClient.connect();
-      }
-
       webSocketConnectedEvent.preventDefault();
+
+      queueMicrotask(() => {
+        hub.emitBasic(memorelayClientCreatedEvent);
+
+        // TODO(jimbo): Consider removing.
+        if (!memorelayClientCreatedEvent.defaultPrevented) {
+          memorelayClient.connect();
+        }
+      });
     }
   );
 }
