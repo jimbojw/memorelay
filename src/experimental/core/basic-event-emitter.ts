@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { BasicEvent } from './basic-event';
+import { BasicEvent } from '../events/basic-event';
 
 export interface BasicEventHandler {
   target: EventEmitter;

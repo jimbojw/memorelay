@@ -9,7 +9,7 @@ import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
 import { createClients } from './create-clients';
-import { BasicEventEmitter } from '../events/basic-event-emitter';
+import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';

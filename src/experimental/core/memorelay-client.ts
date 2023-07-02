@@ -8,8 +8,8 @@
 import { RawData, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 
-import { WebSocketMessageEvent } from './events/web-socket-message-event';
-import { BasicEventEmitter } from './events/basic-event-emitter';
+import { WebSocketMessageEvent } from '../events/web-socket-message-event';
+import { BasicEventEmitter } from './basic-event-emitter';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It

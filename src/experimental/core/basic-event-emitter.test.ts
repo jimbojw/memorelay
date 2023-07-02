@@ -8,7 +8,7 @@
 import { EventEmitter } from 'events';
 
 import { BasicEventEmitter, BasicEventHandler } from './basic-event-emitter';
-import { BasicEvent } from './basic-event';
+import { BasicEvent } from '../events/basic-event';
 
 describe('BasicEventEmitter', () => {
   it('should be a constructor function', () => {

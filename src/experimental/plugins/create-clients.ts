@@ -8,8 +8,8 @@
 
 import { WebSocket } from 'ws';
 
-import { MemorelayClient } from '../memorelay-client';
-import { BasicEventEmitter } from '../events/basic-event-emitter';
+import { MemorelayClient } from '../core/memorelay-client';
+import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';

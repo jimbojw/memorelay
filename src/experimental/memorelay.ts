@@ -5,7 +5,7 @@
  * @fileoverview Memorelay entry point.
  */
 
-import { MemorelayHub } from './memorelay-hub';
+import { MemorelayHub } from './core/memorelay-hub';
 import { createClients } from './plugins/create-clients';
 import {
   parseIncomingJsonMessages,

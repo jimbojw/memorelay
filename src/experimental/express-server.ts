@@ -9,7 +9,7 @@
 import express, { Request, Response } from 'express';
 
 import { Memorelay } from './memorelay';
-import { relayInformationDocument } from './relay-information-document';
+import { relayInformationDocument } from './plugins/nip-11-relay-information-document/relay-information-document';
 
 const PORT = 3000;
 

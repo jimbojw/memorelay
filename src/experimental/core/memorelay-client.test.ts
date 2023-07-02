@@ -9,8 +9,8 @@ import { WebSocket } from 'ws';
 import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
-import { WebSocketMessageEvent } from './events/web-socket-message-event';
-import { BasicEvent } from './events/basic-event';
+import { WebSocketMessageEvent } from '../events/web-socket-message-event';
+import { BasicEvent } from '../events/basic-event';
 
 describe('MemorelayClient', () => {
   it('should be a constructor function', () => {

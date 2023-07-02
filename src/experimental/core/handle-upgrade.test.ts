@@ -10,10 +10,10 @@ import { Socket } from 'net';
 import { Request } from 'express';
 import { WebSocketServer } from 'ws';
 
-import { BasicEventEmitter } from './events/basic-event-emitter';
+import { BasicEventEmitter } from './basic-event-emitter';
 import { handleUpgrade } from './handle-upgrade';
-import { BasicEvent } from './events/basic-event';
-import { WebSocketConnectedEvent } from './events/web-socket-connected-event';
+import { BasicEvent } from '../events/basic-event';
+import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 
 describe('handleUpgrade()', () => {
   it('should return a handler function', () => {

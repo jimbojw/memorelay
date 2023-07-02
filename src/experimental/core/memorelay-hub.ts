@@ -7,8 +7,8 @@
 
 import { WebSocketServer } from 'ws';
 
-import { BasicEventEmitter } from './events/basic-event-emitter';
-import { UpgradeHandler } from './types/upgrade-handler';
+import { BasicEventEmitter } from './basic-event-emitter';
+import { UpgradeHandler } from '../types/upgrade-handler';
 import { handleUpgrade } from './handle-upgrade';
 
 /**

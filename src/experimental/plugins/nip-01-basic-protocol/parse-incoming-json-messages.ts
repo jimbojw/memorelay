@@ -8,7 +8,7 @@
 
 import { BadMessageError } from '../../../lib/bad-message-error';
 import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
-import { BasicEventEmitter } from '../../events/basic-event-emitter';
+import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingMessageEvent } from '../../events/incoming-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
