@@ -19,11 +19,9 @@ export class Memorelay extends MemorelayHub {
    * Connecting is delayed until connect() is called because the underlying
    * EventEmitter will invoke handlers as they appear. This gives API users a
    * chance to add their own listeners, which will be invoked first.
-   * @returns
+   * @returns this
    */
   connect(): this {
-    super.connect();
-
     // Upgrade connected WebSockets to full MemorelayClient instances.
     createClients(this);
 
