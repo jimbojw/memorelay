@@ -47,6 +47,8 @@ export function validateIncomingEventMessages(hub: BasicEventEmitter) {
         );
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);
+      } finally {
+        incomingMessageEvent.preventDefault();
       }
     }
   }
