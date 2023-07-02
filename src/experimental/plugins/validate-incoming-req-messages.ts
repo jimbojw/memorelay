@@ -7,10 +7,7 @@
  */
 
 import { BadMessageError } from '../../lib/bad-message-error';
-import {
-  checkEventMessage,
-  checkReqMessage,
-} from '../../lib/buffer-to-message';
+import { checkReqMessage } from '../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../events/basic-event-emitter';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { IncomingMessageEvent } from '../events/incoming-message-event';
@@ -22,6 +19,7 @@ import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-
  * @param hub Event hub for inter-component communication.
  * @event IncomingReqMessageEvent When a generic message is an REQ message.
  * @event BadMessageError When a REQ message is malformed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function validateIncomingReqMessages(hub: BasicEventEmitter) {
   hub.on(MemorelayClientCreatedEvent.type, handleClientCreated);

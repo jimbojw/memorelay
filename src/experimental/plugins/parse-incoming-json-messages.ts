@@ -23,6 +23,7 @@ import { WebSocketMessageEvent } from '../events/web-socket-message-event';
  * @param hub Event hub for inter-component communication.
  * @event IncomingMessageEvent When a message payload buffer could be parsed.
  * @event BadMessageError When a message payload buffer could not be parsed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function parseIncomingJsonMessages(hub: BasicEventEmitter) {
   hub.on(MemorelayClientCreatedEvent.type, handleClientCreated);

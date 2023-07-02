@@ -19,6 +19,7 @@ import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-
  * @param hub Event hub for inter-component communication.
  * @event IncomingEventMessageEvent When a generic message is an EVENT message.
  * @event BadMessageError When an EVENT message is malformed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function validateIncomingEventMessages(hub: BasicEventEmitter) {
   hub.on(MemorelayClientCreatedEvent.type, handleClientCreated);
