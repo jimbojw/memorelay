@@ -11,6 +11,7 @@ import { Request } from 'express';
 import { EventEmitter } from 'events';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
 import { BasicEvent } from '../events/basic-event';
+import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 
 describe('MemorelayClient', () => {
   it('should be a constructor function', () => {
@@ -39,6 +40,30 @@ describe('MemorelayClient', () => {
 
       expect(mockEmitBasicFn.mock.calls[0][0]).toBeInstanceOf(
         WebSocketMessageEvent
+      );
+    });
+  });
+
+  describe('webSocket#close', () => {
+    it('should emit a WebSocketCloseEvent', () => {
+      const request = {} as Request;
+      const webSocket = new EventEmitter() as WebSocket;
+      const memorelayClient = new MemorelayClient(webSocket, request).connect();
+
+      const mockEmitBasicFn = jest.fn<BasicEvent, [WebSocketCloseEvent]>();
+      memorelayClient.emitBasic = mockEmitBasicFn;
+
+      // @see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+      const NORMAL_CLOSURE_CODE = 1000;
+      webSocket.emit('close', NORMAL_CLOSURE_CODE);
+
+      expect(mockEmitBasicFn.mock.calls).toHaveLength(1);
+
+      expect(mockEmitBasicFn.mock.calls[0][0]).toBeInstanceOf(
+        WebSocketCloseEvent
+      );
+      expect(mockEmitBasicFn.mock.calls[0][0].details.code).toBe(
+        NORMAL_CLOSURE_CODE
       );
     });
   });
