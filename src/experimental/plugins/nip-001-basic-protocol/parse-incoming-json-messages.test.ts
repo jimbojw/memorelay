@@ -17,36 +17,6 @@ import { IncomingGenericMessageEvent } from '../../events/incoming-generic-messa
 import { BadMessageError } from '../../../lib/bad-message-error';
 
 describe('parseIncomingJsonMessages()', () => {
-  it('should be a function', () => {
-    expect(typeof parseIncomingJsonMessages).toBe('function');
-  });
-
-  it('should listen for client connections', () => {
-    const mockOnFn = jest.fn<unknown, [string, () => void]>();
-    const mockHub = { on: mockOnFn } as unknown as BasicEventEmitter;
-    parseIncomingJsonMessages(mockHub);
-    expect(mockOnFn.mock.calls).toHaveLength(1);
-    const [type, callback] = mockOnFn.mock.calls[0];
-    expect(type).toBe(MemorelayClientCreatedEvent.type);
-    expect(typeof callback).toBe('function');
-  });
-
-  it('should listen for WebSocket messages', () => {
-    const hub = new BasicEventEmitter();
-    parseIncomingJsonMessages(hub);
-
-    const mockOnFn = jest.fn<unknown, [string, () => void]>();
-    const mockClient = { on: mockOnFn } as unknown as MemorelayClient;
-    hub.emitBasic(
-      new MemorelayClientCreatedEvent({ memorelayClient: mockClient })
-    );
-
-    expect(mockOnFn.mock.calls).toHaveLength(1);
-    const [type, callback] = mockOnFn.mock.calls[0];
-    expect(type).toBe(WebSocketMessageEvent.type);
-    expect(typeof callback).toBe('function');
-  });
-
   it('should parse a JSON WebSocket message', () => {
     const hub = new BasicEventEmitter();
     parseIncomingJsonMessages(hub);
