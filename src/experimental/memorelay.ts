@@ -7,11 +7,7 @@
 
 import { MemorelayHub } from './core/memorelay-hub';
 import { createClients } from './plugins/create-clients';
-import {
-  parseIncomingJsonMessages,
-  validateIncomingEventMessages,
-  validateIncomingReqMessages,
-} from './plugins/nip-001-basic-protocol';
+import { basicProtocol } from './plugins/nip-001-basic-protocol';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
@@ -31,12 +27,8 @@ export class Memorelay extends MemorelayHub {
     // Upgrade connected WebSockets to full MemorelayClient instances.
     createClients(this);
 
-    // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
-    parseIncomingJsonMessages(this);
-
-    // Validate and upgrade incoming EVENT and REQ messages.
-    validateIncomingEventMessages(this);
-    validateIncomingReqMessages(this);
+    // Implement basic Nostr protocol support.
+    basicProtocol(this);
 
     return this;
   }
