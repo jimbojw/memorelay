@@ -6,8 +6,9 @@
  */
 
 module.exports = {
-  transform: { '^.+\\.ts?$': 'ts-jest' },
+  coverageReporters: ['clover', 'json', 'lcov', ['text', { skipFull: true }]],
   testEnvironment: 'node',
   testRegex: '/(src|test)/.*\\.(spec|test)?\\.(ts|tsx)$',
+  transform: { '^.+\\.ts?$': 'ts-jest' },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };
