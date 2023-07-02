@@ -7,7 +7,7 @@
 
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { setupHubAndMemorelayClient } from './setup-hub-and-memorelay-client';
+import { setupHubAndMemorelayClient } from '../test/setup-hub-and-memorelay-client';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BadMessageError } from '../../lib/bad-message-error';
 
