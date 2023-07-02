@@ -7,14 +7,14 @@
 
 import { decode, encode } from 'cborg';
 
-import { Memorelay } from '../memorelay';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
-import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { WebSocketMessageEvent } from '../events/web-socket-message-event';
-import { checkGenericMessage } from '../../lib/buffer-to-message';
-import { ClientMessage, GenericMessage } from '../../lib/message-types';
-import { BadMessageError } from '../../lib/bad-message-error';
-import { OutgoingMessageEvent } from '../events/outgoing-message-event';
+import { Memorelay } from '../../memorelay';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
+import { checkGenericMessage } from '../../../lib/buffer-to-message';
+import { ClientMessage, GenericMessage } from '../../../lib/message-types';
+import { BadMessageError } from '../../../lib/bad-message-error';
+import { OutgoingMessageEvent } from '../../events/outgoing-message-event';
 
 /**
  * Plugin setup function. Establishes listeners on a Memorelay instance.

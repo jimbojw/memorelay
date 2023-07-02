@@ -6,11 +6,11 @@
  */
 
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
-import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { setupHubAndMemorelayClient } from '../test/setup-hub-and-memorelay-client';
-import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
-import { createSignedTestEvent } from '../test/signed-test-event';
-import { BadMessageError } from '../../lib/bad-message-error';
+import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
+import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
+import { createSignedTestEvent } from '../../test/signed-test-event';
+import { BadMessageError } from '../../../lib/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
   it('should validate an EVENT message', () => {

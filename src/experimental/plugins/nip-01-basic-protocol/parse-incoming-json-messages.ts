@@ -6,12 +6,12 @@
  * payloads as generic JSON client messages.
  */
 
-import { BadMessageError } from '../../lib/bad-message-error';
-import { bufferToGenericMessage } from '../../lib/buffer-to-message';
-import { BasicEventEmitter } from '../events/basic-event-emitter';
-import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
-import { WebSocketMessageEvent } from '../events/web-socket-message-event';
+import { BadMessageError } from '../../../lib/bad-message-error';
+import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
+import { BasicEventEmitter } from '../../events/basic-event-emitter';
+import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 
 /**
  * Memorelay core plugin for parsing incoming WebSocket 'message' payload

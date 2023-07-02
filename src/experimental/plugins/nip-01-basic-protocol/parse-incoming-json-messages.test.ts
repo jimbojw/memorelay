@@ -8,13 +8,13 @@
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
-import { BasicEventEmitter } from '../events/basic-event-emitter';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
-import { WebSocketMessageEvent } from '../events/web-socket-message-event';
-import { MemorelayClient } from '../memorelay-client';
+import { BasicEventEmitter } from '../../events/basic-event-emitter';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
+import { MemorelayClient } from '../../memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
-import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { BadMessageError } from '../../lib/bad-message-error';
+import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { BadMessageError } from '../../../lib/bad-message-error';
 
 describe('parseIncomingJsonMessages()', () => {
   it('should be a function', () => {

@@ -6,12 +6,12 @@
  * messages of type 'REQ'.
  */
 
-import { BadMessageError } from '../../lib/bad-message-error';
-import { checkReqMessage } from '../../lib/buffer-to-message';
-import { BasicEventEmitter } from '../events/basic-event-emitter';
-import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
-import { IncomingMessageEvent } from '../events/incoming-message-event';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
+import { BadMessageError } from '../../../lib/bad-message-error';
+import { checkReqMessage } from '../../../lib/buffer-to-message';
+import { BasicEventEmitter } from '../../events/basic-event-emitter';
+import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
+import { IncomingMessageEvent } from '../../events/incoming-message-event';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type

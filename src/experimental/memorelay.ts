@@ -7,9 +7,11 @@
 
 import { MemorelayHub } from './memorelay-hub';
 import { createClients } from './plugins/create-clients';
-import { parseIncomingJsonMessages } from './plugins/parse-incoming-json-messages';
-import { validateIncomingEventMessages } from './plugins/validate-incoming-event-messages';
-import { validateIncomingReqMessages } from './plugins/validate-incoming-req-messages';
+import {
+  parseIncomingJsonMessages,
+  validateIncomingEventMessages,
+  validateIncomingReqMessages,
+} from './plugins/nip-01-basic-protocol';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
