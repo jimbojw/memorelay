@@ -9,7 +9,7 @@ import { IncomingCloseMessageEvent } from './incoming-close-message-event';
 import { IncomingEventMessageEvent } from './incoming-event-message-event';
 import { IncomingGenericMessageEvent } from './incoming-generic-message-event';
 import { IncomingReqMessageEvent } from './incoming-req-message-event';
-import { OutgoingMessageEvent } from './outgoing-message-event';
+import { OutgoingGenericMessageEvent } from './outgoing-generic-message-event';
 import { WebSocketCloseEvent } from './web-socket-close-event';
 import { WebSocketMessageEvent } from './web-socket-message-event';
 
@@ -21,6 +21,6 @@ export type ClientEvent =
   | IncomingEventMessageEvent
   | IncomingGenericMessageEvent
   | IncomingReqMessageEvent
-  | OutgoingMessageEvent
+  | OutgoingGenericMessageEvent
   | WebSocketCloseEvent
   | WebSocketMessageEvent;

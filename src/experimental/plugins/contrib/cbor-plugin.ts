@@ -14,7 +14,7 @@ import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { ClientMessage, GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';
-import { OutgoingMessageEvent } from '../../events/outgoing-message-event';
+import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { BasicError } from '../../errors/basic-error';
 import { MemorelayClient } from '../../core/memorelay-client';
 import { ClientEvent } from '../../events/client-event';
@@ -53,7 +53,7 @@ function handleMemorelayClientCreatedEvent({
 
   cborClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
   cborClient.onEvent(IncomingGenericMessageEvent.type, handleIncomingMessage);
-  cborClient.onEvent(OutgoingMessageEvent.type, handleOutgoingMessage);
+  cborClient.onEvent(OutgoingGenericMessageEvent.type, handleOutgoingMessage);
 
   /**
    * When the MemorelayClient's underlying WebSocket emits a 'message' event,
@@ -158,8 +158,8 @@ function handleMemorelayClientCreatedEvent({
 
     // Emit a NOTICE to inform the client.
     cborClient.emitEvent(
-      new OutgoingMessageEvent({
-        outgoingMessage: ['NOTICE', 'CBOR enabled'],
+      new OutgoingGenericMessageEvent({
+        genericMessage: ['NOTICE', 'CBOR enabled'],
       })
     );
 
@@ -172,7 +172,9 @@ function handleMemorelayClientCreatedEvent({
    * encoding them as CBOR and pushing them to the client's WebSocket.
    * @event 'cbor-encoding-error' Emits on client if encoding fails.
    */
-  function handleOutgoingMessage(outgoingMessageEvent: OutgoingMessageEvent) {
+  function handleOutgoingMessage(
+    outgoingMessageEvent: OutgoingGenericMessageEvent
+  ) {
     if (!isCborEnabled) {
       return; // Only handle outgoing messages if client has enabled CBOR.
     }
@@ -182,11 +184,11 @@ function handleMemorelayClientCreatedEvent({
     }
 
     // Attempt to serialize the message.
-    const { outgoingMessage } = outgoingMessageEvent.details;
+    const { genericMessage } = outgoingMessageEvent.details;
 
     try {
       // Attempt to encode the outgoing message as CBOR.
-      const dataArray = encode(outgoingMessage);
+      const dataArray = encode(genericMessage);
 
       // Send the encoded buffer.
       cborClient.webSocket.send(dataArray.buffer);

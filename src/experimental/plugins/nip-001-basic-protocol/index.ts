@@ -5,10 +5,11 @@
  * @fileoverview Memorelay core plugins for implementing NIP-01.
  */
 
-import { BasicEventEmitter } from '../../core/basic-event-emitter';
+import { MemorelayHub } from '../../core/memorelay-hub';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
+import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
@@ -18,7 +19,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * component functionality.
  * @param hub Basic event emitter, often a Memorelay instance.
  */
-export function basicProtocol(hub: BasicEventEmitter) {
+export function basicProtocol(hub: MemorelayHub) {
   // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
   parseIncomingJsonMessages(hub);
 
@@ -29,4 +30,7 @@ export function basicProtocol(hub: BasicEventEmitter) {
 
   // Reject any message type other than EVENT, REQ and CLOSE.
   rejectUnrecognizedIncomingMessages(hub);
+
+  // Serialize outgoing generic messages and send to the WebSocket.
+  serializeOutgoingJsonMessages(hub);
 }
