@@ -6,13 +6,21 @@
  */
 
 import { MemorelayHub } from './core/memorelay-hub';
+import { RelayError } from './errors/relay-error';
+import { RelayEvent } from './events/relay-event';
 import { createClients } from './plugins/create-clients';
 import { basicProtocol } from './plugins/nip-001-basic-protocol';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
  */
-export class Memorelay extends MemorelayHub {
+export class Memorelay<
+  PluginRelayEvent extends RelayEvent = RelayEvent,
+  PluginRelayError extends RelayError = RelayError
+> extends MemorelayHub<
+  PluginRelayEvent | RelayEvent,
+  PluginRelayError | RelayError
+> {
   /**
    * Install default plugins, which will begin listening for various events.
    *

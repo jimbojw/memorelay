@@ -21,7 +21,10 @@ export const WEBSOCKET_SERVER = Symbol('webSocketServer');
 /**
  * Memorelay main class. Allows for configurable Nostr relay behavior.
  */
-export class MemorelayHub extends BasicEventEmitter<RelayEvent, RelayError> {
+export class MemorelayHub<
+  RelayEventType extends RelayEvent = RelayEvent,
+  RelayErrorType extends RelayError = RelayError
+> extends BasicEventEmitter<RelayEventType, RelayErrorType> {
   /**
    * WebSocket server for handling requests.
    */
