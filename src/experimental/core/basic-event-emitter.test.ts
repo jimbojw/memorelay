@@ -5,6 +5,8 @@
  * @fileoverview Tests for BasicEventEmitter.
  */
 
+import { EventEmitter } from 'events';
+
 import { BasicEventEmitter } from './basic-event-emitter';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
@@ -21,7 +23,7 @@ describe('BasicEventEmitter', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
       const mockEmitFn = jest.fn<boolean, [string, BasicEvent]>();
-      basicEventEmitter.emit = mockEmitFn;
+      basicEventEmitter.internalEmitter.emit = mockEmitFn;
 
       const basicEvent = new BasicEvent('EXAMPLE', undefined);
 
@@ -40,10 +42,10 @@ describe('BasicEventEmitter', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
       const mockOnFn = jest.fn<
-        BasicEventEmitter,
+        EventEmitter,
         [string, (basicEvent: BasicEvent) => void]
       >();
-      basicEventEmitter.on = mockOnFn;
+      basicEventEmitter.internalEmitter.on = mockOnFn;
 
       const mockCallbackFn = jest.fn<unknown, [BasicEvent]>();
       basicEventEmitter.onEvent('EVENT_TYPE', mockCallbackFn);
@@ -62,7 +64,7 @@ describe('BasicEventEmitter', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
       const mockEmitFn = jest.fn<boolean, [string, BasicEvent]>();
-      basicEventEmitter.emit = mockEmitFn;
+      basicEventEmitter.internalEmitter.emit = mockEmitFn;
 
       const mockError = {
         type: 'EXAMPLE_ERROR',
@@ -84,10 +86,10 @@ describe('BasicEventEmitter', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
       const mockOnFn = jest.fn<
-        BasicEventEmitter,
+        EventEmitter,
         [string, (error: { type: string }) => void]
       >();
-      basicEventEmitter.on = mockOnFn;
+      basicEventEmitter.internalEmitter.on = mockOnFn;
 
       const mockCallbackFn = jest.fn<unknown, [{ type: string }]>();
       basicEventEmitter.onError('ERROR_TYPE', mockCallbackFn);

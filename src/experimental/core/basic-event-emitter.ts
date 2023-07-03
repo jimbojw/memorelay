@@ -12,14 +12,16 @@ import { BasicError } from '../errors/basic-error';
 export class BasicEventEmitter<
   EventType extends BasicEvent = BasicEvent,
   ErrorType extends BasicError = BasicError
-> extends EventEmitter {
+> {
+  readonly internalEmitter = new EventEmitter();
+
   /**
    * Emits the provided BasicEvent then returns it.
    * @param basicEvent The event to emit using its type as eventName.
    * @returns The same provided BasicEvent for chaining.
    */
   emitEvent(basicEvent: EventType): EventType {
-    this.emit(basicEvent.type, basicEvent);
+    this.internalEmitter.emit(basicEvent.type, basicEvent);
     return basicEvent;
   }
 
@@ -33,7 +35,8 @@ export class BasicEventEmitter<
     basicEventType: string,
     callbackFn: (basicEvent: T) => void
   ): this {
-    return this.on(basicEventType, callbackFn);
+    this.internalEmitter.on(basicEventType, callbackFn);
+    return this;
   }
 
   /**
@@ -42,7 +45,7 @@ export class BasicEventEmitter<
    * @returns The same error object which was passed in.
    */
   emitError(error: ErrorType) {
-    this.emit(error.type, error);
+    this.internalEmitter.emit(error.type, error);
     return error;
   }
 
@@ -56,6 +59,7 @@ export class BasicEventEmitter<
     errorType: string,
     callbackFn: (error: E) => void
   ): this {
-    return this.on(errorType, callbackFn);
+    this.internalEmitter.on(errorType, callbackFn);
+    return this;
   }
 }
