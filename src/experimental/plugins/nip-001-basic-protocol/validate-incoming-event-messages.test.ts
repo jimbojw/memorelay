@@ -10,7 +10,7 @@ import { IncomingGenericMessageEvent } from '../../events/incoming-generic-messa
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
   it('should validate an EVENT message', () => {

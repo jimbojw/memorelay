@@ -9,7 +9,7 @@ import { validateIncomingCloseMessages } from './validate-incoming-close-message
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingCloseMessages()', () => {
   it('should validate and re-emit a CLOSE message', () => {

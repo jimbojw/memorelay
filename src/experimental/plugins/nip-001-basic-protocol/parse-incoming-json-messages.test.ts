@@ -14,7 +14,7 @@ import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { MemorelayClient } from '../../core/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('parseIncomingJsonMessages()', () => {
   it('should parse a JSON WebSocket message', () => {

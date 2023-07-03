@@ -6,7 +6,7 @@
  * messages of type 'CLOSE'.
  */
 
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { checkCloseMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';

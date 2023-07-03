@@ -6,7 +6,7 @@
  * messages of type 'EVENT'.
  */
 
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { checkEventMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';

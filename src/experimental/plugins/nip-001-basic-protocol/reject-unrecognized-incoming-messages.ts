@@ -6,7 +6,7 @@
  * in which the type string is unrecognized.
  */
 
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';

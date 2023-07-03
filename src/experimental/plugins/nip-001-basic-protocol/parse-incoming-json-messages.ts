@@ -6,7 +6,7 @@
  * payloads as generic JSON client messages.
  */
 
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';

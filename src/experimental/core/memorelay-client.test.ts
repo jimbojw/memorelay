@@ -30,7 +30,10 @@ describe('MemorelayClient', () => {
       const webSocket = new EventEmitter() as WebSocket;
       const memorelayClient = new MemorelayClient(webSocket, request).connect();
 
-      const mockEmitBasicFn = jest.fn<BasicEvent, [WebSocketMessageEvent]>();
+      const mockEmitBasicFn = jest.fn<
+        WebSocketMessageEvent,
+        [WebSocketMessageEvent]
+      >();
       memorelayClient.emitBasic = mockEmitBasicFn;
 
       const data = Buffer.from('MESSAGE_DATA');
@@ -50,7 +53,10 @@ describe('MemorelayClient', () => {
       const webSocket = new EventEmitter() as WebSocket;
       const memorelayClient = new MemorelayClient(webSocket, request).connect();
 
-      const mockEmitBasicFn = jest.fn<BasicEvent, [WebSocketCloseEvent]>();
+      const mockEmitBasicFn = jest.fn<
+        WebSocketCloseEvent,
+        [WebSocketCloseEvent]
+      >();
       memorelayClient.emitBasic = mockEmitBasicFn;
 
       // @see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code

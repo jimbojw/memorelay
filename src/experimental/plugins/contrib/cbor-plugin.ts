@@ -13,7 +13,7 @@ import { IncomingGenericMessageEvent } from '../../events/incoming-generic-messa
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { ClientMessage, GenericMessage } from '../../../lib/message-types';
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { OutgoingMessageEvent } from '../../events/outgoing-message-event';
 
 /**

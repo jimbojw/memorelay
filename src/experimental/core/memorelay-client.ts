@@ -11,12 +11,17 @@ import { IncomingMessage } from 'http';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
 import { BasicEventEmitter } from './basic-event-emitter';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
+import { ClientEvent } from '../events/client-event';
+import { ClientError } from '../errors/client-error';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
  * receives raw message events from the socket, and sends encoded messages back.
  */
-export class MemorelayClient extends BasicEventEmitter {
+export class MemorelayClient extends BasicEventEmitter<
+  ClientEvent,
+  ClientError
+> {
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.

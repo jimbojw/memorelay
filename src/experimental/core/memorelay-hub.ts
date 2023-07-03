@@ -10,6 +10,8 @@ import { WebSocketServer } from 'ws';
 import { BasicEventEmitter } from './basic-event-emitter';
 import { UpgradeHandler } from '../types/upgrade-handler';
 import { handleUpgrade } from './handle-upgrade';
+import { RelayEvent } from '../events/relay-event';
+import { RelayError } from '../errors/relay-error';
 
 /**
  * Symbol for accessing the internal WebSocket server instance.
@@ -19,7 +21,7 @@ export const WEBSOCKET_SERVER = Symbol('webSocketServer');
 /**
  * Memorelay main class. Allows for configurable Nostr relay behavior.
  */
-export class MemorelayHub extends BasicEventEmitter {
+export class MemorelayHub extends BasicEventEmitter<RelayEvent, RelayError> {
   /**
    * WebSocket server for handling requests.
    */

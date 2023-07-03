@@ -7,13 +7,16 @@
 
 import { WebSocket } from 'ws';
 
+export const DUPLICATE_WEB_SOCKET_ERROR_TYPE = 'duplicate-websocket-error';
+
 /**
  * Error emitted when a Memorelay's WebSocketServer has emitted a 'connection'
  * event, but the WebSocket has already been used as the basis for a previous
  * MemorelayClient.
  */
 export class DuplicateWebSocketError extends Error {
-  static type = 'duplicate-websocket-error';
+  static readonly type: typeof DUPLICATE_WEB_SOCKET_ERROR_TYPE =
+    DUPLICATE_WEB_SOCKET_ERROR_TYPE;
 
   constructor(
     readonly webSocket: WebSocket,

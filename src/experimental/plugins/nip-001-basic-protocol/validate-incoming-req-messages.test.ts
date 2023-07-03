@@ -9,7 +9,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingReqMessages()', () => {
   it('should validate and re-emit a REQ message', () => {

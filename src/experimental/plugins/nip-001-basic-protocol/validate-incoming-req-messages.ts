@@ -6,7 +6,7 @@
  * messages of type 'REQ'.
  */
 
-import { BadMessageError } from '../../../lib/bad-message-error';
+import { BadMessageError } from '../../errors/bad-message-error';
 import { checkReqMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
