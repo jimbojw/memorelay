@@ -12,7 +12,7 @@ import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-creat
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { checkGenericMessage } from '../../../lib/buffer-to-message';
-import { ClientMessage, GenericMessage } from '../../../lib/message-types';
+import { GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { BasicError } from '../../errors/basic-error';
@@ -114,7 +114,7 @@ function handleMemorelayClientCreatedEvent({
 
     try {
       // This will either return the payloadObject or throw a BadMessageError.
-      const clientMessage = checkGenericMessage(payloadObject) as ClientMessage;
+      const genericMessage = checkGenericMessage(payloadObject);
 
       // Now that we have a CBOR-decoded ClientMessage, we call
       // preventDefault() to signal that this event has been handled.  This
@@ -124,9 +124,7 @@ function handleMemorelayClientCreatedEvent({
 
       // Emit an IncomingGenericMessageEvent with the CBOR-decoded client
       // message.
-      cborClient.emitEvent(
-        new IncomingGenericMessageEvent({ genericMessage: clientMessage })
-      );
+      cborClient.emitEvent(new IncomingGenericMessageEvent({ genericMessage }));
     } catch (error) {
       if (!(error instanceof BadMessageError)) {
         throw error; // Unexpected error type. Fail loud.

@@ -8,6 +8,7 @@
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
+import { Filter } from 'nostr-tools';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
@@ -16,13 +17,16 @@ import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function subscribeToReqMessages(hub: MemorelayHub) {
+export function subscribeToIncomingReqMessages(hub: MemorelayHub) {
   hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
+
+    const subscriptions = new Map<string, Filter[]>();
+
     memorelayClient.onEvent(IncomingReqMessageEvent, handleReqMessage);
 
     function handleReqMessage(
@@ -32,7 +36,10 @@ export function subscribeToReqMessages(hub: MemorelayHub) {
         return; // Preempted by another handler.
       }
 
-      // TODO(jimbo): Implement plugin.
+      const [, subscriptionId, ...filters] =
+        incomingReqMessageEvent.details.reqMessage;
+
+      subscriptions.set(subscriptionId, filters);
     }
   }
 }

@@ -6,11 +6,12 @@
  */
 
 import { MemorelayHub } from '../../core/memorelay-hub';
+import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
-import { subscribeToReqMessages } from './subscribe-to-req-messages';
+import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-messages';
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
@@ -32,8 +33,11 @@ export function basicProtocol(hub: MemorelayHub) {
   // Reject any message type other than EVENT, REQ and CLOSE.
   rejectUnrecognizedIncomingMessages(hub);
 
+  // Broadcast incoming EVENT messages to all other connected clients.
+  broadcastIncomingEventMessages(hub);
+
   // Subscribe to incoming REQ messages.
-  subscribeToReqMessages(hub);
+  subscribeToIncomingReqMessages(hub);
 
   // Serialize outgoing generic messages and send to the WebSocket.
   serializeOutgoingJsonMessages(hub);
