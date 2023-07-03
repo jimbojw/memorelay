@@ -11,12 +11,16 @@ import express, { Request, Response } from 'express';
 import { Memorelay } from './memorelay';
 import { relayInformationDocument } from './plugins/nip-011-relay-information-document/relay-information-document';
 import { loggingPlugin } from './plugins/contrib/logging';
+import { cborPlugin } from './plugins/contrib/cbor-plugin';
 
 const PORT = 3000;
 
-const memorelay = new Memorelay().connect();
+const memorelay = new Memorelay();
 
+cborPlugin(memorelay);
 loggingPlugin('silly')(memorelay);
+
+memorelay.connect();
 
 const app = express();
 

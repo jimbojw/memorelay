@@ -16,8 +16,7 @@ export const DUPLICATE_WEB_SOCKET_ERROR_TYPE = 'duplicate-websocket-error';
  * MemorelayClient.
  */
 export class DuplicateWebSocketError extends BasicError {
-  static readonly type: typeof DUPLICATE_WEB_SOCKET_ERROR_TYPE =
-    DUPLICATE_WEB_SOCKET_ERROR_TYPE;
+  static readonly type = DUPLICATE_WEB_SOCKET_ERROR_TYPE;
 
   constructor(
     readonly webSocket: WebSocket,

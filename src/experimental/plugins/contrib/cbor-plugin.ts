@@ -15,6 +15,17 @@ import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { ClientMessage, GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';
 import { OutgoingMessageEvent } from '../../events/outgoing-message-event';
+import { BasicError } from '../../errors/basic-error';
+import { MemorelayClient } from '../../core/memorelay-client';
+import { ClientEvent } from '../../events/client-event';
+
+export class CborDecodingError extends BasicError {
+  readonly type = 'cbor-decoding-error';
+}
+
+export class CborEncodingError extends BasicError {
+  readonly type = 'cbor-encoding-error';
+}
 
 /**
  * Plugin setup function. Establishes listeners on a Memorelay instance.
@@ -27,6 +38,8 @@ export function cborPlugin(memorelay: Memorelay) {
   );
 }
 
+export type CborClient = MemorelayClient<ClientEvent, CborDecodingError>;
+
 /**
  * Internal function to wrap a MemorelayClient with CBOR functionality.
  * @param memorelayClient The connected MemorelayClient to wrap.
@@ -34,14 +47,13 @@ export function cborPlugin(memorelay: Memorelay) {
 function handleMemorelayClientCreatedEvent({
   details: { memorelayClient },
 }: MemorelayClientCreatedEvent) {
+  const cborClient = memorelayClient as unknown as CborClient;
+
   let isCborEnabled = false;
 
-  memorelayClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
-  memorelayClient.onEvent(
-    IncomingGenericMessageEvent.type,
-    handleIncomingMessage
-  );
-  memorelayClient.onEvent(OutgoingMessageEvent.type, handleOutgoingMessage);
+  cborClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
+  cborClient.onEvent(IncomingGenericMessageEvent.type, handleIncomingMessage);
+  cborClient.onEvent(OutgoingMessageEvent.type, handleOutgoingMessage);
 
   /**
    * When the MemorelayClient's underlying WebSocket emits a 'message' event,
@@ -81,6 +93,11 @@ function handleMemorelayClientCreatedEvent({
     try {
       payloadObject = decode(dataArray) as unknown;
     } catch (error) {
+      if (!(error instanceof Error)) {
+        // TODO(jimbo): Determine what data type is actulally thrown here.
+        throw error;
+      }
+
       // Failed to decode CBOR payload. This could be a legitimate error in
       // the CBOR encoding, or it could be that despite the client supporting
       // CBOR, and the fact that the WebSocket raw message was flagged as
@@ -91,7 +108,7 @@ function handleMemorelayClientCreatedEvent({
       // of the system continue processing. But for posterity, emit a custom
       // error to indicate the problem. This way, some other handler can log
       // it, optionally, for investigative purposes.
-      memorelayClient.emit('cbor-encoding-error', error);
+      cborClient.emitError(new CborDecodingError(error.message));
       return;
     }
 
@@ -107,14 +124,14 @@ function handleMemorelayClientCreatedEvent({
 
       // Emit an IncomingGenericMessageEvent with the CBOR-decoded client
       // message.
-      memorelayClient.emitEvent(
+      cborClient.emitEvent(
         new IncomingGenericMessageEvent({ genericMessage: clientMessage })
       );
     } catch (error) {
       if (!(error instanceof BadMessageError)) {
         throw error; // Unexpected error type. Fail loud.
       }
-      memorelayClient.emitError(error);
+      cborClient.emitError(error);
     }
   }
 
@@ -140,7 +157,7 @@ function handleMemorelayClientCreatedEvent({
     event.preventDefault();
 
     // Emit a NOTICE to inform the client.
-    memorelayClient.emitEvent(
+    cborClient.emitEvent(
       new OutgoingMessageEvent({
         outgoingMessage: ['NOTICE', 'CBOR enabled'],
       })
@@ -155,29 +172,36 @@ function handleMemorelayClientCreatedEvent({
    * encoding them as CBOR and pushing them to the client's WebSocket.
    * @event 'cbor-encoding-error' Emits on client if encoding fails.
    */
-  function handleOutgoingMessage(event: OutgoingMessageEvent) {
+  function handleOutgoingMessage(outgoingMessageEvent: OutgoingMessageEvent) {
     if (!isCborEnabled) {
       return; // Only handle outgoing messages if client has enabled CBOR.
     }
 
-    if (event.defaultPrevented) {
+    if (outgoingMessageEvent.defaultPrevented) {
       return; // Some other plugin must have already handled this.
     }
 
     // Attempt to serialize the message.
-    const { outgoingMessage } = event.details;
+    const { outgoingMessage } = outgoingMessageEvent.details;
 
     try {
       // Attempt to encode the outgoing message as CBOR.
       const dataArray = encode(outgoingMessage);
 
       // Send the encoded buffer.
-      memorelayClient.webSocket.send(dataArray.buffer);
+      cborClient.webSocket.send(dataArray.buffer);
 
       // Signal that this event has been handled.
-      event.preventDefault();
+      outgoingMessageEvent.preventDefault();
     } catch (error) {
-      memorelayClient.emit('cbor-encoding-error', error);
+      if (!(error instanceof Error)) {
+        // TODO(jimbo): Determine what data type is actulally thrown here.
+        throw error;
+      }
+
+      // Failed to encode CBOR payload.
+      cborClient.emitError(new CborEncodingError(error.message));
+      return;
     }
   }
 }

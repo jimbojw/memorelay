@@ -18,9 +18,12 @@ import { ClientError } from '../errors/client-error';
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
  * receives raw message events from the socket, and sends encoded messages back.
  */
-export class MemorelayClient extends BasicEventEmitter<
-  ClientEvent,
-  ClientError
+export class MemorelayClient<
+  PluginClientEvent extends ClientEvent = ClientEvent,
+  PluginClientError extends ClientError = ClientError
+> extends BasicEventEmitter<
+  PluginClientEvent | ClientEvent,
+  PluginClientError | ClientError
 > {
   /**
    * @param webSocket The associated WebSocket for this client.
