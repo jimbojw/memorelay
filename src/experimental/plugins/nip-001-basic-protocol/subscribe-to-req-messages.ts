@@ -17,13 +17,13 @@ import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function subscribeToReqMessages(hub: MemorelayHub) {
-  hub.onEvent(MemorelayClientCreatedEvent.type, handleClientCreated);
+  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(IncomingReqMessageEvent.type, handleReqMessage);
+    memorelayClient.onEvent(IncomingReqMessageEvent, handleReqMessage);
 
     function handleReqMessage(
       incomingReqMessageEvent: IncomingReqMessageEvent

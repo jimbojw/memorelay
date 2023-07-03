@@ -22,16 +22,13 @@ import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-creat
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function validateIncomingEventMessages(hub: BasicEventEmitter) {
-  hub.onEvent(MemorelayClientCreatedEvent.type, handleClientCreated);
+  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(
-      IncomingGenericMessageEvent.type,
-      handleIncomingMessage
-    );
+    memorelayClient.onEvent(IncomingGenericMessageEvent, handleIncomingMessage);
 
     function handleIncomingMessage(
       incomingGenericMessageEvent: IncomingGenericMessageEvent

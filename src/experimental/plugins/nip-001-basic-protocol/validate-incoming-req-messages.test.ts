@@ -18,7 +18,7 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
-    memorelayClient.onEvent(IncomingReqMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['REQ', 'SUBSCRIPTION_ID'],
@@ -42,7 +42,7 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
-    memorelayClient.onEvent(IncomingReqMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['REQ', 'IGNORE_ME'],
@@ -59,7 +59,7 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
-    memorelayClient.onEvent(IncomingReqMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN', 12345],
@@ -77,7 +77,7 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
+    memorelayClient.onError(BadMessageError, mockErrorHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['REQ'], // Omit required subscription id.

@@ -26,7 +26,7 @@ export function createClients(
   webSocketClientMap = new Map<WebSocket, MemorelayClient>()
 ) {
   hub.onEvent(
-    WebSocketConnectedEvent.type,
+    WebSocketConnectedEvent,
     (webSocketConnectedEvent: WebSocketConnectedEvent) => {
       if (webSocketConnectedEvent.defaultPrevented) {
         return; // Client creation preempted by another listener.

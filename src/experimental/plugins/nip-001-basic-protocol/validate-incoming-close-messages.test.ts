@@ -18,7 +18,7 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingCloseMessageEvent]>();
-    memorelayClient.onEvent(IncomingCloseMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['CLOSE', 'SUBSCRIPTION_ID'],
@@ -42,7 +42,7 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingCloseMessageEvent]>();
-    memorelayClient.onEvent(IncomingCloseMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['CLOSE', 'IGNORE_ME'],
@@ -59,7 +59,7 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingCloseMessageEvent]>();
-    memorelayClient.onEvent(IncomingCloseMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN', 12345],
@@ -77,7 +77,7 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
+    memorelayClient.onError(BadMessageError, mockErrorHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['CLOSE'], // Omit required subscription id.

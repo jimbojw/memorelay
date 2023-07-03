@@ -48,7 +48,7 @@ describe('BasicEventEmitter', () => {
       basicEventEmitter.internalEmitter.on = mockOnFn;
 
       const mockCallbackFn = jest.fn<unknown, [BasicEvent]>();
-      basicEventEmitter.onEvent('EVENT_TYPE', mockCallbackFn);
+      basicEventEmitter.onEvent({ type: 'EVENT_TYPE' }, mockCallbackFn);
 
       expect(mockOnFn.mock.calls).toHaveLength(1);
       const params = mockOnFn.mock.calls[0];
@@ -92,7 +92,7 @@ describe('BasicEventEmitter', () => {
       basicEventEmitter.internalEmitter.on = mockOnFn;
 
       const mockCallbackFn = jest.fn<unknown, [{ type: string }]>();
-      basicEventEmitter.onError('ERROR_TYPE', mockCallbackFn);
+      basicEventEmitter.onError({ type: 'ERROR_TYPE' }, mockCallbackFn);
 
       expect(mockOnFn.mock.calls).toHaveLength(1);
       const params = mockOnFn.mock.calls[0];

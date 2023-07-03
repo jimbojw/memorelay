@@ -33,7 +33,7 @@ export class CborEncodingError extends BasicError {
  */
 export function cborPlugin(memorelay: Memorelay) {
   memorelay.onEvent(
-    MemorelayClientCreatedEvent.type,
+    MemorelayClientCreatedEvent,
     handleMemorelayClientCreatedEvent
   );
 }
@@ -51,9 +51,9 @@ function handleMemorelayClientCreatedEvent({
 
   let isCborEnabled = false;
 
-  cborClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
-  cborClient.onEvent(IncomingGenericMessageEvent.type, handleIncomingMessage);
-  cborClient.onEvent(OutgoingGenericMessageEvent.type, handleOutgoingMessage);
+  cborClient.onEvent(WebSocketMessageEvent, handleWebSocketMessage);
+  cborClient.onEvent(IncomingGenericMessageEvent, handleIncomingMessage);
+  cborClient.onEvent(OutgoingGenericMessageEvent, handleOutgoingMessage);
 
   /**
    * When the MemorelayClient's underlying WebSocket emits a 'message' event,

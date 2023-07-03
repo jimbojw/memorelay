@@ -25,7 +25,7 @@ describe('createClients()', () => {
         unknown,
         [MemorelayClientCreatedEvent]
       >();
-      hub.onEvent(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
+      hub.onEvent(MemorelayClientCreatedEvent, mockCreatedHandlerFn);
 
       const mockRequest = {} as IncomingMessage;
       const mockOnFn = jest.fn<unknown, [string, () => void]>();
@@ -60,7 +60,7 @@ describe('createClients()', () => {
         unknown,
         [MemorelayClientCreatedEvent]
       >();
-      hub.onEvent(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
+      hub.onEvent(MemorelayClientCreatedEvent, mockCreatedHandlerFn);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;
@@ -94,7 +94,7 @@ describe('createClients()', () => {
       );
 
       const mockErrorHandlerFn = jest.fn<unknown, [DuplicateWebSocketError]>();
-      hub.onError(DuplicateWebSocketError.type, mockErrorHandlerFn);
+      hub.onError(DuplicateWebSocketError, mockErrorHandlerFn);
 
       expect(mockErrorHandlerFn.mock.calls).toHaveLength(0);
 

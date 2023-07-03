@@ -17,14 +17,14 @@ import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-messa
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function serializeOutgoingJsonMessages(hub: MemorelayHub) {
-  hub.onEvent(MemorelayClientCreatedEvent.type, handleClientCreated);
+  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
     memorelayClient.onEvent(
-      OutgoingGenericMessageEvent.type,
+      OutgoingGenericMessageEvent,
       handleOutgoingGenericMessage
     );
 

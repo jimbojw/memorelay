@@ -32,10 +32,10 @@ export class BasicEventEmitter<
    * @returns this.
    */
   onEvent<T extends EventType>(
-    basicEventType: string,
+    basicEventType: { type: string },
     callbackFn: (basicEvent: T) => void
   ): this {
-    this.internalEmitter.on(basicEventType, callbackFn);
+    this.internalEmitter.on(basicEventType.type, callbackFn);
     return this;
   }
 
@@ -56,10 +56,10 @@ export class BasicEventEmitter<
    * @returns this.
    */
   onError<E extends ErrorType>(
-    errorType: string,
+    errorType: { type: string },
     callbackFn: (error: E) => void
   ): this {
-    this.internalEmitter.on(errorType, callbackFn);
+    this.internalEmitter.on(errorType.type, callbackFn);
     return this;
   }
 }

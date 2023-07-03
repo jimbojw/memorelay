@@ -17,13 +17,13 @@ import { Memorelay } from '../../memorelay';
  */
 export function simpleThrottlePlugin(memorelay: Memorelay) {
   memorelay.onEvent(
-    MemorelayClientCreatedEvent.type,
+    MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
       // Simple, scope-based throttling.
       let lastMessageTs = 0;
 
       memorelayClient.onEvent(
-        WebSocketMessageEvent.type,
+        WebSocketMessageEvent,
         (event: WebSocketMessageEvent) => {
           // Compute how long it has been since the last message.
           const now = Date.now();

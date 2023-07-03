@@ -26,13 +26,13 @@ import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function parseIncomingJsonMessages(hub: BasicEventEmitter) {
-  hub.onEvent(MemorelayClientCreatedEvent.type, handleClientCreated);
+  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
+    memorelayClient.onEvent(WebSocketMessageEvent, handleWebSocketMessage);
 
     function handleWebSocketMessage(
       webSocketMessageEvent: WebSocketMessageEvent

@@ -30,10 +30,7 @@ describe('parseIncomingJsonMessages()', () => {
       unknown,
       [IncomingGenericMessageEvent]
     >();
-    memorelayClient.onEvent(
-      IncomingGenericMessageEvent.type,
-      mockMessageHandler
-    );
+    memorelayClient.onEvent(IncomingGenericMessageEvent, mockMessageHandler);
 
     memorelayClient.emitEvent(
       new WebSocketMessageEvent({
@@ -66,10 +63,7 @@ describe('parseIncomingJsonMessages()', () => {
       unknown,
       [IncomingGenericMessageEvent]
     >();
-    memorelayClient.onEvent(
-      IncomingGenericMessageEvent.type,
-      mockMessageHandler
-    );
+    memorelayClient.onEvent(IncomingGenericMessageEvent, mockMessageHandler);
 
     memorelayClient.emitEvent(
       new WebSocketMessageEvent({
@@ -102,10 +96,7 @@ describe('parseIncomingJsonMessages()', () => {
       unknown,
       [IncomingGenericMessageEvent]
     >();
-    memorelayClient.onEvent(
-      IncomingGenericMessageEvent.type,
-      mockMessageHandler
-    );
+    memorelayClient.onEvent(IncomingGenericMessageEvent, mockMessageHandler);
 
     const webSocketMessageEvent = new WebSocketMessageEvent({
       data: Buffer.from('["PAYLOAD","IGNORE"]'),
@@ -128,7 +119,7 @@ describe('parseIncomingJsonMessages()', () => {
     hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
+    memorelayClient.onError(BadMessageError, mockErrorHandler);
 
     memorelayClient.emitEvent(
       new WebSocketMessageEvent({
