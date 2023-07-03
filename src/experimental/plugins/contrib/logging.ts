@@ -44,7 +44,7 @@ export function loggingPlugin(level = 'warn'): (memorelay: Memorelay) => void {
 
     logMemorelayClientCreated(memorelay, logger);
 
-    memorelay.on(
+    memorelay.onEvent(
       MemorelayClientCreatedEvent.type,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
         logWebSocketClose(memorelayClient, logger);
@@ -60,7 +60,7 @@ function logWebSocketConnected(
   logger: Logger,
   level = 'silly'
 ) {
-  memorelay.on(
+  memorelay.onEvent(
     WebSocketConnectedEvent.type,
     (webSocketConnectedEvent: WebSocketConnectedEvent) => {
       const { request } = webSocketConnectedEvent.details;
@@ -75,7 +75,7 @@ function logMemorelayClientCreated(
   logger: Logger,
   level = 'silly'
 ) {
-  memorelay.on(
+  memorelay.onEvent(
     MemorelayClientCreatedEvent.type,
     (memorelayClientCreatedEvent: MemorelayClientCreatedEvent) => {
       const { request } = memorelayClientCreatedEvent.details.memorelayClient;
@@ -91,7 +91,7 @@ function logBadMessageError(
   logger: Logger,
   level = 'debug'
 ) {
-  memorelayClient.on(
+  memorelayClient.onError(
     BadMessageError.type,
     (badMessageError: BadMessageError) => {
       logger.log(level, badMessageError.message);
@@ -106,7 +106,7 @@ function logWebSocketClose(
 ) {
   const secWebSocketKey =
     memorelayClient.request.headers['sec-websocket-key'] ?? 'undefined';
-  memorelayClient.on(
+  memorelayClient.onEvent(
     WebSocketCloseEvent.type,
     (webSocketCloseEvent: WebSocketCloseEvent) => {
       const { code } = webSocketCloseEvent.details;

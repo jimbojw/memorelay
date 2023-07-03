@@ -21,7 +21,7 @@ import { OutgoingMessageEvent } from '../../events/outgoing-message-event';
  * @param memorelay The Memorelay instance to connect to.
  */
 export function cborPlugin(memorelay: Memorelay) {
-  memorelay.on(
+  memorelay.onEvent(
     MemorelayClientCreatedEvent.type,
     handleMemorelayClientCreatedEvent
   );
@@ -36,9 +36,12 @@ function handleMemorelayClientCreatedEvent({
 }: MemorelayClientCreatedEvent) {
   let isCborEnabled = false;
 
-  memorelayClient.on(WebSocketMessageEvent.type, handleWebSocketMessage);
-  memorelayClient.on(IncomingGenericMessageEvent.type, handleIncomingMessage);
-  memorelayClient.on(OutgoingMessageEvent.type, handleOutgoingMessage);
+  memorelayClient.onEvent(WebSocketMessageEvent.type, handleWebSocketMessage);
+  memorelayClient.onEvent(
+    IncomingGenericMessageEvent.type,
+    handleIncomingMessage
+  );
+  memorelayClient.onEvent(OutgoingMessageEvent.type, handleOutgoingMessage);
 
   /**
    * When the MemorelayClient's underlying WebSocket emits a 'message' event,

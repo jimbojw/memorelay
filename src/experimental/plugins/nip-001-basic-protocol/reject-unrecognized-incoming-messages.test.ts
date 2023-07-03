@@ -8,7 +8,6 @@
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
-import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingReqMessages()', () => {
@@ -17,8 +16,8 @@ describe('validateIncomingReqMessages()', () => {
       rejectUnrecognizedIncomingMessages(hub);
     });
 
-    const mockErrorHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
-    memorelayClient.on(BadMessageError.type, mockErrorHandler);
+    const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
+    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
 
     memorelayClient.emitEvent(
       new IncomingGenericMessageEvent({
@@ -44,8 +43,8 @@ describe('validateIncomingReqMessages()', () => {
       rejectUnrecognizedIncomingMessages(hub);
     });
 
-    const mockErrorHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
-    memorelayClient.on(BadMessageError.type, mockErrorHandler);
+    const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
+    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['BAD_MESSAGE'],
@@ -62,7 +61,7 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.on(BadMessageError.type, mockErrorHandler);
+    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN_TYPE'],

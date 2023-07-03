@@ -25,7 +25,7 @@ export function createClients(
   hub: BasicEventEmitter,
   webSocketClientMap = new Map<WebSocket, MemorelayClient>()
 ) {
-  hub.on(
+  hub.onEvent(
     WebSocketConnectedEvent.type,
     (webSocketConnectedEvent: WebSocketConnectedEvent) => {
       if (webSocketConnectedEvent.defaultPrevented) {

@@ -19,7 +19,7 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingEventMessageEvent.type, mockMessageHandler);
 
     const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
@@ -44,7 +44,7 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingEventMessageEvent.type, mockMessageHandler);
 
     const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
@@ -62,7 +62,7 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.on(IncomingEventMessageEvent.type, mockMessageHandler);
+    memorelayClient.onEvent(IncomingEventMessageEvent.type, mockMessageHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN', 12345],
@@ -80,7 +80,7 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.on(BadMessageError.type, mockErrorHandler);
+    memorelayClient.onError(BadMessageError.type, mockErrorHandler);
 
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['EVENT', 12345],

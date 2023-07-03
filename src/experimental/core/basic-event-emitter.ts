@@ -29,9 +29,9 @@ export class BasicEventEmitter<
    * @param callbackFn Callback function to invoke when event is emitted.
    * @returns this.
    */
-  onEvent(
+  onEvent<T extends EventType>(
     basicEventType: string,
-    callbackFn: (basicEvent: EventType) => void
+    callbackFn: (basicEvent: T) => void
   ): this {
     return this.on(basicEventType, callbackFn);
   }
@@ -52,7 +52,10 @@ export class BasicEventEmitter<
    * @param callbackFn Callback function to invoke when error is emitted.
    * @returns this.
    */
-  onError(errorType: string, callbackFn: (error: ErrorType) => void): this {
+  onError<E extends ErrorType>(
+    errorType: string,
+    callbackFn: (error: E) => void
+  ): this {
     return this.on(errorType, callbackFn);
   }
 }

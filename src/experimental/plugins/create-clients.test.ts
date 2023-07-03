@@ -15,22 +15,6 @@ import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 
 describe('createClients()', () => {
-  it('should be a function', () => {
-    expect(typeof createClients).toBe('function');
-  });
-
-  it('should listen for WebSocketConnectedEvents', () => {
-    const mockOnFn = jest.fn<unknown, [string, () => void]>();
-    const mockHub = { on: mockOnFn } as unknown as BasicEventEmitter;
-
-    createClients(mockHub);
-
-    expect(mockOnFn.mock.calls).toHaveLength(1);
-
-    expect(mockOnFn.mock.calls[0][0]).toBe(WebSocketConnectedEvent.type);
-    expect(typeof mockOnFn.mock.calls[0][1]).toBe('function');
-  });
-
   describe('#WebSocketConnectedEvent', () => {
     it('should trigger MemorelayClientCreatedEvent', async () => {
       const hub = new BasicEventEmitter();
@@ -41,7 +25,7 @@ describe('createClients()', () => {
         unknown,
         [MemorelayClientCreatedEvent]
       >();
-      hub.on(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
+      hub.onEvent(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
 
       const mockRequest = {} as IncomingMessage;
       const mockOnFn = jest.fn<unknown, [string, () => void]>();
@@ -76,7 +60,7 @@ describe('createClients()', () => {
         unknown,
         [MemorelayClientCreatedEvent]
       >();
-      hub.on(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
+      hub.onEvent(MemorelayClientCreatedEvent.type, mockCreatedHandlerFn);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;
@@ -110,7 +94,7 @@ describe('createClients()', () => {
       );
 
       const mockErrorHandlerFn = jest.fn<unknown, [DuplicateWebSocketError]>();
-      hub.on(DuplicateWebSocketError.type, mockErrorHandlerFn);
+      hub.onError(DuplicateWebSocketError.type, mockErrorHandlerFn);
 
       expect(mockErrorHandlerFn.mock.calls).toHaveLength(0);
 
@@ -123,6 +107,8 @@ describe('createClients()', () => {
       );
 
       expect(mockErrorHandlerFn.mock.calls).toHaveLength(1);
+      const error = mockErrorHandlerFn.mock.calls[0][0];
+      expect(error.webSocket).toBe(mockWebSocket);
     });
   });
 });
