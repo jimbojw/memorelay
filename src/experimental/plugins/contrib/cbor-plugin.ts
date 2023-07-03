@@ -104,7 +104,7 @@ function handleMemorelayClientCreatedEvent({
 
       // Emit an IncomingGenericMessageEvent with the CBOR-decoded client
       // message.
-      memorelayClient.emitBasic(
+      memorelayClient.emitEvent(
         new IncomingGenericMessageEvent({ genericMessage: clientMessage })
       );
     } catch (error) {
@@ -137,7 +137,7 @@ function handleMemorelayClientCreatedEvent({
     event.preventDefault();
 
     // Emit a NOTICE to inform the client.
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new OutgoingMessageEvent({
         outgoingMessage: ['NOTICE', 'CBOR enabled'],
       })

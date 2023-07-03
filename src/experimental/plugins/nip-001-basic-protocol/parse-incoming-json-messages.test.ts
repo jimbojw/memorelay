@@ -24,7 +24,7 @@ describe('parseIncomingJsonMessages()', () => {
     const mockRequest = {} as IncomingMessage;
     const mockWebSocket = {} as WebSocket;
     const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-    hub.emitBasic(new MemorelayClientCreatedEvent({ memorelayClient }));
+    hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
     const mockMessageHandler = jest.fn<
       unknown,
@@ -32,7 +32,7 @@ describe('parseIncomingJsonMessages()', () => {
     >();
     memorelayClient.on(IncomingGenericMessageEvent.type, mockMessageHandler);
 
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new WebSocketMessageEvent({
         data: Buffer.from('["PAYLOAD","IGNORE"]'),
         isBinary: false,
@@ -57,7 +57,7 @@ describe('parseIncomingJsonMessages()', () => {
     const mockRequest = {} as IncomingMessage;
     const mockWebSocket = {} as WebSocket;
     const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-    hub.emitBasic(new MemorelayClientCreatedEvent({ memorelayClient }));
+    hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
     const mockMessageHandler = jest.fn<
       unknown,
@@ -65,7 +65,7 @@ describe('parseIncomingJsonMessages()', () => {
     >();
     memorelayClient.on(IncomingGenericMessageEvent.type, mockMessageHandler);
 
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new WebSocketMessageEvent({
         data: [Buffer.from('["COMBINED",'), Buffer.from('"BUFFER"]')],
         isBinary: false,
@@ -90,7 +90,7 @@ describe('parseIncomingJsonMessages()', () => {
     const mockRequest = {} as IncomingMessage;
     const mockWebSocket = {} as WebSocket;
     const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-    hub.emitBasic(new MemorelayClientCreatedEvent({ memorelayClient }));
+    hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
     const mockMessageHandler = jest.fn<
       unknown,
@@ -104,7 +104,7 @@ describe('parseIncomingJsonMessages()', () => {
     });
     webSocketMessageEvent.preventDefault();
 
-    memorelayClient.emitBasic(webSocketMessageEvent);
+    memorelayClient.emitEvent(webSocketMessageEvent);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
@@ -116,12 +116,12 @@ describe('parseIncomingJsonMessages()', () => {
     const mockRequest = {} as IncomingMessage;
     const mockWebSocket = {} as WebSocket;
     const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-    hub.emitBasic(new MemorelayClientCreatedEvent({ memorelayClient }));
+    hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
     const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
     memorelayClient.on(BadMessageError.type, mockErrorHandler);
 
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new WebSocketMessageEvent({
         data: Buffer.from('UNPARSEABLE_MESSAGE_PAYLOAD'),
         isBinary: false,

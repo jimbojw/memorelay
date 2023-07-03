@@ -81,7 +81,7 @@ describe('handleUpgrade()', () => {
       const connectedCallbackFn = mockHandleUpgradeFn.mock.calls[0][3];
 
       const mockEmitBasicFn = jest.fn<BasicEvent, [BasicEvent]>();
-      mockBasicEventEmitter.emitBasic = mockEmitBasicFn;
+      mockBasicEventEmitter.emitEvent = mockEmitBasicFn;
 
       connectedCallbackFn();
 

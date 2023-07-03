@@ -51,7 +51,7 @@ describe('createClients()', () => {
         webSocket: mockWebSocket,
         request: mockRequest,
       });
-      hub.emitBasic(webSocketConnectedEvent);
+      hub.emitEvent(webSocketConnectedEvent);
 
       await Promise.resolve();
 
@@ -88,7 +88,7 @@ describe('createClients()', () => {
 
       webSocketConnectedEvent.preventDefault();
 
-      hub.emitBasic(webSocketConnectedEvent);
+      hub.emitEvent(webSocketConnectedEvent);
 
       expect(mockCreatedHandlerFn.mock.calls).toHaveLength(0);
     });
@@ -102,7 +102,7 @@ describe('createClients()', () => {
       const mockWebSocket = { on: mockOnFn } as unknown as WebSocket;
       const mockRequest = {} as IncomingMessage;
 
-      hub.emitBasic(
+      hub.emitEvent(
         new WebSocketConnectedEvent({
           webSocket: mockWebSocket,
           request: mockRequest,
@@ -115,7 +115,7 @@ describe('createClients()', () => {
       expect(mockErrorHandlerFn.mock.calls).toHaveLength(0);
 
       // Duplicate WebSocket connected event.
-      hub.emitBasic(
+      hub.emitEvent(
         new WebSocketConnectedEvent({
           webSocket: mockWebSocket,
           request: mockRequest,

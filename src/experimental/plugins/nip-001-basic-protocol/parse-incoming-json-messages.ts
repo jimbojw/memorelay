@@ -48,7 +48,7 @@ export function parseIncomingJsonMessages(hub: BasicEventEmitter) {
 
       try {
         const genericMessage = bufferToGenericMessage(buffer);
-        memorelayClient.emitBasic(
+        memorelayClient.emitEvent(
           new IncomingGenericMessageEvent({ genericMessage })
         );
       } catch (error) {

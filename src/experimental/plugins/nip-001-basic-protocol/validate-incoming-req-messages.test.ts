@@ -23,7 +23,7 @@ describe('validateIncomingReqMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['REQ', 'SUBSCRIPTION_ID'],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
@@ -48,7 +48,7 @@ describe('validateIncomingReqMessages()', () => {
       genericMessage: ['REQ', 'IGNORE_ME'],
     });
     incomingGenericMessageEvent.preventDefault();
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
@@ -64,7 +64,7 @@ describe('validateIncomingReqMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN', 12345],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
@@ -82,7 +82,7 @@ describe('validateIncomingReqMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['REQ'], // Omit required subscription id.
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 

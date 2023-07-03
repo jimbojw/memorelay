@@ -56,7 +56,7 @@ export function relayInformationDocument(memorelay: Memorelay): RequestHandler {
       supported_nips: [1, 11],
     };
 
-    memorelay.emitBasic(
+    memorelay.emitEvent(
       new RelayInformationDocumentEvent({
         relayInformationDocument,
       })

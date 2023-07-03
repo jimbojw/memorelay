@@ -47,7 +47,7 @@ export function handleUpgrade(
       socket,
       head,
       (webSocket: WebSocket) => {
-        basicEventEmitter.emitBasic(
+        basicEventEmitter.emitEvent(
           new WebSocketConnectedEvent({ webSocket, request })
         );
       }

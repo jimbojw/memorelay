@@ -32,6 +32,6 @@ export function setupHubAndMemorelayClient(
   const mockRequest = {} as IncomingMessage;
   const mockWebSocket = {} as WebSocket;
   const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-  hub.emitBasic(new MemorelayClientCreatedEvent({ memorelayClient }));
+  hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
   return { hub, memorelayClient };
 }

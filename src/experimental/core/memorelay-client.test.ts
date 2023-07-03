@@ -10,7 +10,6 @@ import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
-import { BasicEvent } from '../events/basic-event';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 
 describe('MemorelayClient', () => {
@@ -34,7 +33,7 @@ describe('MemorelayClient', () => {
         WebSocketMessageEvent,
         [WebSocketMessageEvent]
       >();
-      memorelayClient.emitBasic = mockEmitBasicFn;
+      memorelayClient.emitEvent = mockEmitBasicFn;
 
       const data = Buffer.from('MESSAGE_DATA');
       webSocket.emit('message', data, false);
@@ -57,7 +56,7 @@ describe('MemorelayClient', () => {
         WebSocketCloseEvent,
         [WebSocketCloseEvent]
       >();
-      memorelayClient.emitBasic = mockEmitBasicFn;
+      memorelayClient.emitEvent = mockEmitBasicFn;
 
       // @see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
       const NORMAL_CLOSURE_CODE = 1000;

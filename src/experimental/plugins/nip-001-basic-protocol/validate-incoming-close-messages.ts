@@ -45,7 +45,7 @@ export function validateIncomingCloseMessages(hub: BasicEventEmitter) {
 
       try {
         const closeMessage = checkCloseMessage(genericMessage);
-        memorelayClient.emitBasic(
+        memorelayClient.emitEvent(
           new IncomingCloseMessageEvent({ closeMessage })
         );
       } catch (error) {

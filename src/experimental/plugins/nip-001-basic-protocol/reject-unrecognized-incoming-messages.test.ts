@@ -20,17 +20,17 @@ describe('validateIncomingReqMessages()', () => {
     const mockErrorHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
     memorelayClient.on(BadMessageError.type, mockErrorHandler);
 
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new IncomingGenericMessageEvent({
         genericMessage: ['EVENT', 'IGNORE_ME'],
       })
     );
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new IncomingGenericMessageEvent({
         genericMessage: ['REQ', 'IGNORE_ME'],
       })
     );
-    memorelayClient.emitBasic(
+    memorelayClient.emitEvent(
       new IncomingGenericMessageEvent({
         genericMessage: ['CLOSE', 'IGNORE_ME'],
       })
@@ -51,7 +51,7 @@ describe('validateIncomingReqMessages()', () => {
       genericMessage: ['BAD_MESSAGE'],
     });
     incomingGenericMessageEvent.preventDefault();
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(mockErrorHandler.mock.calls).toHaveLength(0);
   });
@@ -67,7 +67,7 @@ describe('validateIncomingReqMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN_TYPE'],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 

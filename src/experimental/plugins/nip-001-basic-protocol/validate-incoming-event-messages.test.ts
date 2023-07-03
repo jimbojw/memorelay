@@ -25,7 +25,7 @@ describe('validateIncomingEventMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['EVENT', nostrEvent],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
@@ -51,7 +51,7 @@ describe('validateIncomingEventMessages()', () => {
       genericMessage: ['EVENT', nostrEvent],
     });
     incomingGenericMessageEvent.preventDefault();
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(mockMessageHandler.mock.calls).toHaveLength(0);
   });
@@ -67,7 +67,7 @@ describe('validateIncomingEventMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['UNKNOWN', 12345],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
@@ -85,7 +85,7 @@ describe('validateIncomingEventMessages()', () => {
     const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
       genericMessage: ['EVENT', 12345],
     });
-    memorelayClient.emitBasic(incomingGenericMessageEvent);
+    memorelayClient.emitEvent(incomingGenericMessageEvent);
 
     expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 

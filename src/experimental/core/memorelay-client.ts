@@ -40,11 +40,11 @@ export class MemorelayClient extends BasicEventEmitter<
    */
   connect(): this {
     this.webSocket.on('message', (data: RawData, isBinary: boolean) => {
-      this.emitBasic(new WebSocketMessageEvent({ data, isBinary }));
+      this.emitEvent(new WebSocketMessageEvent({ data, isBinary }));
     });
 
     this.webSocket.on('close', (code: number) => {
-      this.emitBasic(new WebSocketCloseEvent({ code }));
+      this.emitEvent(new WebSocketCloseEvent({ code }));
     });
 
     return this;

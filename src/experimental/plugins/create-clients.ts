@@ -50,7 +50,7 @@ export function createClients(
       webSocketConnectedEvent.preventDefault();
 
       queueMicrotask(() => {
-        hub.emitBasic(memorelayClientCreatedEvent);
+        hub.emitEvent(memorelayClientCreatedEvent);
 
         // TODO(jimbo): Consider removing.
         if (!memorelayClientCreatedEvent.defaultPrevented) {

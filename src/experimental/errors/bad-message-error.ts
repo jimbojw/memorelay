@@ -5,9 +5,11 @@
  * @fileoverview Error type for bad messages.
  */
 
+import { BasicError } from './basic-error';
+
 export const BAD_MESSAGE_ERROR_TYPE = 'bad-message-error';
 
-export class BadMessageError extends Error {
+export class BadMessageError extends BasicError {
   static readonly type: typeof BAD_MESSAGE_ERROR_TYPE = BAD_MESSAGE_ERROR_TYPE;
 
   constructor(private readonly reason: string) {
