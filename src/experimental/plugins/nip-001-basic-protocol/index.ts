@@ -21,6 +21,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
  * component functionality.
  * @param hub Basic event emitter, often a Memorelay instance.
+ * @returns Handler for disconnection.
  */
 export function basicProtocol(hub: MemorelayHub): Handler {
   // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
