@@ -595,7 +595,7 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(2);
       expect(webSocketSentData[1]).toEqual(
-        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
+        messageToBuffer(['EVENT', 'SUBSCRIPTION_ID', EXAMPLE_SIGNED_EVENT])
       );
 
       const actualLogs = await actualLogsPromise;
@@ -640,7 +640,7 @@ describe('Subscriber', () => {
 
       expect(webSocketSentData.length).toBe(2);
       expect(webSocketSentData[0]).toEqual(
-        messageToBuffer(['EVENT', EXAMPLE_SIGNED_EVENT])
+        messageToBuffer(['EVENT', 'SUBSCRIPTION_ID', EXAMPLE_SIGNED_EVENT])
       );
       expect(webSocketSentData[1]).toEqual(
         messageToBuffer(['EOSE', 'SUBSCRIPTION_ID'])

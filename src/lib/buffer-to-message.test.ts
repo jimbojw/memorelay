@@ -272,24 +272,36 @@ describe('bufferToRelayMessage', () => {
   });
 
   describe('EVENT', () => {
-    it('should reject EVENT message without an event', () => {
+    it('should reject EVENT message without subscription id', () => {
       expect(() => {
         bufferToRelayMessage(objectToBuffer(['EVENT']));
+      }).toThrow('bad msg: subscription id missing');
+    });
+
+    it('should reject EVENT message without an event', () => {
+      expect(() => {
+        bufferToRelayMessage(objectToBuffer(['EVENT', 'SUBSCRIPTION_ID']));
       }).toThrow('bad msg: event missing');
     });
 
     it('should reject EVENT message with invalid event', () => {
       expect(() => {
-        bufferToRelayMessage(objectToBuffer(['EVENT', null]));
+        bufferToRelayMessage(
+          objectToBuffer(['EVENT', 'SUBSCRIPTION_ID', null])
+        );
       }).toThrow('bad msg: event invalid');
 
       expect(() => {
-        bufferToRelayMessage(objectToBuffer(['EVENT', {}]));
+        bufferToRelayMessage(objectToBuffer(['EVENT', 'SUBSCRIPTION_ID', {}]));
       }).toThrow('bad msg: event invalid');
 
       expect(() => {
         bufferToRelayMessage(
-          objectToBuffer(['EVENT', { kind: 1, content: 'hello' }])
+          objectToBuffer([
+            'EVENT',
+            'SUBSCRIPTION_ID',
+            { kind: 1, content: 'hello' },
+          ])
         );
       }).toThrow('bad msg: event invalid');
     });
@@ -304,7 +316,11 @@ describe('bufferToRelayMessage', () => {
           '6140478c9ae12f1d0b540e7c57806649327a91b040b07f7ba3dedc357cab0da5',
         tags: [],
       };
-      const payload = objectToBuffer(['EVENT', unsignedEvent]);
+      const payload = objectToBuffer([
+        'EVENT',
+        'SUBSCRIPTION_ID',
+        unsignedEvent,
+      ]);
       expect(() => {
         bufferToRelayMessage(payload);
       }).toThrow('bad msg: event signature missing');
@@ -321,7 +337,11 @@ describe('bufferToRelayMessage', () => {
         sig: 'LET_ME_IN',
         tags: [],
       };
-      const payload = objectToBuffer(['EVENT', unsignedEvent]);
+      const payload = objectToBuffer([
+        'EVENT',
+        'SUBSCRIPTION_ID',
+        unsignedEvent,
+      ]);
       expect(() => {
         bufferToRelayMessage(payload);
       }).toThrow('bad msg: bad signature');
@@ -338,14 +358,15 @@ describe('bufferToRelayMessage', () => {
         sig: 'c84d6e0db72b1b93f7ef95a03ad73519679966d007f030fe3e82fe66e199aa10278da0806109895b62c11f516dff986a59041461c6e26e600fa0f75f4948d8bd',
         tags: [],
       };
-      const payload = objectToBuffer(['EVENT', event]);
+      const payload = objectToBuffer(['EVENT', 'SUBSCRIPTION_ID', event]);
 
       const message = bufferToRelayMessage(payload);
 
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('EVENT');
-      expect(message[1]).toEqual(event);
-      expect(message[1]).not.toBe(event);
+      expect(message[1]).toBe('SUBSCRIPTION_ID');
+      expect(message[2]).toEqual(event);
+      expect(message[2]).not.toBe(event);
     });
   });
 

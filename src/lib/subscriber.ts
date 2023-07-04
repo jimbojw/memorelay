@@ -148,13 +148,13 @@ export class Subscriber {
     // subscription for future events is saved.
     const matchingEvents = this.memorelay.matchFilters(filters);
     for (const event of matchingEvents) {
-      this.sendMessage(['EVENT', event]);
+      this.sendMessage(['EVENT', subscriptionId, event]);
     }
     this.sendMessage(['EOSE', subscriptionId]);
 
     const newSubscriptionNumber = this.memorelay.subscribe((event) => {
       // TODO(jimbo): What if the WebSocket is disconnected?
-      this.sendMessage(['EVENT', event]);
+      this.sendMessage(['EVENT', subscriptionId, event]);
     }, filters);
 
     this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);

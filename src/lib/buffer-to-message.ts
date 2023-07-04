@@ -23,6 +23,7 @@ import {
   OKMessage,
   RelayMessage,
   GenericMessage,
+  RelayEventMessage,
 } from './message-types';
 
 /**
@@ -200,14 +201,20 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
 
   if (eventType === 'EVENT') {
     if (genericMessage.length < 2) {
+      throw new BadMessageError('subscription id missing');
+    }
+
+    checkSubscriptionId(genericMessage[1]);
+
+    if (genericMessage.length < 3) {
       throw new BadMessageError('event missing');
     }
 
-    if (genericMessage.length > 2) {
+    if (genericMessage.length > 3) {
       throw new BadMessageError('extra elements detected');
     }
 
-    const payloadEvent = genericMessage[1] as NostrEvent;
+    const payloadEvent = genericMessage[2] as NostrEvent;
 
     if (!validateEvent(payloadEvent)) {
       throw new BadMessageError('event invalid');
@@ -221,7 +228,7 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
       throw new BadMessageError('bad signature');
     }
 
-    return genericMessage as EventMessage;
+    return genericMessage as RelayEventMessage;
   }
 
   if (eventType === 'EOSE') {

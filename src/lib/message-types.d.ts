@@ -30,7 +30,7 @@ export type ClientMessage = EventMessage | ReqMessage | CloseMessage;
  * A message that a relay might send to a client.
  */
 export type RelayMessage =
-  | RelayEventMessage
   | EOSEMessage
   | NoticeMessage
-  | OKMessage;
+  | OKMessage
+  | RelayEventMessage;
