@@ -10,6 +10,9 @@ import { BadMessageError } from '../../errors/bad-message-error';
 import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { Handler } from '../../types/handler';
+import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/clear-handlers';
 
 /**
  * Memorelay core plugin that rejects any generic message with an unrecognized
@@ -18,14 +21,27 @@ import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-creat
  * @event BadMessageError When an incoming generic message is unrecognized.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function rejectUnrecognizedIncomingMessages(hub: BasicEventEmitter) {
-  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
+export function rejectUnrecognizedIncomingMessages(
+  hub: BasicEventEmitter
+): Handler {
+  return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(IncomingGenericMessageEvent, handleIncomingMessage);
+
+    const handlers: Handler[] = [];
+    handlers.push(
+      memorelayClient.onEvent(
+        IncomingGenericMessageEvent,
+        handleIncomingMessage
+      ),
+      memorelayClient.onEvent(
+        MemorelayClientDisconnectEvent,
+        clearHandlers(handlers)
+      )
+    );
 
     function handleIncomingMessage(
       incomingGenericMessageEvent: IncomingGenericMessageEvent

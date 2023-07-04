@@ -33,10 +33,10 @@ export function basicProtocol(hub: MemorelayHub): Handler {
     validateIncomingEventMessages(hub),
     validateIncomingReqMessages(hub),
     validateIncomingCloseMessages(hub),
-  ];
 
-  // Reject any message type other than EVENT, REQ and CLOSE.
-  rejectUnrecognizedIncomingMessages(hub);
+    // Reject any message type other than EVENT, REQ and CLOSE.
+    rejectUnrecognizedIncomingMessages(hub),
+  ];
 
   // Broadcast incoming EVENT messages to all other connected clients.
   broadcastIncomingEventMessages(hub);
