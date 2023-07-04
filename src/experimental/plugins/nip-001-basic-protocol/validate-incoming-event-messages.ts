@@ -12,6 +12,9 @@ import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { Handler } from '../../types/handler';
+import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/clear-handlers';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
@@ -21,14 +24,25 @@ import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-creat
  * @event BadMessageError When an EVENT message is malformed.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function validateIncomingEventMessages(hub: BasicEventEmitter) {
-  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
+export function validateIncomingEventMessages(hub: BasicEventEmitter): Handler {
+  return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(IncomingGenericMessageEvent, handleIncomingMessage);
+
+    const handlers: Handler[] = [];
+    handlers.push(
+      memorelayClient.onEvent(
+        IncomingGenericMessageEvent,
+        handleIncomingMessage
+      ),
+      memorelayClient.onEvent(
+        MemorelayClientDisconnectEvent,
+        clearHandlers(handlers)
+      )
+    );
 
     function handleIncomingMessage(
       incomingGenericMessageEvent: IncomingGenericMessageEvent

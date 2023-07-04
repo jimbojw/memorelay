@@ -14,6 +14,7 @@ import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-creat
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/clear-handlers';
 
 /**
  * Memorelay core plugin for parsing incoming WebSocket 'message' payload
@@ -36,13 +37,14 @@ export function parseIncomingJsonMessages(hub: BasicEventEmitter): Handler {
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
 
-    const handlers = [
+    const handlers: Handler[] = [];
+    handlers.push(
       memorelayClient.onEvent(WebSocketMessageEvent, handleWebSocketMessage),
       memorelayClient.onEvent(
         MemorelayClientDisconnectEvent,
-        handleClientDisconnect
-      ),
-    ];
+        clearHandlers(handlers)
+      )
+    );
 
     function handleWebSocketMessage(
       webSocketMessageEvent: WebSocketMessageEvent
@@ -64,12 +66,6 @@ export function parseIncomingJsonMessages(hub: BasicEventEmitter): Handler {
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);
       }
-    }
-
-    function handleClientDisconnect() {
-      handlers.splice(0).forEach((handler) => {
-        handler.disconnect();
-      });
     }
   }
 }

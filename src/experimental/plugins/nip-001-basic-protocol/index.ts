@@ -28,12 +28,12 @@ export function basicProtocol(hub: MemorelayHub): Handler {
   const handlers: Handler[] = [
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
     parseIncomingJsonMessages(hub),
-  ];
 
-  // Validate and upgrade incoming EVENT, REQ and CLOSE messages.
-  validateIncomingEventMessages(hub);
-  validateIncomingReqMessages(hub);
-  validateIncomingCloseMessages(hub);
+    // Validate and upgrade incoming EVENT, REQ and CLOSE messages.
+    validateIncomingEventMessages(hub),
+    validateIncomingReqMessages(hub),
+    validateIncomingCloseMessages(hub),
+  ];
 
   // Reject any message type other than EVENT, REQ and CLOSE.
   rejectUnrecognizedIncomingMessages(hub);
