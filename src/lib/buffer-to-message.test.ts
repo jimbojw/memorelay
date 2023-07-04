@@ -10,7 +10,11 @@ import {
   bufferToGenericMessage,
   bufferToRelayMessage,
 } from './buffer-to-message';
-import { NoticeMessage, OKMessage, ReqMessage } from './message-types';
+import {
+  RelayNoticeMessage,
+  RelayOKMessage,
+  ClientReqMessage,
+} from './message-types';
 
 // A valid event id consisting of all zeros.
 const ZERO_ID = Array(64).fill(0).join('');
@@ -228,7 +232,7 @@ describe('bufferToClientMessage', () => {
 
     it('should accept REQ message with one filter', () => {
       const payload = objectToBuffer(['REQ', 'SUBSCRIPTION_ID', {}]);
-      const message = bufferToClientMessage(payload) as ReqMessage;
+      const message = bufferToClientMessage(payload) as ClientReqMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('REQ');
       expect(message[1]).toBe('SUBSCRIPTION_ID');
@@ -242,7 +246,7 @@ describe('bufferToClientMessage', () => {
         { ids: ['1'] },
         { authors: ['2'] },
       ]);
-      const message = bufferToClientMessage(payload) as ReqMessage;
+      const message = bufferToClientMessage(payload) as ClientReqMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('REQ');
       expect(message[1]).toBe('SUBSCRIPTION_ID');
@@ -434,7 +438,7 @@ describe('bufferToRelayMessage', () => {
 
     it('should accept NOTICE message with description', () => {
       const payload = objectToBuffer(['NOTICE', 'some reason']);
-      const message = bufferToRelayMessage(payload) as NoticeMessage;
+      const message = bufferToRelayMessage(payload) as RelayNoticeMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('NOTICE');
       expect(message[1]).toBe('some reason');
@@ -502,7 +506,7 @@ describe('bufferToRelayMessage', () => {
 
     it('should accept OK message with empty description', () => {
       const payload = objectToBuffer(['OK', ZERO_ID, true, '']);
-      const message = bufferToRelayMessage(payload) as OKMessage;
+      const message = bufferToRelayMessage(payload) as RelayOKMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('OK');
       expect(message[1]).toBe(ZERO_ID);
@@ -512,7 +516,7 @@ describe('bufferToRelayMessage', () => {
 
     it('should accept OK message marking duplicate', () => {
       const payload = objectToBuffer(['OK', ZERO_ID, true, 'duplicate:']);
-      const message = bufferToRelayMessage(payload) as OKMessage;
+      const message = bufferToRelayMessage(payload) as RelayOKMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('OK');
       expect(message[1]).toBe(ZERO_ID);
@@ -522,7 +526,7 @@ describe('bufferToRelayMessage', () => {
 
     it('should accept OK message marking deleted event', () => {
       const payload = objectToBuffer(['OK', ZERO_ID, true, 'deleted:']);
-      const message = bufferToRelayMessage(payload) as OKMessage;
+      const message = bufferToRelayMessage(payload) as RelayOKMessage;
       expect(Array.isArray(message)).toBe(true);
       expect(message[0]).toBe('OK');
       expect(message[1]).toBe(ZERO_ID);

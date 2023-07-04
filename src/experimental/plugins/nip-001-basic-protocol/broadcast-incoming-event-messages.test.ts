@@ -14,7 +14,7 @@ import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
-import { EventMessage } from '../../../lib/message-types';
+import { ClientEventMessage } from '../../../lib/message-types';
 import { createSignedTestEvent } from '../../test/signed-test-event';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 
@@ -32,12 +32,12 @@ describe('broadcastIncomingEventMessages()', () => {
       const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
       hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
-      const eventMessage: EventMessage = [
+      const eventMessage: ClientEventMessage = [
         'EVENT',
         createSignedTestEvent({ content: 'testing testing' }),
       ];
       memorelayClient.emitEvent(
-        new IncomingEventMessageEvent({ eventMessage })
+        new IncomingEventMessageEvent({ clientEventMessage: eventMessage })
       );
 
       await Promise.resolve();
@@ -66,12 +66,12 @@ describe('broadcastIncomingEventMessages()', () => {
         new MemorelayClientDisconnectEvent({ memorelayClient })
       );
 
-      const eventMessage: EventMessage = [
+      const eventMessage: ClientEventMessage = [
         'EVENT',
         createSignedTestEvent({ content: 'testing testing' }),
       ];
       memorelayClient.emitEvent(
-        new IncomingEventMessageEvent({ eventMessage })
+        new IncomingEventMessageEvent({ clientEventMessage: eventMessage })
       );
 
       await Promise.resolve();

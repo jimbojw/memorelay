@@ -29,7 +29,9 @@ export function broadcastIncomingEventMessages(hub: MemorelayHub): Handler {
         // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(
           IncomingEventMessageEvent,
-          ({ details: { eventMessage } }: IncomingEventMessageEvent) => {
+          ({
+            details: { clientEventMessage: eventMessage },
+          }: IncomingEventMessageEvent) => {
             hub.emitEvent(
               new BroadcastEventMessageEvent({
                 eventMessage,

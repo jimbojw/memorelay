@@ -5,7 +5,7 @@
  * @fileoverview Event to signal an incoming CLOSE Nostr event.
  */
 
-import { CloseMessage } from '../../lib/message-types';
+import { ClientCloseMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
 export const INCOMING_CLOSE_MESSAGE_EVENT_TYPE = 'incoming-close-message';
@@ -17,7 +17,7 @@ export interface IncomingCloseMessageEventDetails {
   /**
    * The incoming Nostr Close message.
    */
-  readonly closeMessage: CloseMessage;
+  readonly closeMessage: ClientCloseMessage;
 }
 
 /**

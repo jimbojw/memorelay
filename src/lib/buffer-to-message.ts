@@ -15,12 +15,12 @@ import { verifyFilter } from './verify-filters';
 
 import {
   ClientMessage,
-  EventMessage,
-  ReqMessage,
-  CloseMessage,
-  EOSEMessage,
-  NoticeMessage,
-  OKMessage,
+  ClientEventMessage,
+  ClientReqMessage,
+  ClientCloseMessage,
+  RelayEOSEMessage,
+  RelayNoticeMessage,
+  RelayOKMessage,
   RelayMessage,
   GenericMessage,
   RelayEventMessage,
@@ -122,7 +122,7 @@ export function bufferToClientMessage(payloadRawData: Buffer): ClientMessage {
  */
 export function checkEventMessage(
   genericMessage: GenericMessage
-): EventMessage {
+): ClientEventMessage {
   if (genericMessage.length < 2) {
     throw new BadMessageError('event missing');
   }
@@ -145,7 +145,7 @@ export function checkEventMessage(
     throw new BadMessageError('bad signature');
   }
 
-  return genericMessage as EventMessage;
+  return genericMessage as ClientEventMessage;
 }
 
 /**
@@ -154,7 +154,9 @@ export function checkEventMessage(
  * @returns The same incoming genericMessage, but cast as ReqMessage.
  * @throws BadMessageError if the incoming genericMessage is malformed.
  */
-export function checkReqMessage(genericMessage: GenericMessage): ReqMessage {
+export function checkReqMessage(
+  genericMessage: GenericMessage
+): ClientReqMessage {
   checkSubscriptionId(genericMessage[1]);
 
   try {
@@ -165,7 +167,7 @@ export function checkReqMessage(genericMessage: GenericMessage): ReqMessage {
     throw new BadMessageError((err as Error).message);
   }
 
-  return genericMessage as ReqMessage;
+  return genericMessage as ClientReqMessage;
 }
 
 /**
@@ -176,14 +178,14 @@ export function checkReqMessage(genericMessage: GenericMessage): ReqMessage {
  */
 export function checkCloseMessage(
   genericMessage: GenericMessage
-): CloseMessage {
+): ClientCloseMessage {
   checkSubscriptionId(genericMessage[1]);
 
   if (genericMessage.length > 2) {
     throw new BadMessageError('extra elements detected');
   }
 
-  return genericMessage as CloseMessage;
+  return genericMessage as ClientCloseMessage;
 }
 
 /**
@@ -234,7 +236,7 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
   if (eventType === 'EOSE') {
     checkSubscriptionId(genericMessage[1]);
 
-    return genericMessage as EOSEMessage;
+    return genericMessage as RelayEOSEMessage;
   }
 
   if (eventType === 'NOTICE') {
@@ -250,7 +252,7 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
       throw new BadMessageError('extra elements detected');
     }
 
-    return genericMessage as NoticeMessage;
+    return genericMessage as RelayNoticeMessage;
   }
 
   if (eventType === 'OK') {
@@ -305,7 +307,7 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
       throw new BadMessageError('extra elements detected');
     }
 
-    return genericMessage as OKMessage;
+    return genericMessage as RelayOKMessage;
   }
 
   throw new BadMessageError('unrecognized event type');

@@ -5,7 +5,7 @@
  * @fileoverview Event to signal an incoming generic Nostr event.
  */
 
-import { ReqMessage } from '../../lib/message-types';
+import { ClientReqMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
 export const INCOMING_REQ_MESSAGE_EVENT_TYPE = 'incoming-req-message';
@@ -17,7 +17,7 @@ export interface IncomingReqMessageEventDetails {
   /**
    * The incoming Nostr REQ message.
    */
-  readonly reqMessage: ReqMessage;
+  readonly reqMessage: ClientReqMessage;
 }
 
 /**

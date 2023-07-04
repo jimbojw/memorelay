@@ -6,7 +6,7 @@
  * one client to others.
  */
 
-import { EventMessage } from '../../lib/message-types';
+import { ClientEventMessage } from '../../lib/message-types';
 import { MemorelayClient } from '../core/memorelay-client';
 import { BasicEvent } from './basic-event';
 
@@ -19,7 +19,7 @@ export interface BroadcastEventMessageEventDetails {
   /**
    * The incoming Nostr EVENT message.
    */
-  readonly eventMessage: EventMessage;
+  readonly eventMessage: ClientEventMessage;
 
   /**
    * The originating Memorelay instance.

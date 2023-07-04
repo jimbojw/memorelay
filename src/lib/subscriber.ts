@@ -8,10 +8,10 @@
 import { bufferToClientMessage } from './buffer-to-message';
 import {
   ClientMessage,
-  CloseMessage,
-  EventMessage,
+  ClientCloseMessage,
+  ClientEventMessage,
   RelayMessage,
-  ReqMessage,
+  ClientReqMessage,
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
 import { messageToBuffer } from './message-to-buffer';
@@ -103,7 +103,7 @@ export class Subscriber {
    * Handle an incoming EVENT message.
    * @param eventMessage Incoming EVENT message to handle.
    */
-  handleEventMessage(eventMessage: EventMessage) {
+  handleEventMessage(eventMessage: ClientEventMessage) {
     const event = eventMessage[1];
     if (this.memorelay.hasEvent(event.id)) {
       this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
@@ -132,7 +132,7 @@ export class Subscriber {
    * Handle an incoming REQ message.
    * @param reqMessage Incoming REQ message to handle.
    */
-  handleReqMessage(reqMessage: ReqMessage) {
+  handleReqMessage(reqMessage: ClientReqMessage) {
     const [, subscriptionId, ...filters] = reqMessage;
 
     this.logger.log('verbose', 'REQ %s', subscriptionId);
@@ -164,7 +164,7 @@ export class Subscriber {
    * Handle an incoming CLOSE message.
    * @param closeMessage Incoming CLOSE message to handle.
    */
-  handleCloseMessage(closeMessage: CloseMessage) {
+  handleCloseMessage(closeMessage: ClientCloseMessage) {
     const [, subscriptionId] = closeMessage;
 
     this.logger.log('verbose', 'CLOSE %s', subscriptionId);

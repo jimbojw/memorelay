@@ -32,7 +32,7 @@ describe('validateIncomingEventMessages()', () => {
     expect(mockMessageHandler.mock.calls).toHaveLength(1);
     const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
     expect(incomingEventMessageEvent).toBeInstanceOf(IncomingEventMessageEvent);
-    expect(incomingEventMessageEvent.details.eventMessage).toEqual([
+    expect(incomingEventMessageEvent.details.clientEventMessage).toEqual([
       'EVENT',
       nostrEvent,
     ]);

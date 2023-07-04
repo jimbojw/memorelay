@@ -9,10 +9,10 @@ import { bufferToRelayMessage } from './buffer-to-message';
 import { createExpectingLogger } from './create-expecting-logger';
 import {
   ClientMessage,
-  CloseMessage,
-  EventMessage,
+  ClientCloseMessage,
+  ClientEventMessage,
   RelayMessage,
-  ReqMessage,
+  ClientReqMessage,
 } from './message-types';
 import { MemorelayCoordinator } from './memorelay-coordinator';
 import { messageToBuffer } from './message-to-buffer';
@@ -327,8 +327,8 @@ describe('Subscriber', () => {
         memorelay
       );
 
-      const handleEventMessageParams: EventMessage[] = [];
-      subscriber.handleEventMessage = (eventMessage: EventMessage) => {
+      const handleEventMessageParams: ClientEventMessage[] = [];
+      subscriber.handleEventMessage = (eventMessage: ClientEventMessage) => {
         handleEventMessageParams.push(eventMessage);
       };
 
@@ -355,8 +355,8 @@ describe('Subscriber', () => {
         memorelay
       );
 
-      const handleReqMessageParams: ReqMessage[] = [];
-      subscriber.handleReqMessage = (reqMessage: ReqMessage) => {
+      const handleReqMessageParams: ClientReqMessage[] = [];
+      subscriber.handleReqMessage = (reqMessage: ClientReqMessage) => {
         handleReqMessageParams.push(reqMessage);
       };
 
@@ -379,8 +379,8 @@ describe('Subscriber', () => {
         memorelay
       );
 
-      const handleCloseMessageParams: CloseMessage[] = [];
-      subscriber.handleCloseMessage = (closeMessage: CloseMessage) => {
+      const handleCloseMessageParams: ClientCloseMessage[] = [];
+      subscriber.handleCloseMessage = (closeMessage: ClientCloseMessage) => {
         handleCloseMessageParams.push(closeMessage);
       };
 

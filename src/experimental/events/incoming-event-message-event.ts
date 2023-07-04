@@ -5,7 +5,7 @@
  * @fileoverview Event to signal an incoming generic Nostr event.
  */
 
-import { EventMessage } from '../../lib/message-types';
+import { ClientEventMessage } from '../../lib/message-types';
 import { BasicEvent } from './basic-event';
 
 export const INCOMING_EVENT_MESSAGE_EVENT_TYPE = 'incoming-event-message';
@@ -17,7 +17,7 @@ export interface IncomingEventMessageEventDetails {
   /**
    * The incoming Nostr EVENT message.
    */
-  readonly eventMessage: EventMessage;
+  readonly clientEventMessage: ClientEventMessage;
 }
 
 /**

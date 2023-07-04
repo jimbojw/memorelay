@@ -14,7 +14,7 @@ import { Event as NostrEvent } from 'nostr-tools';
 import path from 'path';
 import { spawn } from 'child_process';
 import { WebSocket } from 'ws';
-import { OKMessage } from './lib/message-types';
+import { RelayOKMessage } from './lib/message-types';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
   content: 'BRB, turning on the miners',
@@ -194,10 +194,10 @@ describe('bin.ts', () => {
       childProcess.on('error', reject);
     });
 
-    const webSocketOKMessagePromise = new Promise<OKMessage>(
+    const webSocketOKMessagePromise = new Promise<RelayOKMessage>(
       (resolve, reject) => {
         webSocket.once('message', (buffer: Buffer) => {
-          resolve(bufferToRelayMessage(buffer) as OKMessage);
+          resolve(bufferToRelayMessage(buffer) as RelayOKMessage);
         });
         webSocket.once('error', reject);
       }
