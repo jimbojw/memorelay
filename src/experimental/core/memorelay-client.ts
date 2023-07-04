@@ -13,6 +13,14 @@ import { BasicEventEmitter } from './basic-event-emitter';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 import { ClientEvent } from '../events/client-event';
 import { ClientError } from '../errors/client-error';
+import { onWithHandler } from './on-with-handler';
+import { Handler } from '../types/handler';
+import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
+
+/**
+ * Symbol for accessing the internal handlers list in tests.
+ */
+export const HANDLERS = Symbol('handlers');
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
@@ -25,6 +33,12 @@ export class MemorelayClient<
   PluginClientEvent | ClientEvent,
   PluginClientError | ClientError
 > {
+  private readonly handlers: Handler[] = [];
+
+  readonly [HANDLERS] = this.handlers;
+
+  private isConnected = false;
+
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.
@@ -42,14 +56,72 @@ export class MemorelayClient<
    * @returns this
    */
   connect(): this {
-    this.webSocket.on('message', (data: RawData, isBinary: boolean) => {
-      this.emitEvent(new WebSocketMessageEvent({ data, isBinary }));
-    });
+    if (this.isConnected) {
+      return this;
+    }
 
-    this.webSocket.on('close', (code: number) => {
-      this.emitEvent(new WebSocketCloseEvent({ code }));
-    });
+    this.handlers.push(
+      // Upgrade native WebSocket 'message' events to WebSocketMessageEvents.
+      onWithHandler(
+        this.webSocket,
+        'message',
+        (data: RawData, isBinary: boolean) => {
+          this.emitEvent(new WebSocketMessageEvent({ data, isBinary }));
+        }
+      ),
 
+      // Upgrade native WebSocket 'close' events to WebSocketCloseEvents.
+      onWithHandler(this.webSocket, 'close', (code: number) => {
+        this.emitEvent(new WebSocketCloseEvent({ code }));
+      }),
+
+      // On WebSocketCloseEvent, trigger MemorelayClientDisconnectEvent.
+      this.onEvent(
+        WebSocketCloseEvent,
+        (webSocketCloseEvent: WebSocketCloseEvent) => {
+          queueMicrotask(() => {
+            if (webSocketCloseEvent.defaultPrevented) {
+              return; // Preempted by another handler.
+            }
+            this.emitEvent(
+              new MemorelayClientDisconnectEvent({ memorelayClient: this })
+            );
+          });
+        }
+      ),
+
+      // On MemorelayClientDisconnectEvent, disconnect.
+      this.onEvent(
+        MemorelayClientDisconnectEvent,
+        (memorelayClientDisconnectedEvent: MemorelayClientDisconnectEvent) => {
+          queueMicrotask(() => {
+            if (memorelayClientDisconnectedEvent.defaultPrevented) {
+              return; // Preempted by another handler.
+            }
+            this.disconnect();
+          });
+        }
+      )
+    );
+
+    this.isConnected = true;
+
+    return this;
+  }
+
+  /**
+   * Disconnect all listeners.
+   * @returns this.
+   */
+  disconnect(): this {
+    if (!this.isConnected) {
+      return this;
+    }
+    this.handlers.forEach((handler) => {
+      handler.disconnect();
+    });
+    this.handlers.splice(0);
+    this.isConnected = false;
     return this;
   }
 }
