@@ -13,6 +13,7 @@ import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
+import { Handler } from '../types/handler';
 
 /**
  * Memorelay core plugin to create MemorelayClient instances out of connected
@@ -24,8 +25,8 @@ import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-
 export function createClients(
   hub: BasicEventEmitter,
   webSocketClientMap = new Map<WebSocket, MemorelayClient>()
-) {
-  hub.onEvent(
+): Handler {
+  return hub.onEvent(
     WebSocketConnectedEvent,
     (webSocketConnectedEvent: WebSocketConnectedEvent) => {
       if (webSocketConnectedEvent.defaultPrevented) {

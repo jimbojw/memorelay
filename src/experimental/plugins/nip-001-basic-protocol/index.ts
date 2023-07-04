@@ -6,6 +6,7 @@
  */
 
 import { MemorelayHub } from '../../core/memorelay-hub';
+import { Handler } from '../../types/handler';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
@@ -21,7 +22,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * component functionality.
  * @param hub Basic event emitter, often a Memorelay instance.
  */
-export function basicProtocol(hub: MemorelayHub) {
+export function basicProtocol(hub: MemorelayHub): Handler {
   // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
   parseIncomingJsonMessages(hub);
 
@@ -41,4 +42,10 @@ export function basicProtocol(hub: MemorelayHub) {
 
   // Serialize outgoing generic messages and send to the WebSocket.
   serializeOutgoingJsonMessages(hub);
+
+  return {
+    disconnect: () => {
+      throw new Error('DISCONNECT NOT YET IMPLEMENTED');
+    },
+  };
 }
