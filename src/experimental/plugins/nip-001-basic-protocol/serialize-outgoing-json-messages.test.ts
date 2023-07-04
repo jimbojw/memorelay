@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for parseIncomingJsonMessages().
+ * @fileoverview Tests for serializeOutgoingJsonMessages().
  */
 
 import { IncomingMessage } from 'http';
@@ -15,7 +15,7 @@ import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-message
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 
-describe('parseIncomingJsonMessages()', () => {
+describe('serializeOutgoingJsonMessages()', () => {
   it('should serialize and send a generic message', () => {
     const hub = new BasicEventEmitter();
     serializeOutgoingJsonMessages(hub as MemorelayHub);

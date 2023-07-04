@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for main Memorelay entry point.
+ * @fileoverview Tests for MemorelayHub.
  */
 
 import { MemorelayHub } from './memorelay-hub';

@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for the createClients() Memorelay core plugin.
+ * @fileoverview Tests for the createClients().
  */
 
 import { IncomingMessage } from 'http';

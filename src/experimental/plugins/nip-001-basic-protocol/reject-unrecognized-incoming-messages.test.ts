@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for validateIncomingReqMessages().
+ * @fileoverview Tests for rejectUnrecognizedIncomingMessages().
  */
 
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
@@ -10,7 +10,7 @@ import { IncomingGenericMessageEvent } from '../../events/incoming-generic-messa
 import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
 import { BadMessageError } from '../../errors/bad-message-error';
 
-describe('validateIncomingReqMessages()', () => {
+describe('rejectUnrecognizedIncomingMessages()', () => {
   it('should ignore known message types', () => {
     const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
       rejectUnrecognizedIncomingMessages(hub);
