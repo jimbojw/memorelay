@@ -36,13 +36,13 @@ export function basicProtocol(hub: MemorelayHub): Handler {
 
     // Reject any message type other than EVENT, REQ and CLOSE.
     rejectUnrecognizedIncomingMessages(hub),
+
+    // Broadcast incoming EVENT messages to all other connected clients.
+    broadcastIncomingEventMessages(hub),
+
+    // Subscribe to incoming REQ messages.
+    subscribeToIncomingReqMessages(hub),
   ];
-
-  // Broadcast incoming EVENT messages to all other connected clients.
-  broadcastIncomingEventMessages(hub);
-
-  // Subscribe to incoming REQ messages.
-  subscribeToIncomingReqMessages(hub);
 
   // Serialize outgoing generic messages and send to the WebSocket.
   serializeOutgoingJsonMessages(hub);

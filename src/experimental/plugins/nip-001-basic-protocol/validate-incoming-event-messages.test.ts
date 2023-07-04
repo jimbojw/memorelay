@@ -7,14 +7,14 @@
 
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
   it('should validate an EVENT message', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingEventMessages(hub);
     });
 
@@ -39,7 +39,7 @@ describe('validateIncomingEventMessages()', () => {
   });
 
   it('should ignore an EVENT message if defaultPrevented', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingEventMessages(hub);
     });
 
@@ -57,7 +57,7 @@ describe('validateIncomingEventMessages()', () => {
   });
 
   it('should ignore non-EVENT messages', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingEventMessages(hub);
     });
 
@@ -75,7 +75,7 @@ describe('validateIncomingEventMessages()', () => {
   });
 
   it('should emit an error when EVENT message is malformed', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingEventMessages(hub);
     });
 

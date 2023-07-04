@@ -7,13 +7,13 @@
 
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingCloseMessages()', () => {
   it('should validate and re-emit a CLOSE message', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingCloseMessages(hub);
     });
 
@@ -37,7 +37,7 @@ describe('validateIncomingCloseMessages()', () => {
   });
 
   it('should ignore a CLOSE message if defaultPrevented', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingCloseMessages(hub);
     });
 
@@ -54,7 +54,7 @@ describe('validateIncomingCloseMessages()', () => {
   });
 
   it('should ignore non-CLOSE messages', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingCloseMessages(hub);
     });
 
@@ -72,7 +72,7 @@ describe('validateIncomingCloseMessages()', () => {
   });
 
   it('should emit an error when CLOSE message is malformed', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingCloseMessages(hub);
     });
 

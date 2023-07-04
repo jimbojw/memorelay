@@ -16,6 +16,7 @@ export type ReqMessage = ['REQ', string, ...Filter[]];
 export type CloseMessage = ['CLOSE', string];
 export type EOSEMessage = ['EOSE', string];
 export type NoticeMessage = ['NOTICE', string];
+export type RelayEventMessage = ['EVENT', string, NostrEvent];
 
 // @see https://github.com/nostr-protocol/nips/blob/master/20.md
 export type OKMessage = ['OK', string, boolean, string];
@@ -29,7 +30,7 @@ export type ClientMessage = EventMessage | ReqMessage | CloseMessage;
  * A message that a relay might send to a client.
  */
 export type RelayMessage =
-  | EventMessage
+  | RelayEventMessage
   | EOSEMessage
   | NoticeMessage
   | OKMessage;

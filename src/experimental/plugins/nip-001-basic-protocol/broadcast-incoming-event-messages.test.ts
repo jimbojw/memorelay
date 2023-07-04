@@ -8,95 +8,75 @@
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
-import { BasicEventEmitter } from '../../core/basic-event-emitter';
-import { MemorelayHub } from '../../core/memorelay-hub';
-import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 import { MemorelayClient } from '../../core/memorelay-client';
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayHub } from '../../core/memorelay-hub';
 import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
+import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { EventMessage } from '../../../lib/message-types';
-import { WebSocketCloseEvent } from '../../events/web-socket-close-event';
+import { createSignedTestEvent } from '../../test/signed-test-event';
+import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 
 describe('broadcastIncomingEventMessages()', () => {
-  it('should broadcast incoming EVENT messages to other clients', async () => {
-    const hub = new BasicEventEmitter() as MemorelayHub;
-    broadcastIncomingEventMessages(hub);
+  describe('#IncomingEventMessageEvent', () => {
+    it('should broadcast incoming EVENT messages up to the hub', async () => {
+      const hub = new MemorelayHub(() => []);
+      broadcastIncomingEventMessages(hub);
 
-    const clientList = new Array(5).fill(0).map(() => {
-      return new MemorelayClient({} as WebSocket, {} as IncomingMessage);
-    });
+      const mockHandlerFn = jest.fn<unknown, [BroadcastEventMessageEvent]>();
+      hub.onEvent(BroadcastEventMessageEvent, mockHandlerFn);
 
-    for (const memorelayClient of clientList) {
+      const mockRequest = {} as IncomingMessage;
+      const mockWebSocket = {} as WebSocket;
+      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
       hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
-    }
 
-    const mockBroadcastEventHandler = jest.fn<
-      MemorelayClient,
-      [BroadcastEventMessageEvent]
-    >();
-    for (const memorelayClient of clientList) {
-      memorelayClient.onEvent(
-        BroadcastEventMessageEvent,
-        mockBroadcastEventHandler
+      const eventMessage: EventMessage = [
+        'EVENT',
+        createSignedTestEvent({ content: 'testing testing' }),
+      ];
+      memorelayClient.emitEvent(
+        new IncomingEventMessageEvent({ eventMessage })
       );
-    }
 
-    // Emit from the third (index=2) client.
-    clientList[2].emitEvent(
-      new IncomingEventMessageEvent({
-        eventMessage: ['EVENT', 'MOCK'] as unknown as EventMessage,
-      })
-    );
+      await Promise.resolve();
 
-    // Since broadcast messages are done using queueMicrotask(), we need to wait
-    // until they've finished emitting.
-    await Promise.resolve();
-
-    // Only should receive four broadcast events (index 0, 1, 3 and 4).
-    expect(mockBroadcastEventHandler.mock.calls).toHaveLength(4);
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+      const eventParam = mockHandlerFn.mock.calls[0][0];
+      expect(eventParam.details.eventMessage).toBe(eventMessage);
+      expect(eventParam.details.memorelayClient).toBe(memorelayClient);
+    });
   });
 
-  it('should forget client when WebSocket closes', async () => {
-    const hub = new BasicEventEmitter() as MemorelayHub;
-    broadcastIncomingEventMessages(hub);
+  describe('#MemorelayClientDisconnectEvent', () => {
+    it('should trigger disconnect', async () => {
+      const hub = new MemorelayHub(() => []);
+      broadcastIncomingEventMessages(hub);
 
-    const clientList = new Array(5).fill(0).map(() => {
-      return new MemorelayClient({} as WebSocket, {} as IncomingMessage);
-    });
+      const mockHandlerFn = jest.fn<unknown, [BroadcastEventMessageEvent]>();
+      hub.onEvent(BroadcastEventMessageEvent, mockHandlerFn);
 
-    for (const memorelayClient of clientList) {
+      const mockRequest = {} as IncomingMessage;
+      const mockWebSocket = {} as WebSocket;
+      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
       hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
-    }
 
-    const mockBroadcastEventHandler = jest.fn<
-      MemorelayClient,
-      [BroadcastEventMessageEvent]
-    >();
-    for (const memorelayClient of clientList) {
-      memorelayClient.onEvent(
-        BroadcastEventMessageEvent,
-        mockBroadcastEventHandler
+      memorelayClient.emitEvent(
+        new MemorelayClientDisconnectEvent({ memorelayClient })
       );
-    }
 
-    // Close three of the five clients.
-    for (const index of [0, 2, 4]) {
-      const memorelayClient = clientList[index];
-      memorelayClient.emitEvent(new WebSocketCloseEvent({ code: 1000 }));
-    }
+      const eventMessage: EventMessage = [
+        'EVENT',
+        createSignedTestEvent({ content: 'testing testing' }),
+      ];
+      memorelayClient.emitEvent(
+        new IncomingEventMessageEvent({ eventMessage })
+      );
 
-    clientList[1].emitEvent(
-      new IncomingEventMessageEvent({
-        eventMessage: ['EVENT', 'MOCK'] as unknown as EventMessage,
-      })
-    );
+      await Promise.resolve();
 
-    // Since broadcast messages are done using queueMicrotask(), we need to wait
-    // until they've finished emitting.
-    await Promise.resolve();
-
-    // Only the fourth client (index=3) should have received the broadcast.
-    expect(mockBroadcastEventHandler.mock.calls).toHaveLength(1);
+      expect(mockHandlerFn).not.toHaveBeenCalled();
+    });
   });
 });

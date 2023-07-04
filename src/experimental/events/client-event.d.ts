@@ -5,7 +5,6 @@
  * @fileoverview Union type of events emitted at the client level.
  */
 
-import { BroadcastEventMessageEvent } from './broadcast-event-message-event';
 import { IncomingCloseMessageEvent } from './incoming-close-message-event';
 import { IncomingEventMessageEvent } from './incoming-event-message-event';
 import { IncomingGenericMessageEvent } from './incoming-generic-message-event';
@@ -19,7 +18,6 @@ import { WebSocketMessageEvent } from './web-socket-message-event';
  * Union type of events that are expected to be emitted at the client level.
  */
 export type ClientEvent =
-  | BroadcastEventMessageEvent
   | IncomingCloseMessageEvent
   | IncomingEventMessageEvent
   | IncomingGenericMessageEvent

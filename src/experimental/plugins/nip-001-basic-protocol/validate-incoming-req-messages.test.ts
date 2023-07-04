@@ -7,13 +7,13 @@
 
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingReqMessages()', () => {
   it('should validate and re-emit a REQ message', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingReqMessages(hub);
     });
 
@@ -37,7 +37,7 @@ describe('validateIncomingReqMessages()', () => {
   });
 
   it('should ignore a REQ message if defaultPrevented', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingReqMessages(hub);
     });
 
@@ -54,7 +54,7 @@ describe('validateIncomingReqMessages()', () => {
   });
 
   it('should ignore non-REQ messages', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingReqMessages(hub);
     });
 
@@ -72,7 +72,7 @@ describe('validateIncomingReqMessages()', () => {
   });
 
   it('should emit an error when REQ message is malformed', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       validateIncomingReqMessages(hub);
     });
 

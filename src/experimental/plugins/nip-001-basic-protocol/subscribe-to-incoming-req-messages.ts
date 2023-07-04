@@ -12,6 +12,11 @@ import { Filter, matchFilters } from 'nostr-tools';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
 import { SubscriptionNotFoundError } from '../../errors/subscription-not-found-error';
 import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
+import { Handler } from '../../types/handler';
+import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/clear-handlers';
+import { RelayEventMessage } from '../../../lib/message-types';
+import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
@@ -20,65 +25,88 @@ import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function subscribeToIncomingReqMessages(hub: MemorelayHub) {
-  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
+export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
+  return hub.onEvent(
+    MemorelayClientCreatedEvent,
+    ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+      const subscriptions = new Map<string, Filter[]>();
 
-  function handleClientCreated(
-    memorelayClientCreatedEvent: MemorelayClientCreatedEvent
-  ) {
-    const { memorelayClient } = memorelayClientCreatedEvent.details;
+      const handlers: Handler[] = [];
+      handlers.push(
+        // Subscribe on incoming REQ event.
+        memorelayClient.onEvent(IncomingReqMessageEvent, handleReqMessage),
 
-    const subscriptions = new Map<string, Filter[]>();
+        // Cancel subscription on CLOSE event.
+        memorelayClient.onEvent(IncomingCloseMessageEvent, handleCloseMessage),
 
-    memorelayClient.onEvent(IncomingReqMessageEvent, handleReqMessage);
-    memorelayClient.onEvent(IncomingCloseMessageEvent, handleCloseMessage);
-    memorelayClient.onEvent(
-      BroadcastEventMessageEvent,
-      handleBroadcastEventMessage
-    );
+        // Listen for broadcasted EVENTs from other connected clients.
+        hub.onEvent(BroadcastEventMessageEvent, handleBroadcastEventMessage),
 
-    function handleReqMessage(
-      incomingReqMessageEvent: IncomingReqMessageEvent
-    ) {
-      if (incomingReqMessageEvent.defaultPrevented) {
-        return; // Preempted by another handler.
-      }
-      const [, subscriptionId, ...filters] =
-        incomingReqMessageEvent.details.reqMessage;
-      subscriptions.set(subscriptionId, filters);
-    }
+        // Clean up on disconnect.
+        memorelayClient.onEvent(
+          MemorelayClientDisconnectEvent,
+          clearHandlers(handlers)
+        )
+      );
 
-    function handleCloseMessage(
-      incomingCloseMessageEvent: IncomingCloseMessageEvent
-    ) {
-      if (incomingCloseMessageEvent.defaultPrevented) {
-        return; // Preempted by another handler.
-      }
-
-      const [, subscriptionId] = incomingCloseMessageEvent.details.closeMessage;
-
-      if (!subscriptions.has(subscriptionId)) {
-        memorelayClient.emitError(
-          new SubscriptionNotFoundError(subscriptionId)
-        );
-        return;
+      function handleReqMessage(
+        incomingReqMessageEvent: IncomingReqMessageEvent
+      ) {
+        if (incomingReqMessageEvent.defaultPrevented) {
+          return; // Preempted by another handler.
+        }
+        const [, subscriptionId, ...filters] =
+          incomingReqMessageEvent.details.reqMessage;
+        subscriptions.set(subscriptionId, filters);
       }
 
-      subscriptions.delete(subscriptionId);
-    }
+      function handleCloseMessage(
+        incomingCloseMessageEvent: IncomingCloseMessageEvent
+      ) {
+        if (incomingCloseMessageEvent.defaultPrevented) {
+          return; // Preempted by another handler.
+        }
 
-    function handleBroadcastEventMessage(
-      broadcastEventMessageEvent: BroadcastEventMessageEvent
-    ) {
-      const [, broadcastEvent] =
-        broadcastEventMessageEvent.details.eventMessage;
-      for (const [subscriptionId, filters] of subscriptions.entries()) {
-        if (!filters.length || matchFilters(filters, broadcastEvent)) {
-          queueMicrotask(() => {
-            // TODO(jimbo): Send event down to client.
-          });
+        const [, subscriptionId] =
+          incomingCloseMessageEvent.details.closeMessage;
+
+        if (!subscriptions.has(subscriptionId)) {
+          memorelayClient.emitError(
+            new SubscriptionNotFoundError(subscriptionId)
+          );
+          return;
+        }
+
+        subscriptions.delete(subscriptionId);
+      }
+
+      function handleBroadcastEventMessage({
+        details: broadcastDetails,
+      }: BroadcastEventMessageEvent) {
+        if (broadcastDetails.memorelayClient === memorelayClient) {
+          return; // Nothing to do. This client originated this broadcast event.
+        }
+
+        const [, broadcastEvent] = broadcastDetails.eventMessage;
+
+        for (const [subscriptionId, filters] of subscriptions.entries()) {
+          if (!filters.length || matchFilters(filters, broadcastEvent)) {
+            queueMicrotask(() => {
+              const outgoingEventMessage: RelayEventMessage = [
+                'EVENT',
+                subscriptionId,
+                broadcastEvent,
+              ];
+              // TODO(jimbo): Implement and switch to OutgoingEventMessageEvent.
+              memorelayClient.emitEvent(
+                new OutgoingGenericMessageEvent({
+                  genericMessage: outgoingEventMessage,
+                })
+              );
+            });
+          }
         }
       }
     }
-  }
+  );
 }

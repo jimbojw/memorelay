@@ -7,12 +7,12 @@
 
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { setupHubAndMemorelayClient } from '../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('rejectUnrecognizedIncomingMessages()', () => {
   it('should ignore known message types', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       rejectUnrecognizedIncomingMessages(hub);
     });
 
@@ -39,7 +39,7 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
   });
 
   it('should ignore events with defaultPrevented', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       rejectUnrecognizedIncomingMessages(hub);
     });
 
@@ -56,7 +56,7 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
   });
 
   it('should emit an error when message type is unrecognized', () => {
-    const { memorelayClient } = setupHubAndMemorelayClient((hub) => {
+    const { memorelayClient } = setupTestHubAndClient((hub) => {
       rejectUnrecognizedIncomingMessages(hub);
     });
 

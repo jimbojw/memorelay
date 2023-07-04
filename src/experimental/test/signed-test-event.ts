@@ -13,8 +13,12 @@ import {
 } from 'nostr-tools';
 import { signEvent } from '../../lib/sign-event';
 
+interface ExtendedUnsignedEvent extends UnsignedEvent {
+  kind: number;
+}
+
 export function createSignedTestEvent(
-  templateEvent: Partial<UnsignedEvent>,
+  templateEvent: Partial<ExtendedUnsignedEvent>,
   secretKey = generatePrivateKey()
 ) {
   const pubkey = getPublicKey(secretKey);
