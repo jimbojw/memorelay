@@ -5,10 +5,7 @@
  * @fileoverview Integration tests for binary (entry point bin.ts).
  */
 
-import {
-  bufferToClientMessage,
-  bufferToRelayMessage,
-} from './lib/buffer-to-message';
+import { bufferToRelayMessage } from './lib/buffer-to-message';
 
 import { Event as NostrEvent } from 'nostr-tools';
 import path from 'path';
