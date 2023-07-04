@@ -42,10 +42,10 @@ export function basicProtocol(hub: MemorelayHub): Handler {
 
     // Subscribe to incoming REQ messages.
     subscribeToIncomingReqMessages(hub),
-  ];
 
-  // Serialize outgoing generic messages and send to the WebSocket.
-  serializeOutgoingJsonMessages(hub);
+    // Serialize outgoing generic messages and send to the WebSocket.
+    serializeOutgoingJsonMessages(hub),
+  ];
 
   return { disconnect: clearHandlers(handlers) };
 }

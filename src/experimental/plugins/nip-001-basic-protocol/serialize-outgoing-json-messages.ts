@@ -9,6 +9,9 @@
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
+import { Handler } from '../../types/handler';
+import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/clear-handlers';
 
 /**
  * Memorelay core plugin for serializing generic, outgoing Nostr messages as
@@ -16,16 +19,26 @@ import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-messa
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function serializeOutgoingJsonMessages(hub: MemorelayHub) {
-  hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
+export function serializeOutgoingJsonMessages(hub: MemorelayHub): Handler {
+  return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
     memorelayClientCreatedEvent: MemorelayClientCreatedEvent
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
-    memorelayClient.onEvent(
-      OutgoingGenericMessageEvent,
-      handleOutgoingGenericMessage
+
+    const handlers: Handler[] = [];
+    handlers.push(
+      // Serialize and send outgoing messages to the WebSocket.
+      memorelayClient.onEvent(
+        OutgoingGenericMessageEvent,
+        handleOutgoingGenericMessage
+      ),
+      // Clean up on disconnect.
+      memorelayClient.onEvent(
+        MemorelayClientDisconnectEvent,
+        clearHandlers(handlers)
+      )
     );
 
     function handleOutgoingGenericMessage(
