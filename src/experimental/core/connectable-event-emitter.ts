@@ -8,6 +8,8 @@
 
 import { BasicEventEmitter } from './basic-event-emitter';
 import { Handler } from '../types/handler';
+import { BasicEvent } from '../events/basic-event';
+import { BasicError } from '../errors/basic-error';
 
 /**
  * Symbol for accessing the internal handlers list in tests.
@@ -18,7 +20,10 @@ export const HANDLERS = Symbol('handlers');
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
  * receives raw message events from the socket, and sends encoded messages back.
  */
-export class ConnectableEventEmitter extends BasicEventEmitter {
+export class ConnectableEventEmitter<
+  EventType extends BasicEvent = BasicEvent,
+  ErrorType extends BasicError = BasicError
+> extends BasicEventEmitter<EventType, ErrorType> {
   private handlers?: Handler[];
 
   /**

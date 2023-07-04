@@ -6,7 +6,7 @@
  */
 
 import { WebSocket } from 'ws';
-import { HANDLERS, MemorelayClient } from './memorelay-client';
+import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
@@ -14,79 +14,6 @@ import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
 
 describe('MemorelayClient', () => {
-  describe('connect()', () => {
-    it('should connect handlers', () => {
-      const request = {} as Request;
-      const webSocket = new EventEmitter() as WebSocket;
-      const memorelayClient = new MemorelayClient(webSocket, request);
-      const handlers = memorelayClient[HANDLERS];
-
-      expect(handlers).toHaveLength(0);
-      expect(webSocket.eventNames()).toHaveLength(0);
-      expect(memorelayClient.internalEmitter.eventNames()).toHaveLength(0);
-
-      memorelayClient.connect();
-
-      expect(handlers.length).toBeGreaterThan(0);
-      expect(webSocket.eventNames().length).toBeGreaterThan(0);
-      expect(
-        memorelayClient.internalEmitter.eventNames().length
-      ).toBeGreaterThan(0);
-    });
-
-    it('should only connect once', () => {
-      const request = {} as Request;
-      const webSocket = new EventEmitter() as WebSocket;
-      const memorelayClient = new MemorelayClient(webSocket, request);
-      const handlers = memorelayClient[HANDLERS];
-
-      memorelayClient.connect();
-
-      const handlersLength = handlers.length;
-      const webSocketEventNamesLength = webSocket.eventNames().length;
-      const internalEventNamesLength =
-        memorelayClient.internalEmitter.eventNames().length;
-
-      memorelayClient.connect();
-
-      expect(handlers).toHaveLength(handlersLength);
-      expect(webSocket.eventNames()).toHaveLength(webSocketEventNamesLength);
-      expect(memorelayClient.internalEmitter.eventNames()).toHaveLength(
-        internalEventNamesLength
-      );
-    });
-  });
-
-  describe('disconnect()', () => {
-    it('should do nothing if not connected', () => {
-      const request = {} as Request;
-      const webSocket = new EventEmitter() as WebSocket;
-      const memorelayClient = new MemorelayClient(webSocket, request);
-      const handlers = memorelayClient[HANDLERS];
-
-      memorelayClient.disconnect();
-
-      expect(handlers).toHaveLength(0);
-      expect(webSocket.eventNames()).toHaveLength(0);
-      expect(memorelayClient.internalEmitter.eventNames()).toHaveLength(0);
-    });
-
-    it('should remove handlers after connecting', () => {
-      const request = {} as Request;
-      const webSocket = new EventEmitter() as WebSocket;
-      const memorelayClient = new MemorelayClient(webSocket, request);
-      const handlers = memorelayClient[HANDLERS];
-
-      memorelayClient.connect();
-
-      memorelayClient.disconnect();
-
-      expect(handlers).toHaveLength(0);
-      expect(webSocket.eventNames()).toHaveLength(0);
-      expect(memorelayClient.internalEmitter.eventNames()).toHaveLength(0);
-    });
-  });
-
   describe('webSocket#message', () => {
     it('should emit a WebSocketMessageEvent', () => {
       const request = {} as Request;

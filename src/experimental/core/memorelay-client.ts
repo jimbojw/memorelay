@@ -9,18 +9,12 @@ import { RawData, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
-import { BasicEventEmitter } from './basic-event-emitter';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 import { ClientEvent } from '../events/client-event';
 import { ClientError } from '../errors/client-error';
 import { onWithHandler } from './on-with-handler';
-import { Handler } from '../types/handler';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
-
-/**
- * Symbol for accessing the internal handlers list in tests.
- */
-export const HANDLERS = Symbol('handlers');
+import { ConnectableEventEmitter } from './connectable-event-emitter';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
@@ -29,16 +23,10 @@ export const HANDLERS = Symbol('handlers');
 export class MemorelayClient<
   PluginClientEvent extends ClientEvent = ClientEvent,
   PluginClientError extends ClientError = ClientError
-> extends BasicEventEmitter<
+> extends ConnectableEventEmitter<
   PluginClientEvent | ClientEvent,
   PluginClientError | ClientError
 > {
-  private readonly handlers: Handler[] = [];
-
-  readonly [HANDLERS] = this.handlers;
-
-  private isConnected = false;
-
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.
@@ -47,20 +35,7 @@ export class MemorelayClient<
     readonly webSocket: WebSocket,
     readonly request: IncomingMessage
   ) {
-    super();
-  }
-
-  /**
-   * Connect event handlers. This is delayed until connect() is called in order
-   * to give others a chance to listen first.
-   * @returns this
-   */
-  connect(): this {
-    if (this.isConnected) {
-      return this;
-    }
-
-    this.handlers.push(
+    super(() => [
       // Upgrade native WebSocket 'message' events to WebSocketMessageEvents.
       onWithHandler(
         this.webSocket,
@@ -101,27 +76,7 @@ export class MemorelayClient<
             this.disconnect();
           });
         }
-      )
-    );
-
-    this.isConnected = true;
-
-    return this;
-  }
-
-  /**
-   * Disconnect all listeners.
-   * @returns this.
-   */
-  disconnect(): this {
-    if (!this.isConnected) {
-      return this;
-    }
-    this.handlers.forEach((handler) => {
-      handler.disconnect();
-    });
-    this.handlers.splice(0);
-    this.isConnected = false;
-    return this;
+      ),
+    ]);
   }
 }
