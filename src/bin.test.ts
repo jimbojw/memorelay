@@ -339,10 +339,11 @@ describe('bin.ts', () => {
     });
     listenerWebSocket.removeAllListeners();
 
-    const listenerMessage = bufferToClientMessage(listenerData);
+    const listenerMessage = bufferToRelayMessage(listenerData);
 
     expect(listenerMessage[0]).toBe('EVENT');
-    expect(listenerMessage[1]).toEqual(EXAMPLE_SIGNED_EVENT);
+    expect(listenerMessage[1]).toBe('1');
+    expect(listenerMessage[2]).toEqual(EXAMPLE_SIGNED_EVENT);
 
     // Wait for WebSockets to close.
     await Promise.all([
