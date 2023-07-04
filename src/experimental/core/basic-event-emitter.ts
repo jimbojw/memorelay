@@ -9,6 +9,7 @@ import { EventEmitter } from 'events';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 import { Handler } from '../types/handler';
+import { onWithHandler } from './on-with-handler';
 
 export class BasicEventEmitter<
   EventType extends BasicEvent = BasicEvent,
@@ -36,14 +37,7 @@ export class BasicEventEmitter<
     basicEventType: { type: string },
     callbackFn: (basicEvent: T) => void
   ): Handler {
-    const eventType = basicEventType.type;
-    const emitter = this.internalEmitter;
-    emitter.on(eventType, callbackFn);
-    return {
-      disconnect: () => {
-        emitter.off(eventType, callbackFn);
-      },
-    };
+    return onWithHandler(this.internalEmitter, basicEventType.type, callbackFn);
   }
 
   /**
@@ -66,13 +60,6 @@ export class BasicEventEmitter<
     errorType: { type: string },
     callbackFn: (error: E) => void
   ): Handler {
-    const eventType = errorType.type;
-    const emitter = this.internalEmitter;
-    emitter.on(eventType, callbackFn);
-    return {
-      disconnect: () => {
-        emitter.off(eventType, callbackFn);
-      },
-    };
+    return onWithHandler(this.internalEmitter, errorType.type, callbackFn);
   }
 }

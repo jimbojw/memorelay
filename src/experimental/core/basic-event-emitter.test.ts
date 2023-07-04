@@ -53,7 +53,7 @@ describe('BasicEventEmitter', () => {
       expect(mockOnFn.mock.calls).toHaveLength(1);
       const params = mockOnFn.mock.calls[0];
       expect(params[0]).toBe('EVENT_TYPE');
-      expect(params[1]).toBe(mockCallbackFn);
+      expect(typeof params[1]).toBe('function');
 
       expect(mockCallbackFn.mock.calls).toHaveLength(0);
     });
@@ -81,7 +81,7 @@ describe('BasicEventEmitter', () => {
 
       const params = mockOffFn.mock.calls[0];
       expect(params[0]).toBe('EVENT_TYPE');
-      expect(params[1]).toBe(mockCallbackFn);
+      expect(typeof params[1]).toBe('function');
 
       expect(mockCallbackFn.mock.calls).toHaveLength(0);
     });
@@ -125,7 +125,7 @@ describe('BasicEventEmitter', () => {
       expect(mockOnFn.mock.calls).toHaveLength(1);
       const params = mockOnFn.mock.calls[0];
       expect(params[0]).toBe('ERROR_TYPE');
-      expect(params[1]).toBe(mockCallbackFn);
+      expect(typeof params[1]).toBe('function');
 
       expect(mockCallbackFn.mock.calls).toHaveLength(0);
     });
@@ -153,7 +153,7 @@ describe('BasicEventEmitter', () => {
 
       const params = mockOffFn.mock.calls[0];
       expect(params[0]).toBe('EVENT_TYPE');
-      expect(params[1]).toBe(mockCallbackFn);
+      expect(typeof params[1]).toBe('function');
 
       expect(mockCallbackFn.mock.calls).toHaveLength(0);
     });
