@@ -5,6 +5,7 @@
  * @fileoverview Memorelay core plugins for implementing NIP-01.
  */
 
+import { clearHandlers } from '../../core/clear-handlers';
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { Handler } from '../../types/handler';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
@@ -24,8 +25,10 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * @returns Handler for disconnection.
  */
 export function basicProtocol(hub: MemorelayHub): Handler {
-  // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
-  parseIncomingJsonMessages(hub);
+  const handlers: Handler[] = [
+    // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
+    parseIncomingJsonMessages(hub),
+  ];
 
   // Validate and upgrade incoming EVENT, REQ and CLOSE messages.
   validateIncomingEventMessages(hub);
@@ -44,9 +47,5 @@ export function basicProtocol(hub: MemorelayHub): Handler {
   // Serialize outgoing generic messages and send to the WebSocket.
   serializeOutgoingJsonMessages(hub);
 
-  return {
-    disconnect: () => {
-      throw new Error('DISCONNECT NOT YET IMPLEMENTED');
-    },
-  };
+  return { disconnect: clearHandlers(handlers) };
 }
