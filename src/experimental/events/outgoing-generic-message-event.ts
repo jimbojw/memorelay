@@ -6,7 +6,7 @@
  */
 
 import { GenericMessage } from '../../lib/message-types';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const OUTGOING_GENERIC_MESSAGE_EVENT_TYPE = 'outgoing-generic-message';
 
@@ -25,7 +25,7 @@ export interface OutgoingGenericMessageEventDetails {
  * The default handler for this event will serialize the message as JSON, then
  * push it down the wire.
  */
-export class OutgoingGenericMessageEvent extends BasicEvent<
+export class OutgoingGenericMessageEvent extends ClientEvent<
   typeof OUTGOING_GENERIC_MESSAGE_EVENT_TYPE,
   OutgoingGenericMessageEventDetails
 > {

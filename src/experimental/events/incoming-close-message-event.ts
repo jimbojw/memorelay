@@ -6,7 +6,7 @@
  */
 
 import { ClientCloseMessage } from '../../lib/message-types';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const INCOMING_CLOSE_MESSAGE_EVENT_TYPE = 'incoming-close-message';
 
@@ -24,7 +24,7 @@ export interface IncomingCloseMessageEventDetails {
  * Event emitted when a MemorelayClient has received a properly formed,
  * incoming, REQ Nostr message.
  */
-export class IncomingCloseMessageEvent extends BasicEvent<
+export class IncomingCloseMessageEvent extends ClientEvent<
   typeof INCOMING_CLOSE_MESSAGE_EVENT_TYPE,
   IncomingCloseMessageEventDetails
 > {

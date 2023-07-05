@@ -6,7 +6,7 @@
  */
 
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE =
   'memorelay-client-disconnect';
@@ -26,7 +26,7 @@ export interface MemorelayClientDisconnectEventDetails {
  * behavior will be to remove all listeners on itself and its assigned
  * WebSocket.
  */
-export class MemorelayClientDisconnectEvent extends BasicEvent<
+export class MemorelayClientDisconnectEvent extends ClientEvent<
   typeof MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE,
   MemorelayClientDisconnectEventDetails
 > {

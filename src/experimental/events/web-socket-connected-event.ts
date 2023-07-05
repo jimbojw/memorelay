@@ -8,7 +8,7 @@
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
-import { BasicEvent } from './basic-event';
+import { RelayEvent } from './relay-event';
 
 export const WEB_SOCKET_CONNECTED_EVENT_TYPE = 'web-socket-connected';
 
@@ -31,7 +31,7 @@ export interface WebSocketConnectedEventDetails {
  * Event emitted by MemorelayCore when it handles an HTTP upgrade request by
  * having its ws.WebSocketServer upgrade the connection to a ws.WebSocket.
  */
-export class WebSocketConnectedEvent extends BasicEvent<
+export class WebSocketConnectedEvent extends RelayEvent<
   typeof WEB_SOCKET_CONNECTED_EVENT_TYPE,
   WebSocketConnectedEventDetails
 > {

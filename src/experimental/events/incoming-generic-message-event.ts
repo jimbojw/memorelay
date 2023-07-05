@@ -6,7 +6,7 @@
  */
 
 import { GenericMessage } from '../../lib/message-types';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const INCOMING_GENERIC_MESSAGE_EVENT_TYPE = 'incoming-generic-message';
 
@@ -25,7 +25,7 @@ export interface IncomingGenericMessageEventDetails {
  * incoming, gerenic Nostr message. Generally this will be in response to a
  * previously received WebSocket 'message' event.
  */
-export class IncomingGenericMessageEvent extends BasicEvent<
+export class IncomingGenericMessageEvent extends ClientEvent<
   typeof INCOMING_GENERIC_MESSAGE_EVENT_TYPE,
   IncomingGenericMessageEventDetails
 > {

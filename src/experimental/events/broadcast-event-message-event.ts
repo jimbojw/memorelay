@@ -8,7 +8,7 @@
 
 import { ClientEventMessage } from '../../lib/message-types';
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEvent } from './basic-event';
+import { RelayEvent } from './relay-event';
 
 export const BROADCAST_EVENT_MESSAGE_EVENT_TYPE = 'broadcast-event-message';
 
@@ -32,7 +32,7 @@ export interface BroadcastEventMessageEventDetails {
  * Generally, the client named in the event details will be different from the
  * emitter of the event.
  */
-export class BroadcastEventMessageEvent extends BasicEvent<
+export class BroadcastEventMessageEvent extends RelayEvent<
   typeof BROADCAST_EVENT_MESSAGE_EVENT_TYPE,
   BroadcastEventMessageEventDetails
 > {

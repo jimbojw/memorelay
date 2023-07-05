@@ -5,7 +5,7 @@
  * @fileoverview Wrapper for WebSocket 'close' event.
  */
 
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const WEB_SOCKET_CLOSE_EVENT_TYPE = 'web-socket-close';
 
@@ -24,7 +24,7 @@ export interface WebSocketCloseEventDetails {
  * Event emitted by a MemorelayClient when its connected WebSocket emits a
  * 'message' event.
  */
-export class WebSocketCloseEvent extends BasicEvent<
+export class WebSocketCloseEvent extends ClientEvent<
   typeof WEB_SOCKET_CLOSE_EVENT_TYPE,
   WebSocketCloseEventDetails
 > {

@@ -6,7 +6,7 @@
  */
 
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEvent } from './basic-event';
+import { RelayEvent } from './relay-event';
 
 export const MEMORELAY_CLIENT_CREATED_EVENT_TYPE = 'memorelay-client-created';
 
@@ -25,7 +25,7 @@ export interface MemorelayClientCreatedEventDetails {
  * connected WebSocket. This would typically be in response to a previously
  * emitted 'connection' event on the Memorelay instance's WebSocketServer.
  */
-export class MemorelayClientCreatedEvent extends BasicEvent<
+export class MemorelayClientCreatedEvent extends RelayEvent<
   typeof MEMORELAY_CLIENT_CREATED_EVENT_TYPE,
   MemorelayClientCreatedEventDetails
 > {

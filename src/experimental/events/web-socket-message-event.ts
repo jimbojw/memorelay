@@ -7,7 +7,7 @@
 
 import { RawData } from 'ws';
 
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const WEB_SOCKET_MESSAGE_EVENT_TYPE = 'web-socket-message';
 
@@ -34,7 +34,7 @@ export interface WebSocketMessageEventDetails {
  * Event emitted by a MemorelayClient when its connected WebSocket emits a
  * 'message' event.
  */
-export class WebSocketMessageEvent extends BasicEvent<
+export class WebSocketMessageEvent extends ClientEvent<
   typeof WEB_SOCKET_MESSAGE_EVENT_TYPE,
   WebSocketMessageEventDetails
 > {

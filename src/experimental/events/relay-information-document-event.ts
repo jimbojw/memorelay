@@ -6,8 +6,8 @@
  * about to be served.
  */
 
-import { BasicEvent } from './basic-event';
 import { RelayInformationDocument } from '../../lib/relay-information-document';
+import { RelayEvent } from './relay-event';
 
 export const RELAY_INFORMATION_DOCUMENT_EVENT_TYPE =
   'relay-information-document';
@@ -28,7 +28,7 @@ export interface RelayInformationDocumentEventDetails {
  * components and plugins to modify the outgoing relay information document
  * before it is sent to the HTTP response.
  */
-export class RelayInformationDocumentEvent extends BasicEvent<
+export class RelayInformationDocumentEvent extends RelayEvent<
   typeof RELAY_INFORMATION_DOCUMENT_EVENT_TYPE,
   RelayInformationDocumentEventDetails
 > {

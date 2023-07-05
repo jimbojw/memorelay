@@ -6,7 +6,7 @@
  */
 
 import { ClientReqMessage } from '../../lib/message-types';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const INCOMING_REQ_MESSAGE_EVENT_TYPE = 'incoming-req-message';
 
@@ -24,7 +24,7 @@ export interface IncomingReqMessageEventDetails {
  * Event emitted when a MemorelayClient has received a properly formed,
  * incoming, REQ Nostr message.
  */
-export class IncomingReqMessageEvent extends BasicEvent<
+export class IncomingReqMessageEvent extends ClientEvent<
   typeof INCOMING_REQ_MESSAGE_EVENT_TYPE,
   IncomingReqMessageEventDetails
 > {

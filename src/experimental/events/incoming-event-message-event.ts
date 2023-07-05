@@ -6,7 +6,7 @@
  */
 
 import { ClientEventMessage } from '../../lib/message-types';
-import { BasicEvent } from './basic-event';
+import { ClientEvent } from './client-event';
 
 export const INCOMING_EVENT_MESSAGE_EVENT_TYPE = 'incoming-event-message';
 
@@ -24,7 +24,7 @@ export interface IncomingEventMessageEventDetails {
  * Event emitted when a MemorelayClient has received a properly formed,
  * incoming, EVENT Nostr message.
  */
-export class IncomingEventMessageEvent extends BasicEvent<
+export class IncomingEventMessageEvent extends ClientEvent<
   typeof INCOMING_EVENT_MESSAGE_EVENT_TYPE,
   IncomingEventMessageEventDetails
 > {
