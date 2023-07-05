@@ -47,6 +47,13 @@ export function basicProtocol(hub: MemorelayHub): Handler {
     // Subscribe to incoming REQ messages.
     subscribeToIncomingReqMessages(hub),
 
+    // Convert outgoing EVENT, EOSE and NOTICE message events to
+    // OutgoingGenericMessageEvents.
+    // TODO(jimbo): Implement the following plugins.
+    // generalizeOutgoingEventMessages(hub),
+    // generalizeOutgoingEOSEMessages(hub),
+    // generalizeOutgoingNoticeMessages(hub),
+
     // Serialize outgoing generic messages and send to the WebSocket.
     serializeOutgoingJsonMessages(hub),
   ];
