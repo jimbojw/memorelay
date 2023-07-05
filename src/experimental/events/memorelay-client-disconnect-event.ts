@@ -6,8 +6,7 @@
  */
 
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEventOptions } from './basic-event';
-import { ClientEvent } from './client-event';
+import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE =
   'memorelay-client-disconnect';
@@ -35,7 +34,7 @@ export class MemorelayClientDisconnectEvent extends ClientEvent<
     MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE;
   constructor(
     details: MemorelayClientDisconnectEventDetails,
-    options?: BasicEventOptions
+    options?: ClientEventOptions
   ) {
     super(MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE, details, options);
   }

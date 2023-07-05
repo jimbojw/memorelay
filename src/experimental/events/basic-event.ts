@@ -5,9 +5,7 @@
  * @fileoverview Basic Event to be extended for different purposes.
  */
 
-import { BasicEventEmitter } from '../core/basic-event-emitter';
-
-export interface BasicEventOptions {
+export interface BasicEventOptions<EmitterType = unknown> {
   /**
    * Object marking the originator of the event. Plugins can use this field to
    * perform strict equality checks to find out whether the plugin itself
@@ -23,7 +21,7 @@ export interface BasicEventOptions {
   /**
    * Emitter on which the event is intended to be emitted.
    */
-  readonly targetEmitter?: BasicEventEmitter;
+  readonly targetEmitter?: EmitterType;
 }
 
 /**
@@ -35,7 +33,8 @@ export interface BasicEventOptions {
  */
 export class BasicEvent<
   EventType extends string = string,
-  DetailsType = unknown
+  DetailsType = unknown,
+  EmitterType = unknown
 > {
   /**
    * Object denoting the originator of the event.
@@ -50,7 +49,7 @@ export class BasicEvent<
   /**
    * Intended emitter of this event.
    */
-  readonly targetEmitter?: BasicEventEmitter;
+  readonly targetEmitter?: EmitterType;
 
   /**
    * Whether any recipient has called preventDefault();
@@ -65,7 +64,7 @@ export class BasicEvent<
   constructor(
     readonly type: EventType,
     readonly details: DetailsType,
-    options?: BasicEventOptions
+    options?: BasicEventOptions<EmitterType>
   ) {
     this.originatorTag = options?.originatorTag;
     this.parentEvent = options?.parentEvent;

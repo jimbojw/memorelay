@@ -9,15 +9,15 @@ import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
 import { createClients } from './create-clients';
-import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
+import { MemorelayHub } from '../core/memorelay-hub';
 
 describe('createClients()', () => {
   describe('#WebSocketConnectedEvent', () => {
     it('should trigger MemorelayClientCreatedEvent', async () => {
-      const hub = new BasicEventEmitter();
+      const hub = new MemorelayHub(() => []);
 
       createClients(hub);
 
@@ -43,6 +43,8 @@ describe('createClients()', () => {
 
       const [event] = mockCreatedHandlerFn.mock.calls[0];
       expect(event).toBeInstanceOf(MemorelayClientCreatedEvent);
+      expect(event.parentEvent).toBe(webSocketConnectedEvent);
+      expect(event.targetEmitter).toBe(hub);
 
       const { memorelayClient } = event.details;
       expect(memorelayClient.webSocket).toBe(mockWebSocket);
@@ -52,7 +54,7 @@ describe('createClients()', () => {
     });
 
     it('should do nothing when defaultPrevented', () => {
-      const hub = new BasicEventEmitter();
+      const hub = new MemorelayHub(() => []);
 
       createClients(hub);
 
@@ -78,7 +80,7 @@ describe('createClients()', () => {
     });
 
     it('should emit an error when duplicate WebSocket is detected', () => {
-      const hub = new BasicEventEmitter();
+      const hub = new MemorelayHub(() => []);
 
       createClients(hub);
 

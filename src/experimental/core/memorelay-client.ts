@@ -41,13 +41,20 @@ export class MemorelayClient<
         this.webSocket,
         'message',
         (data: RawData, isBinary: boolean) => {
-          this.emitEvent(new WebSocketMessageEvent({ data, isBinary }));
+          this.emitEvent(
+            new WebSocketMessageEvent(
+              { data, isBinary },
+              { targetEmitter: this }
+            )
+          );
         }
       ),
 
       // Upgrade native WebSocket 'close' events to WebSocketCloseEvents.
       onWithHandler(this.webSocket, 'close', (code: number) => {
-        this.emitEvent(new WebSocketCloseEvent({ code }));
+        this.emitEvent(
+          new WebSocketCloseEvent({ code }, { targetEmitter: this })
+        );
       }),
 
       // On WebSocketCloseEvent, trigger MemorelayClientDisconnectEvent.
@@ -59,7 +66,10 @@ export class MemorelayClient<
               return; // Preempted by another handler.
             }
             this.emitEvent(
-              new MemorelayClientDisconnectEvent({ memorelayClient: this })
+              new MemorelayClientDisconnectEvent(
+                { memorelayClient: this },
+                { parentEvent: webSocketCloseEvent, targetEmitter: this }
+              )
             );
           });
         }

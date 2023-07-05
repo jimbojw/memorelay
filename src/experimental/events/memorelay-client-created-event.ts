@@ -6,8 +6,7 @@
  */
 
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEventOptions } from './basic-event';
-import { RelayEvent } from './relay-event';
+import { RelayEvent, RelayEventOptions } from './relay-event';
 
 export const MEMORELAY_CLIENT_CREATED_EVENT_TYPE = 'memorelay-client-created';
 
@@ -34,7 +33,7 @@ export class MemorelayClientCreatedEvent extends RelayEvent<
     MEMORELAY_CLIENT_CREATED_EVENT_TYPE;
   constructor(
     details: MemorelayClientCreatedEventDetails,
-    options?: BasicEventOptions
+    options?: RelayEventOptions
   ) {
     super(MEMORELAY_CLIENT_CREATED_EVENT_TYPE, details, options);
   }

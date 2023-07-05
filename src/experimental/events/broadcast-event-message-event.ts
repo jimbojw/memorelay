@@ -8,8 +8,7 @@
 
 import { ClientEventMessage } from '../../lib/message-types';
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEventOptions } from './basic-event';
-import { RelayEvent } from './relay-event';
+import { RelayEvent, RelayEventOptions } from './relay-event';
 
 export const BROADCAST_EVENT_MESSAGE_EVENT_TYPE = 'broadcast-event-message';
 
@@ -41,7 +40,7 @@ export class BroadcastEventMessageEvent extends RelayEvent<
     BROADCAST_EVENT_MESSAGE_EVENT_TYPE;
   constructor(
     details: BroadcastEventMessageEventDetails,
-    options?: BasicEventOptions
+    options?: RelayEventOptions
   ) {
     super(BROADCAST_EVENT_MESSAGE_EVENT_TYPE, details, options);
   }

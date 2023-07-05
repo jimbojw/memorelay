@@ -6,8 +6,7 @@
  */
 
 import { ClientReqMessage } from '../../lib/message-types';
-import { BasicEventOptions } from './basic-event';
-import { ClientEvent } from './client-event';
+import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const INCOMING_REQ_MESSAGE_EVENT_TYPE = 'incoming-req-message';
 
@@ -33,7 +32,7 @@ export class IncomingReqMessageEvent extends ClientEvent<
     INCOMING_REQ_MESSAGE_EVENT_TYPE;
   constructor(
     details: IncomingReqMessageEventDetails,
-    options?: BasicEventOptions
+    options?: ClientEventOptions
   ) {
     super(INCOMING_REQ_MESSAGE_EVENT_TYPE, details, options);
   }

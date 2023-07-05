@@ -10,20 +10,20 @@ import { Socket } from 'net';
 import { pathToRegexp } from 'path-to-regexp';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { BasicEventEmitter } from './basic-event-emitter';
 import { UpgradeHandler } from '../types/upgrade-handler';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
+import { MemorelayHub } from './memorelay-hub';
 
 /**
  * Return a handler for upgrading HTTP client connections to WebSockets.
- * @param basicEventEmitter Event emitter through which to broadcast upgrades.
+ * @param hub Event emitter through which to broadcast upgrades.
  * @param path Optional Express path to match. Defaults to '/'.
  * @param webSocketServer WebSocket server for handling upgrades.
  * @returns Upgrade handler function.
  */
 export function handleUpgrade(
   webSocketServer: WebSocketServer,
-  basicEventEmitter: BasicEventEmitter,
+  hub: MemorelayHub,
   path = '/'
 ): UpgradeHandler {
   // Upgrade path string to regex for testing.
@@ -47,8 +47,11 @@ export function handleUpgrade(
       socket,
       head,
       (webSocket: WebSocket) => {
-        basicEventEmitter.emitEvent(
-          new WebSocketConnectedEvent({ webSocket, request })
+        hub.emitEvent(
+          new WebSocketConnectedEvent(
+            { webSocket, request },
+            { targetEmitter: hub }
+          )
         );
       }
     );

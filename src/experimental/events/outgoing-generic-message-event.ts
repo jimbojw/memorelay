@@ -6,8 +6,7 @@
  */
 
 import { GenericMessage } from '../../lib/message-types';
-import { BasicEventOptions } from './basic-event';
-import { ClientEvent } from './client-event';
+import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const OUTGOING_GENERIC_MESSAGE_EVENT_TYPE = 'outgoing-generic-message';
 
@@ -34,7 +33,7 @@ export class OutgoingGenericMessageEvent extends ClientEvent<
     OUTGOING_GENERIC_MESSAGE_EVENT_TYPE;
   constructor(
     details: OutgoingGenericMessageEventDetails,
-    options?: BasicEventOptions
+    options?: ClientEventOptions
   ) {
     super(OUTGOING_GENERIC_MESSAGE_EVENT_TYPE, details, options);
   }

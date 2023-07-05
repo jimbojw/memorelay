@@ -54,13 +54,10 @@ describe('MemorelayClient', () => {
       webSocket.emit('close', NORMAL_CLOSURE_CODE);
 
       expect(mockEmitBasicFn.mock.calls).toHaveLength(1);
-
-      expect(mockEmitBasicFn.mock.calls[0][0]).toBeInstanceOf(
-        WebSocketCloseEvent
-      );
-      expect(mockEmitBasicFn.mock.calls[0][0].details.code).toBe(
-        NORMAL_CLOSURE_CODE
-      );
+      const webSocketCloseEvent = mockEmitBasicFn.mock.calls[0][0];
+      expect(webSocketCloseEvent).toBeInstanceOf(WebSocketCloseEvent);
+      expect(webSocketCloseEvent.details.code).toBe(NORMAL_CLOSURE_CODE);
+      expect(webSocketCloseEvent.targetEmitter).toBe(memorelayClient);
     });
   });
 
@@ -76,11 +73,19 @@ describe('MemorelayClient', () => {
       >();
       memorelayClient.onEvent(MemorelayClientDisconnectEvent, mockHandlerFn);
 
-      memorelayClient.emitEvent(new WebSocketCloseEvent({ code: 1000 }));
+      const webSocketCloseEvent = new WebSocketCloseEvent({ code: 1000 });
+      memorelayClient.emitEvent(webSocketCloseEvent);
 
       await Promise.resolve();
 
       expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+      const memorelayClientDisconnectEvent = mockHandlerFn.mock.calls[0][0];
+      expect(memorelayClientDisconnectEvent.parentEvent).toBe(
+        webSocketCloseEvent
+      );
+      expect(memorelayClientDisconnectEvent.targetEmitter).toBe(
+        memorelayClient
+      );
     });
 
     it('should do nothing when defaultPrevented', async () => {

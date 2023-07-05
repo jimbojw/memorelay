@@ -9,11 +9,11 @@
 import { WebSocket } from 'ws';
 
 import { MemorelayClient } from '../core/memorelay-client';
-import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { Handler } from '../types/handler';
+import { MemorelayHub } from '../core/memorelay-hub';
 
 /**
  * Memorelay core plugin to create MemorelayClient instances out of connected
@@ -23,7 +23,7 @@ import { Handler } from '../types/handler';
  * objects.
  */
 export function createClients(
-  hub: BasicEventEmitter,
+  hub: MemorelayHub,
   webSocketClientMap = new Map<WebSocket, MemorelayClient>()
 ): Handler {
   return hub.onEvent(
@@ -44,9 +44,10 @@ export function createClients(
       const memorelayClient = new MemorelayClient(webSocket, request);
       webSocketClientMap.set(webSocket, memorelayClient);
 
-      const memorelayClientCreatedEvent = new MemorelayClientCreatedEvent({
-        memorelayClient,
-      });
+      const memorelayClientCreatedEvent = new MemorelayClientCreatedEvent(
+        { memorelayClient },
+        { parentEvent: webSocketConnectedEvent, targetEmitter: hub }
+      );
 
       webSocketConnectedEvent.preventDefault();
 

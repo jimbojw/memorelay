@@ -5,8 +5,7 @@
  * @fileoverview Wrapper for WebSocket 'close' event.
  */
 
-import { BasicEventOptions } from './basic-event';
-import { ClientEvent } from './client-event';
+import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const WEB_SOCKET_CLOSE_EVENT_TYPE = 'web-socket-close';
 
@@ -33,7 +32,7 @@ export class WebSocketCloseEvent extends ClientEvent<
     WEB_SOCKET_CLOSE_EVENT_TYPE;
   constructor(
     details: WebSocketCloseEventDetails,
-    options?: BasicEventOptions
+    options?: ClientEventOptions
   ) {
     super(WEB_SOCKET_CLOSE_EVENT_TYPE, details, options);
   }

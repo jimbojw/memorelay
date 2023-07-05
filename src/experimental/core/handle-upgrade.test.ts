@@ -10,15 +10,15 @@ import { Socket } from 'net';
 import { Request } from 'express';
 import { WebSocketServer } from 'ws';
 
-import { BasicEventEmitter } from './basic-event-emitter';
 import { handleUpgrade } from './handle-upgrade';
-import { BasicEvent } from '../events/basic-event';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
+import { MemorelayHub } from './memorelay-hub';
+import { RelayEvent } from '../events/relay-event';
 
 describe('handleUpgrade()', () => {
   it('should return a handler function', () => {
     const mockWebSocketServer = {} as WebSocketServer;
-    const mockBasicEventEmitter = {} as BasicEventEmitter;
+    const mockBasicEventEmitter = {} as MemorelayHub;
     const handlerFunction = handleUpgrade(
       mockWebSocketServer,
       mockBasicEventEmitter
@@ -28,11 +28,8 @@ describe('handleUpgrade()', () => {
 
   it('should throw if request url is missing', () => {
     const mockWebSocketServer = {} as WebSocketServer;
-    const mockBasicEventEmitter = {} as BasicEventEmitter;
-    const handlerFunction = handleUpgrade(
-      mockWebSocketServer,
-      mockBasicEventEmitter
-    );
+    const mockHub = {} as MemorelayHub;
+    const handlerFunction = handleUpgrade(mockWebSocketServer, mockHub);
 
     const request: MockRequest<Request> = createRequest({});
 
@@ -58,7 +55,7 @@ describe('handleUpgrade()', () => {
       const socket = {} as Socket;
       const head = Buffer.from('');
 
-      const mockBasicEventEmitter = {} as BasicEventEmitter;
+      const mockHub = {} as MemorelayHub;
 
       const mockHandleUpgradeFn = jest.fn<
         unknown,
@@ -70,7 +67,7 @@ describe('handleUpgrade()', () => {
 
       const handlerFunction = handleUpgrade(
         mockWebSocketServer,
-        mockBasicEventEmitter,
+        mockHub,
         '/foo'
       );
 
@@ -80,8 +77,8 @@ describe('handleUpgrade()', () => {
 
       const connectedCallbackFn = mockHandleUpgradeFn.mock.calls[0][3];
 
-      const mockEmitBasicFn = jest.fn<BasicEvent, [BasicEvent]>();
-      mockBasicEventEmitter.emitEvent = mockEmitBasicFn;
+      const mockEmitBasicFn = jest.fn<RelayEvent, [RelayEvent]>();
+      mockHub.emitEvent = mockEmitBasicFn;
 
       connectedCallbackFn();
 
@@ -114,12 +111,8 @@ describe('handleUpgrade()', () => {
         handleUpgrade: mockHandleUpgradeFn,
       } as unknown as WebSocketServer;
 
-      const basicEventEmitter = new BasicEventEmitter();
-      const handlerFunction = handleUpgrade(
-        mockWebSocketServer,
-        basicEventEmitter,
-        '/foo'
-      );
+      const hub = new MemorelayHub(() => []);
+      const handlerFunction = handleUpgrade(mockWebSocketServer, hub, '/foo');
 
       handlerFunction(request, socket, head);
 
