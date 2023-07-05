@@ -12,12 +12,6 @@ import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 
 describe('BasicEventEmitter', () => {
-  it('should be a constructor function', () => {
-    expect(typeof BasicEventEmitter).toBe('function');
-    const basicEventEmitter = new BasicEventEmitter();
-    expect(basicEventEmitter).toBeInstanceOf(BasicEventEmitter);
-  });
-
   describe('emitEvent()', () => {
     it('should emit a BasicEvent and return it', () => {
       const basicEventEmitter = new BasicEventEmitter();

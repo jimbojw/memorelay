@@ -60,7 +60,13 @@ export function validateIncomingCloseMessages(hub: BasicEventEmitter): Handler {
       try {
         const closeMessage = checkCloseMessage(genericMessage);
         memorelayClient.emitEvent(
-          new IncomingCloseMessageEvent({ closeMessage })
+          new IncomingCloseMessageEvent(
+            { closeMessage },
+            {
+              parentEvent: incomingGenericMessageEvent,
+              targetEmitter: memorelayClient,
+            }
+          )
         );
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);

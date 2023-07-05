@@ -57,9 +57,10 @@ export function relayInformationDocument(memorelay: Memorelay): RequestHandler {
     };
 
     memorelay.emitEvent(
-      new RelayInformationDocumentEvent({
-        relayInformationDocument,
-      })
+      new RelayInformationDocumentEvent(
+        { relayInformationDocument },
+        { targetEmitter: memorelay }
+      )
     );
 
     // Deduplicate and sort supported_nips.

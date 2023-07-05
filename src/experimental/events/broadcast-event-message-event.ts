@@ -19,7 +19,7 @@ export interface BroadcastEventMessageEventDetails {
   /**
    * The incoming Nostr EVENT message.
    */
-  readonly eventMessage: ClientEventMessage;
+  readonly clientEventMessage: ClientEventMessage;
 
   /**
    * The originating Memorelay instance.

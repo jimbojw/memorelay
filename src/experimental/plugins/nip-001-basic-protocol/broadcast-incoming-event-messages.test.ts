@@ -36,16 +36,28 @@ describe('broadcastIncomingEventMessages()', () => {
         'EVENT',
         createSignedTestEvent({ content: 'testing testing' }),
       ];
-      memorelayClient.emitEvent(
-        new IncomingEventMessageEvent({ clientEventMessage: eventMessage })
-      );
+      const incomingEventMessageEvent = new IncomingEventMessageEvent({
+        clientEventMessage: eventMessage,
+      });
+      memorelayClient.emitEvent(incomingEventMessageEvent);
 
       await Promise.resolve();
 
       expect(mockHandlerFn).toHaveBeenCalledTimes(1);
-      const eventParam = mockHandlerFn.mock.calls[0][0];
-      expect(eventParam.details.eventMessage).toBe(eventMessage);
-      expect(eventParam.details.memorelayClient).toBe(memorelayClient);
+      const broadcastEventMessageEvent = mockHandlerFn.mock.calls[0][0];
+      expect(broadcastEventMessageEvent).toBeInstanceOf(
+        BroadcastEventMessageEvent
+      );
+      expect(broadcastEventMessageEvent.details.clientEventMessage).toBe(
+        eventMessage
+      );
+      expect(broadcastEventMessageEvent.details.memorelayClient).toBe(
+        memorelayClient
+      );
+      expect(broadcastEventMessageEvent.parentEvent).toBe(
+        incomingEventMessageEvent
+      );
+      expect(broadcastEventMessageEvent.targetEmitter).toBe(hub);
     });
   });
 

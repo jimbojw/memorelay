@@ -29,14 +29,15 @@ export function broadcastIncomingEventMessages(hub: MemorelayHub): Handler {
         // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(
           IncomingEventMessageEvent,
-          ({
-            details: { clientEventMessage: eventMessage },
-          }: IncomingEventMessageEvent) => {
+          (incomingEventMessageEvent: IncomingEventMessageEvent) => {
+            const {
+              details: { clientEventMessage },
+            } = incomingEventMessageEvent;
             hub.emitEvent(
-              new BroadcastEventMessageEvent({
-                eventMessage,
-                memorelayClient,
-              })
+              new BroadcastEventMessageEvent(
+                { clientEventMessage, memorelayClient },
+                { parentEvent: incomingEventMessageEvent, targetEmitter: hub }
+              )
             );
           }
         ),

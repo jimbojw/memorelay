@@ -80,14 +80,16 @@ export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
         subscriptions.delete(subscriptionId);
       }
 
-      function handleBroadcastEventMessage({
-        details: broadcastDetails,
-      }: BroadcastEventMessageEvent) {
+      function handleBroadcastEventMessage(
+        broadcastEventMessageEvent: BroadcastEventMessageEvent
+      ) {
+        const broadcastDetails = broadcastEventMessageEvent.details;
+
         if (broadcastDetails.memorelayClient === memorelayClient) {
           return; // Nothing to do. This client originated this broadcast event.
         }
 
-        const [, broadcastEvent] = broadcastDetails.eventMessage;
+        const [, broadcastEvent] = broadcastDetails.clientEventMessage;
 
         for (const [subscriptionId, filters] of subscriptions.entries()) {
           if (!filters.length || matchFilters(filters, broadcastEvent)) {
@@ -99,9 +101,13 @@ export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
               ];
               // TODO(jimbo): Implement and switch to OutgoingEventMessageEvent.
               memorelayClient.emitEvent(
-                new OutgoingGenericMessageEvent({
-                  genericMessage: outgoingEventMessage,
-                })
+                new OutgoingGenericMessageEvent(
+                  { genericMessage: outgoingEventMessage },
+                  {
+                    parentEvent: broadcastEventMessageEvent,
+                    targetEmitter: memorelayClient,
+                  }
+                )
               );
             });
           }

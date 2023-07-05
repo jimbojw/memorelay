@@ -34,12 +34,11 @@ describe('parseIncomingJsonMessages()', () => {
       >();
       memorelayClient.onEvent(IncomingGenericMessageEvent, mockMessageHandler);
 
-      memorelayClient.emitEvent(
-        new WebSocketMessageEvent({
-          data: Buffer.from('["PAYLOAD","IGNORE"]'),
-          isBinary: false,
-        })
-      );
+      const webSocketMessageEvent = new WebSocketMessageEvent({
+        data: Buffer.from('["PAYLOAD","IGNORE"]'),
+        isBinary: false,
+      });
+      memorelayClient.emitEvent(webSocketMessageEvent);
 
       expect(mockMessageHandler.mock.calls).toHaveLength(1);
       const incomingGenericMessageEvent = mockMessageHandler.mock.calls[0][0];
@@ -50,6 +49,10 @@ describe('parseIncomingJsonMessages()', () => {
         'PAYLOAD',
         'IGNORE',
       ]);
+      expect(incomingGenericMessageEvent.parentEvent).toBe(
+        webSocketMessageEvent
+      );
+      expect(incomingGenericMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
     it('should combine WebSocket message buffers', () => {

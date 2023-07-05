@@ -13,84 +13,101 @@ import { createSignedTestEvent } from '../../test/signed-test-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
-  it('should validate an EVENT message', () => {
-    const { memorelayClient } = setupTestHubAndClient((hub) => {
-      validateIncomingEventMessages(hub);
+  describe('#IncomingGenericMessageEvent', () => {
+    it('should validate an EVENT message', () => {
+      const { memorelayClient } = setupTestHubAndClient((hub) => {
+        validateIncomingEventMessages(hub);
+      });
+
+      const mockMessageHandler = jest.fn<
+        unknown,
+        [IncomingEventMessageEvent]
+      >();
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
+
+      const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
+      const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+        genericMessage: ['EVENT', nostrEvent],
+      });
+      memorelayClient.emitEvent(incomingGenericMessageEvent);
+
+      expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
+
+      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
+      expect(incomingEventMessageEvent).toBeInstanceOf(
+        IncomingEventMessageEvent
+      );
+      expect(incomingEventMessageEvent.details.clientEventMessage).toEqual([
+        'EVENT',
+        nostrEvent,
+      ]);
+      expect(incomingEventMessageEvent.parentEvent).toBe(
+        incomingGenericMessageEvent
+      );
+      expect(incomingEventMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
+    it('should ignore an EVENT message if defaultPrevented', () => {
+      const { memorelayClient } = setupTestHubAndClient((hub) => {
+        validateIncomingEventMessages(hub);
+      });
 
-    const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
-    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-      genericMessage: ['EVENT', nostrEvent],
-    });
-    memorelayClient.emitEvent(incomingGenericMessageEvent);
+      const mockMessageHandler = jest.fn<
+        unknown,
+        [IncomingEventMessageEvent]
+      >();
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
 
-    expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
+      const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
+      const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+        genericMessage: ['EVENT', nostrEvent],
+      });
+      incomingGenericMessageEvent.preventDefault();
+      memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-    expect(mockMessageHandler.mock.calls).toHaveLength(1);
-    const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
-    expect(incomingEventMessageEvent).toBeInstanceOf(IncomingEventMessageEvent);
-    expect(incomingEventMessageEvent.details.clientEventMessage).toEqual([
-      'EVENT',
-      nostrEvent,
-    ]);
-  });
-
-  it('should ignore an EVENT message if defaultPrevented', () => {
-    const { memorelayClient } = setupTestHubAndClient((hub) => {
-      validateIncomingEventMessages(hub);
+      expect(mockMessageHandler.mock.calls).toHaveLength(0);
     });
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
+    it('should ignore non-EVENT messages', () => {
+      const { memorelayClient } = setupTestHubAndClient((hub) => {
+        validateIncomingEventMessages(hub);
+      });
 
-    const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
-    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-      genericMessage: ['EVENT', nostrEvent],
-    });
-    incomingGenericMessageEvent.preventDefault();
-    memorelayClient.emitEvent(incomingGenericMessageEvent);
+      const mockMessageHandler = jest.fn<
+        unknown,
+        [IncomingEventMessageEvent]
+      >();
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
 
-    expect(mockMessageHandler.mock.calls).toHaveLength(0);
-  });
+      const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+        genericMessage: ['UNKNOWN', 12345],
+      });
+      memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-  it('should ignore non-EVENT messages', () => {
-    const { memorelayClient } = setupTestHubAndClient((hub) => {
-      validateIncomingEventMessages(hub);
-    });
+      expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
-    const mockMessageHandler = jest.fn<unknown, [IncomingEventMessageEvent]>();
-    memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
-
-    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-      genericMessage: ['UNKNOWN', 12345],
-    });
-    memorelayClient.emitEvent(incomingGenericMessageEvent);
-
-    expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
-
-    expect(mockMessageHandler.mock.calls).toHaveLength(0);
-  });
-
-  it('should emit an error when EVENT message is malformed', () => {
-    const { memorelayClient } = setupTestHubAndClient((hub) => {
-      validateIncomingEventMessages(hub);
+      expect(mockMessageHandler.mock.calls).toHaveLength(0);
     });
 
-    const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-    memorelayClient.onError(BadMessageError, mockErrorHandler);
+    it('should emit an error when EVENT message is malformed', () => {
+      const { memorelayClient } = setupTestHubAndClient((hub) => {
+        validateIncomingEventMessages(hub);
+      });
 
-    const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-      genericMessage: ['EVENT', 12345],
+      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
+      memorelayClient.onError(BadMessageError, mockErrorHandler);
+
+      const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+        genericMessage: ['EVENT', 12345],
+      });
+      memorelayClient.emitEvent(incomingGenericMessageEvent);
+
+      expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
+
+      expect(mockErrorHandler.mock.calls).toHaveLength(1);
+      const badMessageError = mockErrorHandler.mock.calls[0][0];
+      expect(badMessageError).toBeInstanceOf(BadMessageError);
     });
-    memorelayClient.emitEvent(incomingGenericMessageEvent);
-
-    expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
-
-    expect(mockErrorHandler.mock.calls).toHaveLength(1);
-    const badMessageError = mockErrorHandler.mock.calls[0][0];
-    expect(badMessageError).toBeInstanceOf(BadMessageError);
   });
 });

@@ -40,12 +40,11 @@ describe('subscribeToReqMessages()', () => {
       );
 
       const testEvent = createSignedTestEvent({ content: 'TEST EVENT' });
-      hub.emitEvent(
-        new BroadcastEventMessageEvent({
-          eventMessage: ['EVENT', testEvent],
-          memorelayClient: sendingClient,
-        })
-      );
+      const broadcastEventMessageEvent = new BroadcastEventMessageEvent({
+        clientEventMessage: ['EVENT', testEvent],
+        memorelayClient: sendingClient,
+      });
+      hub.emitEvent(broadcastEventMessageEvent);
 
       await Promise.resolve();
 
@@ -56,6 +55,10 @@ describe('subscribeToReqMessages()', () => {
         'SUBSCRIPTION_ID',
         testEvent,
       ]);
+      expect(outgoingEventMessageEvent.parentEvent).toBe(
+        broadcastEventMessageEvent
+      );
+      expect(outgoingEventMessageEvent.targetEmitter).toBe(subscribingClient);
     });
 
     it('should not begin a subscription when defaultPrevented', async () => {
@@ -81,7 +84,7 @@ describe('subscribeToReqMessages()', () => {
       const testEvent = createSignedTestEvent({ content: 'TEST EVENT' });
       hub.emitEvent(
         new BroadcastEventMessageEvent({
-          eventMessage: ['EVENT', testEvent],
+          clientEventMessage: ['EVENT', testEvent],
           memorelayClient: sendingClient,
         })
       );
@@ -120,7 +123,7 @@ describe('subscribeToReqMessages()', () => {
       const testEvent = createSignedTestEvent({ content: 'TEST EVENT' });
       hub.emitEvent(
         new BroadcastEventMessageEvent({
-          eventMessage: ['EVENT', testEvent],
+          clientEventMessage: ['EVENT', testEvent],
           memorelayClient: sendingClient,
         })
       );
@@ -157,7 +160,7 @@ describe('subscribeToReqMessages()', () => {
       const testEvent = createSignedTestEvent({ content: 'TEST EVENT' });
       hub.emitEvent(
         new BroadcastEventMessageEvent({
-          eventMessage: ['EVENT', testEvent],
+          clientEventMessage: ['EVENT', testEvent],
           memorelayClient: sendingClient,
         })
       );
@@ -215,7 +218,7 @@ describe('subscribeToReqMessages()', () => {
       ].forEach((testEvent) => {
         hub.emitEvent(
           new BroadcastEventMessageEvent({
-            eventMessage: ['EVENT', testEvent],
+            clientEventMessage: ['EVENT', testEvent],
             memorelayClient: sendingClient,
           })
         );
@@ -266,7 +269,7 @@ describe('subscribeToReqMessages()', () => {
       ].forEach((testEvent) => {
         hub.emitEvent(
           new BroadcastEventMessageEvent({
-            eventMessage: ['EVENT', testEvent],
+            clientEventMessage: ['EVENT', testEvent],
             memorelayClient: sendingClient,
           })
         );

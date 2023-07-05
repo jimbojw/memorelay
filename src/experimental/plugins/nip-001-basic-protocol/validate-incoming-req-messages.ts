@@ -59,7 +59,15 @@ export function validateIncomingReqMessages(hub: BasicEventEmitter): Handler {
 
       try {
         const reqMessage = checkReqMessage(genericMessage);
-        memorelayClient.emitEvent(new IncomingReqMessageEvent({ reqMessage }));
+        memorelayClient.emitEvent(
+          new IncomingReqMessageEvent(
+            { reqMessage },
+            {
+              parentEvent: incomingGenericMessageEvent,
+              targetEmitter: memorelayClient,
+            }
+          )
+        );
       } catch (error) {
         memorelayClient.emitError(error as BadMessageError);
       } finally {
