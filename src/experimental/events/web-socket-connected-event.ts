@@ -9,6 +9,7 @@ import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
 import { RelayEvent } from './relay-event';
+import { BasicEventOptions } from './basic-event';
 
 export const WEB_SOCKET_CONNECTED_EVENT_TYPE = 'web-socket-connected';
 
@@ -37,7 +38,10 @@ export class WebSocketConnectedEvent extends RelayEvent<
 > {
   static readonly type: typeof WEB_SOCKET_CONNECTED_EVENT_TYPE =
     WEB_SOCKET_CONNECTED_EVENT_TYPE;
-  constructor(details: WebSocketConnectedEventDetails) {
-    super(WEB_SOCKET_CONNECTED_EVENT_TYPE, details);
+  constructor(
+    details: WebSocketConnectedEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(WEB_SOCKET_CONNECTED_EVENT_TYPE, details, options);
   }
 }

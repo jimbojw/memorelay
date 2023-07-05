@@ -5,29 +5,28 @@
  * @fileoverview Tests for BasicEvent.
  */
 
+import { BasicEventEmitter } from '../core/basic-event-emitter';
 import { BasicEvent } from './basic-event';
 
 describe('BasicEvent', () => {
-  it('should be a constructor function', () => {
-    expect(typeof BasicEvent).toBe('function');
-    const basicEvent = new BasicEvent('test', undefined);
-    expect(basicEvent).toBeInstanceOf(BasicEvent);
-  });
+  it('should have properties match constructor params', () => {
+    const eventType = 'abcde';
+    const mockOriginatorTag = {};
+    const mockParentEvent = {} as BasicEvent;
+    const mockTargetEmitter = {} as BasicEventEmitter;
+    const mockDetails = {};
 
-  it('should have type match constructor param', () => {
-    const basicEvent = new BasicEvent('abcde', undefined);
-    expect(basicEvent.type).toBe('abcde');
-  });
+    const basicEvent = new BasicEvent(eventType, mockDetails, {
+      originatorTag: mockOriginatorTag,
+      parentEvent: mockParentEvent,
+      targetEmitter: mockTargetEmitter,
+    });
 
-  it('should have undefined details if unspecified', () => {
-    const basicEvent = new BasicEvent('test', undefined);
-    expect(basicEvent.details).toBeUndefined();
-  });
-
-  it('should have details match constructor param', () => {
-    const payload = { foo: 'bar' };
-    const basicEvent = new BasicEvent('test', payload);
-    expect(basicEvent.details).toBe(payload);
+    expect(basicEvent.type).toBe(eventType);
+    expect(basicEvent.details).toBe(mockDetails);
+    expect(basicEvent.originatorTag).toBe(mockOriginatorTag);
+    expect(basicEvent.parentEvent).toBe(mockParentEvent);
+    expect(basicEvent.targetEmitter).toBe(mockTargetEmitter);
   });
 
   it('should not have default prevented to begin with', () => {

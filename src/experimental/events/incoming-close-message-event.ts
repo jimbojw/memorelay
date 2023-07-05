@@ -6,6 +6,7 @@
  */
 
 import { ClientCloseMessage } from '../../lib/message-types';
+import { BasicEventOptions } from './basic-event';
 import { ClientEvent } from './client-event';
 
 export const INCOMING_CLOSE_MESSAGE_EVENT_TYPE = 'incoming-close-message';
@@ -30,7 +31,10 @@ export class IncomingCloseMessageEvent extends ClientEvent<
 > {
   static readonly type: typeof INCOMING_CLOSE_MESSAGE_EVENT_TYPE =
     INCOMING_CLOSE_MESSAGE_EVENT_TYPE;
-  constructor(details: IncomingCloseMessageEventDetails) {
-    super(INCOMING_CLOSE_MESSAGE_EVENT_TYPE, details);
+  constructor(
+    details: IncomingCloseMessageEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(INCOMING_CLOSE_MESSAGE_EVENT_TYPE, details, options);
   }
 }

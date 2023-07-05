@@ -5,6 +5,27 @@
  * @fileoverview Basic Event to be extended for different purposes.
  */
 
+import { BasicEventEmitter } from '../core/basic-event-emitter';
+
+export interface BasicEventOptions {
+  /**
+   * Object marking the originator of the event. Plugins can use this field to
+   * perform strict equality checks to find out whether the plugin itself
+   * emitted an event.
+   */
+  readonly originatorTag?: unknown;
+
+  /**
+   * Parent event which in some way caused this event to come into being.
+   */
+  readonly parentEvent?: BasicEvent;
+
+  /**
+   * Emitter on which the event is intended to be emitted.
+   */
+  readonly targetEmitter?: BasicEventEmitter;
+}
+
 /**
  * A Memorelay BasicEvent takes its design from the DOM native CustomEvent. It
  * supports basic DOM Event functionality such as preventDefault(), and carries
@@ -17,15 +38,39 @@ export class BasicEvent<
   DetailsType = unknown
 > {
   /**
+   * Object denoting the originator of the event.
+   */
+  readonly originatorTag?: unknown;
+
+  /**
+   * Parent event which in some way caused this event to be created.
+   */
+  readonly parentEvent?: BasicEvent;
+
+  /**
+   * Intended emitter of this event.
+   */
+  readonly targetEmitter?: BasicEventEmitter;
+
+  /**
    * Whether any recipient has called preventDefault();
    */
   private isDefaultPrevented = false;
 
   /**
    * @param type The name of the event, case-sensitive.
-   * @param details Optional object containing information about this event.
+   * @param details Object containing payload information about this event.
+   * @param options Optional event settings.
    */
-  constructor(readonly type: EventType, readonly details: DetailsType) {}
+  constructor(
+    readonly type: EventType,
+    readonly details: DetailsType,
+    options?: BasicEventOptions
+  ) {
+    this.originatorTag = options?.originatorTag;
+    this.parentEvent = options?.parentEvent;
+    this.targetEmitter = options?.targetEmitter;
+  }
 
   /**
    * Same concept as the DOM standard Event's defaultPrevented getter.

@@ -8,6 +8,7 @@
 import { RawData } from 'ws';
 
 import { ClientEvent } from './client-event';
+import { BasicEventOptions } from './basic-event';
 
 export const WEB_SOCKET_MESSAGE_EVENT_TYPE = 'web-socket-message';
 
@@ -40,7 +41,10 @@ export class WebSocketMessageEvent extends ClientEvent<
 > {
   static readonly type: typeof WEB_SOCKET_MESSAGE_EVENT_TYPE =
     WEB_SOCKET_MESSAGE_EVENT_TYPE;
-  constructor(details: WebSocketMessageEventDetails) {
-    super(WEB_SOCKET_MESSAGE_EVENT_TYPE, details);
+  constructor(
+    details: WebSocketMessageEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(WEB_SOCKET_MESSAGE_EVENT_TYPE, details, options);
   }
 }

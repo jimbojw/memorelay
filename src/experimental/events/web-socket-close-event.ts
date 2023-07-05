@@ -5,6 +5,7 @@
  * @fileoverview Wrapper for WebSocket 'close' event.
  */
 
+import { BasicEventOptions } from './basic-event';
 import { ClientEvent } from './client-event';
 
 export const WEB_SOCKET_CLOSE_EVENT_TYPE = 'web-socket-close';
@@ -30,7 +31,10 @@ export class WebSocketCloseEvent extends ClientEvent<
 > {
   static readonly type: typeof WEB_SOCKET_CLOSE_EVENT_TYPE =
     WEB_SOCKET_CLOSE_EVENT_TYPE;
-  constructor(details: WebSocketCloseEventDetails) {
-    super(WEB_SOCKET_CLOSE_EVENT_TYPE, details);
+  constructor(
+    details: WebSocketCloseEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(WEB_SOCKET_CLOSE_EVENT_TYPE, details, options);
   }
 }

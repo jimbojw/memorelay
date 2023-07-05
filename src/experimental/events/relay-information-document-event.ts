@@ -7,6 +7,7 @@
  */
 
 import { RelayInformationDocument } from '../../lib/relay-information-document';
+import { BasicEventOptions } from './basic-event';
 import { RelayEvent } from './relay-event';
 
 export const RELAY_INFORMATION_DOCUMENT_EVENT_TYPE =
@@ -33,7 +34,10 @@ export class RelayInformationDocumentEvent extends RelayEvent<
   RelayInformationDocumentEventDetails
 > {
   static readonly type = RELAY_INFORMATION_DOCUMENT_EVENT_TYPE;
-  constructor(details: RelayInformationDocumentEventDetails) {
-    super(RELAY_INFORMATION_DOCUMENT_EVENT_TYPE, details);
+  constructor(
+    details: RelayInformationDocumentEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(RELAY_INFORMATION_DOCUMENT_EVENT_TYPE, details, options);
   }
 }

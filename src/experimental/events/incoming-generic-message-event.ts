@@ -6,6 +6,7 @@
  */
 
 import { GenericMessage } from '../../lib/message-types';
+import { BasicEventOptions } from './basic-event';
 import { ClientEvent } from './client-event';
 
 export const INCOMING_GENERIC_MESSAGE_EVENT_TYPE = 'incoming-generic-message';
@@ -31,7 +32,10 @@ export class IncomingGenericMessageEvent extends ClientEvent<
 > {
   static readonly type: typeof INCOMING_GENERIC_MESSAGE_EVENT_TYPE =
     INCOMING_GENERIC_MESSAGE_EVENT_TYPE;
-  constructor(details: IncomingGenericMessageEventDetails) {
-    super(INCOMING_GENERIC_MESSAGE_EVENT_TYPE, details);
+  constructor(
+    details: IncomingGenericMessageEventDetails,
+    options?: BasicEventOptions
+  ) {
+    super(INCOMING_GENERIC_MESSAGE_EVENT_TYPE, details, options);
   }
 }
