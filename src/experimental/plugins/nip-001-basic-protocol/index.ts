@@ -12,6 +12,7 @@ import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messa
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
+import { sendStoredEventsToSubscribers } from './send-stored-events-to-subscribers';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
 import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-messages';
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
@@ -39,6 +40,9 @@ export function basicProtocol(hub: MemorelayHub): Handler {
 
     // Broadcast incoming EVENT messages to all other connected clients.
     broadcastIncomingEventMessages(hub),
+
+    // Send stored events to incoming subscriptions.
+    sendStoredEventsToSubscribers(hub),
 
     // Subscribe to incoming REQ messages.
     subscribeToIncomingReqMessages(hub),
