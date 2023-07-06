@@ -29,36 +29,46 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * @returns Handler for disconnection.
  */
 export function basicProtocol(hub: MemorelayHub): Handler {
-  const handlers: Handler[] = [
+  const plugins = [
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
-    parseIncomingJsonMessages(hub),
+    parseIncomingJsonMessages,
 
     // Validate and upgrade incoming EVENT, REQ and CLOSE messages.
-    validateIncomingEventMessages(hub),
-    validateIncomingReqMessages(hub),
-    validateIncomingCloseMessages(hub),
+    validateIncomingEventMessages,
+    validateIncomingReqMessages,
+    validateIncomingCloseMessages,
 
     // Reject any message type other than EVENT, REQ and CLOSE.
-    rejectUnrecognizedIncomingMessages(hub),
+    rejectUnrecognizedIncomingMessages,
 
     // Broadcast incoming EVENT messages to all other connected clients.
-    broadcastIncomingEventMessages(hub),
+    broadcastIncomingEventMessages,
 
     // Send stored events to incoming subscriptions.
-    sendStoredEventsToSubscribers(hub),
+    sendStoredEventsToSubscribers,
 
     // Subscribe to incoming REQ messages.
-    subscribeToIncomingReqMessages(hub),
+    subscribeToIncomingReqMessages,
 
     // Convert outgoing EVENT, EOSE and NOTICE message events to
     // OutgoingGenericMessageEvents.
-    generalizeOutgoingEventMessages(hub),
-    generalizeOutgoingEOSEMessages(hub),
-    generalizeOutgoingNoticeMessages(hub),
+    generalizeOutgoingEventMessages,
+    generalizeOutgoingEOSEMessages,
+    generalizeOutgoingNoticeMessages,
 
     // Serialize outgoing generic messages and send to the WebSocket.
-    serializeOutgoingJsonMessages(hub),
+    serializeOutgoingJsonMessages,
   ];
 
-  return { disconnect: clearHandlers(handlers) };
+  // Avoid Node's MaxListenersExceededWarning.
+  hub.maxEventListeners += plugins.length;
+
+  const handlers = plugins.map((plugin) => plugin(hub));
+
+  return {
+    disconnect: () => {
+      clearHandlers(handlers);
+      hub.maxEventListeners -= plugins.length; // Restore maxListeners.
+    },
+  };
 }
