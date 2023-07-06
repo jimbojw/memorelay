@@ -11,7 +11,7 @@ import { IncomingMessage } from 'http';
 import { WebSocketMessageEvent } from '../experimental/events/web-socket-message-event';
 import { WebSocketCloseEvent } from '../experimental/events/web-socket-close-event';
 import { ClientEvent } from '../experimental/events/client-event';
-import { ClientError } from '../experimental/errors/client-error';
+import { ClientError } from './errors/client-error';
 import { onWithHandler } from './on-with-handler';
 import { MemorelayClientDisconnectEvent } from '../experimental/events/memorelay-client-disconnect-event';
 import { ConnectableEventEmitter } from './connectable-event-emitter';

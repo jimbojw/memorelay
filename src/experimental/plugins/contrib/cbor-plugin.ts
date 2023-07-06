@@ -15,7 +15,7 @@ import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
-import { BasicError } from '../../errors/basic-error';
+import { BasicError } from '../../../core/errors/basic-error';
 import { OutgoingNoticeMessageEvent } from '../../events/outgoing-notice-message-event';
 
 export class CborDecodingError extends BasicError {

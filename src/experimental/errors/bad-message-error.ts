@@ -5,7 +5,7 @@
  * @fileoverview Error type for bad messages incoming from a client.
  */
 
-import { ClientError } from './client-error';
+import { ClientError } from '../../core/errors/client-error';
 
 export const BAD_MESSAGE_ERROR_TYPE = 'bad-message-error';
 

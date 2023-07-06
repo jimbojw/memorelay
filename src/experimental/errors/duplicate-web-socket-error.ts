@@ -6,7 +6,7 @@
  */
 
 import { WebSocket } from 'ws';
-import { RelayError } from './relay-error';
+import { RelayError } from '../../core/errors/relay-error';
 
 export const DUPLICATE_WEB_SOCKET_ERROR_TYPE = 'duplicate-websocket-error';
 

@@ -6,7 +6,7 @@
  */
 
 import { MemorelayHub } from './core/memorelay-hub';
-import { RelayError } from './experimental/errors/relay-error';
+import { RelayError } from './core/errors/relay-error';
 import { RelayEvent } from './experimental/events/relay-event';
 import { createClients } from './experimental/plugins/create-clients';
 import { basicProtocol } from './experimental/plugins/nip-001-basic-protocol';

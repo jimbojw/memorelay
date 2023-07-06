@@ -5,7 +5,7 @@
  * @fileoverview Error type when a subscription cannot be found.
  */
 
-import { ClientError } from './client-error';
+import { ClientError } from '../../core/errors/client-error';
 
 export const SUBSCRIPTION_NOT_FOUND_ERROR_TYPE = 'subscription-not-found-error';
 
