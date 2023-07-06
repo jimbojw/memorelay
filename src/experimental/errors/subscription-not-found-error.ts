@@ -5,11 +5,11 @@
  * @fileoverview Error type when a subscription cannot be found.
  */
 
-import { BasicError } from './basic-error';
+import { ClientError } from './client-error';
 
 export const SUBSCRIPTION_NOT_FOUND_ERROR_TYPE = 'subscription-not-found-error';
 
-export class SubscriptionNotFoundError extends BasicError {
+export class SubscriptionNotFoundError extends ClientError {
   static readonly type = SUBSCRIPTION_NOT_FOUND_ERROR_TYPE;
 
   constructor(subscriptionId: string) {

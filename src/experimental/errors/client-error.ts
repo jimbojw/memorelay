@@ -2,9 +2,9 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Union type of errors emitted at the client level.
+ * @fileoverview Base class for MemorelayClient errors.
  */
 
-import { BadMessageError } from './bad-message-error';
+import { BasicError } from './basic-error';
 
-export type ClientError = BadMessageError;
+export abstract class ClientError extends BasicError {}

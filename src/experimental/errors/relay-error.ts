@@ -2,9 +2,9 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Union type of errors emitted at the relay level.
+ * @fileoverview Base class for relay errors.
  */
 
-import { DuplicateWebSocketError } from './duplicate-web-socket-error';
+import { BasicError } from './basic-error';
 
-export type RelayError = DuplicateWebSocketError;
+export abstract class RelayError extends BasicError {}

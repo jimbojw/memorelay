@@ -2,14 +2,14 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Error type for bad messages.
+ * @fileoverview Error type for bad messages incoming from a client.
  */
 
-import { BasicError } from './basic-error';
+import { ClientError } from './client-error';
 
 export const BAD_MESSAGE_ERROR_TYPE = 'bad-message-error';
 
-export class BadMessageError extends BasicError {
+export class BadMessageError extends ClientError {
   static readonly type = BAD_MESSAGE_ERROR_TYPE;
 
   constructor(reason: string) {

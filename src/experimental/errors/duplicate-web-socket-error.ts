@@ -6,7 +6,7 @@
  */
 
 import { WebSocket } from 'ws';
-import { BasicError } from './basic-error';
+import { RelayError } from './relay-error';
 
 export const DUPLICATE_WEB_SOCKET_ERROR_TYPE = 'duplicate-websocket-error';
 
@@ -15,7 +15,7 @@ export const DUPLICATE_WEB_SOCKET_ERROR_TYPE = 'duplicate-websocket-error';
  * event, but the WebSocket has already been used as the basis for a previous
  * MemorelayClient.
  */
-export class DuplicateWebSocketError extends BasicError {
+export class DuplicateWebSocketError extends RelayError {
   static readonly type = DUPLICATE_WEB_SOCKET_ERROR_TYPE;
 
   constructor(
