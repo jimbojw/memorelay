@@ -5,7 +5,7 @@
  * @fileoverview Union type of events emitted at the client level.
  */
 
-import { MemorelayClient } from '../core/memorelay-client';
+import { MemorelayClient } from '../../core/memorelay-client';
 import { BasicEvent, BasicEventOptions } from './basic-event';
 
 export type ClientEventOptions = BasicEventOptions<MemorelayClient>;

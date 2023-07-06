@@ -5,7 +5,7 @@
  * @fileoverview Tests for BasicEvent.
  */
 
-import { BasicEventEmitter } from '../core/basic-event-emitter';
+import { BasicEventEmitter } from '../../core/basic-event-emitter';
 import { BasicEvent } from './basic-event';
 
 describe('BasicEvent', () => {

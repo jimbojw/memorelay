@@ -7,7 +7,7 @@
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
-import { Memorelay } from '../../memorelay';
+import { Memorelay } from '../../../memorelay';
 
 /**
  * Example plugin showing how one could implement throttling. This is not meant

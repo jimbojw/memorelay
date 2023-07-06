@@ -7,7 +7,7 @@
 
 import { decode, encode } from 'cborg';
 
-import { Memorelay } from '../../memorelay';
+import { Memorelay } from '../../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';

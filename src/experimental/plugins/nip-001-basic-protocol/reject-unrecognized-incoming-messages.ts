@@ -7,12 +7,12 @@
  */
 
 import { BadMessageError } from '../../errors/bad-message-error';
-import { BasicEventEmitter } from '../../core/basic-event-emitter';
+import { BasicEventEmitter } from '../../../core/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../core/clear-handlers';
+import { clearHandlers } from '../../../core/clear-handlers';
 
 /**
  * Memorelay core plugin that rejects any generic message with an unrecognized

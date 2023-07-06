@@ -7,9 +7,9 @@
  */
 
 import { BasicEventEmitter } from './basic-event-emitter';
-import { Handler } from '../types/handler';
-import { BasicEvent } from '../events/basic-event';
-import { BasicError } from '../errors/basic-error';
+import { Handler } from '../experimental/types/handler';
+import { BasicEvent } from '../experimental/events/basic-event';
+import { BasicError } from '../experimental/errors/basic-error';
 
 /**
  * Symbol for accessing the internal handlers list in tests.

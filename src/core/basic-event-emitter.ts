@@ -6,12 +6,10 @@
  */
 
 import { defaultMaxListeners, EventEmitter } from 'events';
-import { BasicEvent } from '../events/basic-event';
-import { BasicError } from '../errors/basic-error';
-import { Handler } from '../types/handler';
+import { BasicEvent } from '../experimental/events/basic-event';
+import { BasicError } from '../experimental/errors/basic-error';
+import { Handler } from '../experimental/types/handler';
 import { onWithHandler } from './on-with-handler';
-
-export const MAX_EVENT_LISTENERS_SYMBOL = Symbol('maxEventListeners');
 
 export class BasicEventEmitter<
   EventType extends BasicEvent = BasicEvent,

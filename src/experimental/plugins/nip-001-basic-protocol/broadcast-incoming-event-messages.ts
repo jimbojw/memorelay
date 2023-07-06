@@ -7,12 +7,12 @@
  */
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { MemorelayHub } from '../../core/memorelay-hub';
+import { MemorelayHub } from '../../../core/memorelay-hub';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../core/clear-handlers';
+import { clearHandlers } from '../../../core/clear-handlers';
 
 /**
  * Memorelay core plugin for broadcasting incoming EVENT messages from one

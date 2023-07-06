@@ -7,11 +7,11 @@
  */
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { MemorelayHub } from '../../core/memorelay-hub';
+import { MemorelayHub } from '../../../core/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../core/clear-handlers';
+import { clearHandlers } from '../../../core/clear-handlers';
 
 /**
  * Memorelay core plugin for serializing generic, outgoing Nostr messages as

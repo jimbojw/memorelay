@@ -14,7 +14,7 @@ import {
 } from 'node-mocks-http';
 import { Request, Response } from 'express';
 
-import { Memorelay } from '../../memorelay';
+import { Memorelay } from '../../../memorelay';
 import { relayInformationDocument } from './relay-information-document';
 
 describe('relayInformationDocument', () => {
