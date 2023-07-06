@@ -5,16 +5,36 @@
  * @fileoverview EventEmitter with an extra capacity for emitting BasicEvents.
  */
 
-import { EventEmitter } from 'events';
+import { defaultMaxListeners, EventEmitter } from 'events';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 import { Handler } from '../types/handler';
 import { onWithHandler } from './on-with-handler';
 
+export const MAX_EVENT_LISTENERS_SYMBOL = Symbol('maxEventListeners');
+
 export class BasicEventEmitter<
   EventType extends BasicEvent = BasicEvent,
   ErrorType extends BasicError = BasicError
 > {
+  /**
+   * Maximum number of event listeners known to be permitted without warning.
+   *
+   * NOTE: Node v19 introduced the getMaxListeners() module function to support
+   * determining the maxListeners of an emitter. In the future, using that would
+   * be better than keeping a copy, as it would be impervious to circumvention.
+   */
+  private maxEventListenersValue = defaultMaxListeners;
+
+  get maxEventListeners(): number {
+    return this.maxEventListenersValue;
+  }
+
+  set maxEventListeners(maxEventListeners: number) {
+    this.maxEventListenersValue = maxEventListeners;
+    this.internalEmitter.setMaxListeners(this.maxEventListeners);
+  }
+
   readonly internalEmitter = new EventEmitter();
 
   /**

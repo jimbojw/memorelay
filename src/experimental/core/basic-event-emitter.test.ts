@@ -5,13 +5,28 @@
  * @fileoverview Tests for BasicEventEmitter.
  */
 
-import { EventEmitter } from 'events';
+import { defaultMaxListeners, EventEmitter } from 'events';
 
 import { BasicEventEmitter } from './basic-event-emitter';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 
 describe('BasicEventEmitter', () => {
+  describe('get maxEventListeners()', () => {
+    it('should initialize to the default', () => {
+      const basicEventEmitter = new BasicEventEmitter();
+      expect(basicEventEmitter.maxEventListeners).toBe(defaultMaxListeners);
+    });
+  });
+
+  describe('set maxEventListeners()', () => {
+    it('should be set to the expected value', () => {
+      const basicEventEmitter = new BasicEventEmitter();
+      basicEventEmitter.maxEventListeners = 100;
+      expect(basicEventEmitter.maxEventListeners).toBe(100);
+    });
+  });
+
   describe('emitEvent()', () => {
     it('should emit a BasicEvent and return it', () => {
       const basicEventEmitter = new BasicEventEmitter();
