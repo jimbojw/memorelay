@@ -12,7 +12,7 @@ import { createClients } from './create-clients';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
-import { MemorelayHub } from '../../core/memorelay-hub';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
 
 describe('createClients()', () => {
   describe('#WebSocketConnectedEvent', () => {

@@ -5,7 +5,7 @@
  * @fileoverview Event emitted by Memorelay when it creates a MemorelayClient.
  */
 
-import { MemorelayClient } from '../../core/memorelay-client';
+import { MemorelayClient } from '../../core/lib/memorelay-client';
 import { RelayEvent, RelayEventOptions } from './relay-event';
 
 export const MEMORELAY_CLIENT_CREATED_EVENT_TYPE = 'memorelay-client-created';

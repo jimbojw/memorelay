@@ -6,11 +6,11 @@
  */
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { MemorelayHub } from '../../../core/memorelay-hub';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/clear-handlers';
+import { clearHandlers } from '../../../core/lib/clear-handlers';
 
 /**
  * Memorelay plugin to drop incoming EVENT messages if it has been seen before.

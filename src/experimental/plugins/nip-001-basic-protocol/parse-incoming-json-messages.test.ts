@@ -10,12 +10,12 @@ import { WebSocket } from 'ws';
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
-import { MemorelayClient } from '../../../core/memorelay-client';
+import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
 import { BadMessageError } from '../../errors/bad-message-error';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
-import { MemorelayHub } from '../../../core/memorelay-hub';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 
 describe('parseIncomingJsonMessages()', () => {
   describe('#WebSocketMessageEvent', () => {

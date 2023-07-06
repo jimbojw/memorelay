@@ -9,9 +9,9 @@ import { WebSocket } from 'ws';
 import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
-import { WebSocketMessageEvent } from '../experimental/events/web-socket-message-event';
-import { WebSocketCloseEvent } from '../experimental/events/web-socket-close-event';
-import { MemorelayClientDisconnectEvent } from '../experimental/events/memorelay-client-disconnect-event';
+import { WebSocketMessageEvent } from '../../experimental/events/web-socket-message-event';
+import { WebSocketCloseEvent } from '../../experimental/events/web-socket-close-event';
+import { MemorelayClientDisconnectEvent } from '../../experimental/events/memorelay-client-disconnect-event';
 
 describe('MemorelayClient', () => {
   describe('webSocket#message', () => {

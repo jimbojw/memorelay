@@ -7,7 +7,7 @@
 
 import { EventEmitter } from 'events';
 
-import { Handler } from '../experimental/types/handler';
+import { Handler } from '../../experimental/types/handler';
 
 /**
  * Utility function for establishing an event listener on an emitter via its

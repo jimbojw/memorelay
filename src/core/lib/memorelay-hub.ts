@@ -7,10 +7,10 @@
 
 import { WebSocketServer } from 'ws';
 
-import { UpgradeHandler } from '../experimental/types/upgrade-handler';
+import { UpgradeHandler } from '../../experimental/types/upgrade-handler';
 import { handleUpgrade } from './handle-upgrade';
-import { RelayEvent } from '../experimental/events/relay-event';
-import { RelayError } from './errors/relay-error';
+import { RelayEvent } from '../../experimental/events/relay-event';
+import { RelayError } from '../errors/relay-error';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
 
 /**

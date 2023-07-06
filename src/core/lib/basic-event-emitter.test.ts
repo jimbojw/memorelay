@@ -8,8 +8,8 @@
 import { defaultMaxListeners, EventEmitter } from 'events';
 
 import { BasicEventEmitter } from './basic-event-emitter';
-import { BasicEvent } from '../experimental/events/basic-event';
-import { BasicError } from './errors/basic-error';
+import { BasicEvent } from '../../experimental/events/basic-event';
+import { BasicError } from '../errors/basic-error';
 
 describe('BasicEventEmitter', () => {
   describe('get maxEventListeners()', () => {

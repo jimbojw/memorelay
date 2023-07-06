@@ -6,8 +6,8 @@
  */
 
 import { basicProtocol } from '.';
-import { BasicEventEmitter } from '../../../core/basic-event-emitter';
-import { MemorelayHub } from '../../../core/memorelay-hub';
+import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { setupTestHub } from '../../test/setup-hub-and-memorelay-client';
 
 describe('basicProtocol()', () => {

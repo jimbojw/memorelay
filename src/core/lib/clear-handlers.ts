@@ -5,7 +5,7 @@
  * @fileoverview Utility function to disconnect and clear an array of Handlers.
  */
 
-import { Handler } from '../experimental/types/handler';
+import { Handler } from '../../experimental/types/handler';
 
 /**
  * Returns a function which when called will remove all elements from the

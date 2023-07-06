@@ -8,11 +8,11 @@
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
-import { BasicEventEmitter } from '../../../core/basic-event-emitter';
+import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { MemorelayClient } from '../../../core/memorelay-client';
+import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
-import { MemorelayHub } from '../../../core/memorelay-hub';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 

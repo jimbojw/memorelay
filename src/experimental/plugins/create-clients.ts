@@ -8,12 +8,12 @@
 
 import { WebSocket } from 'ws';
 
-import { MemorelayClient } from '../../core/memorelay-client';
+import { MemorelayClient } from '../../core/lib/memorelay-client';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { Handler } from '../types/handler';
-import { MemorelayHub } from '../../core/memorelay-hub';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
 
 /**
  * Memorelay core plugin to create MemorelayClient instances out of connected

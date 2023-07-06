@@ -5,7 +5,7 @@
  * @fileoverview Tests for clearHandlers().
  */
 
-import { Handler } from '../experimental/types/handler';
+import { Handler } from '../../experimental/types/handler';
 import { clearHandlers } from './clear-handlers';
 
 describe('clearHandlers()', () => {
