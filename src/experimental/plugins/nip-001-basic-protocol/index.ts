@@ -14,6 +14,7 @@ import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-mes
 import { generalizeOutgoingNoticeMessages } from './generalize-outgoing-notice-messages';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
+import { dropDuplicateIncomingEventMessages } from './drop-duplicate-incoming-event-messages';
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { sendStoredEventsToSubscribers } from './send-stored-events-to-subscribers';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
@@ -40,6 +41,9 @@ export function basicProtocol(hub: MemorelayHub): Handler {
 
     // Reject any message type other than EVENT, REQ and CLOSE.
     rejectUnrecognizedIncomingMessages,
+
+    // Drop incoming EVENT messages where the clientEvent has been seen before.
+    dropDuplicateIncomingEventMessages,
 
     // Broadcast incoming EVENT messages to all other connected clients.
     broadcastIncomingEventMessages,

@@ -2,25 +2,23 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Memorelay core plugin for broadcasting an incoming EVENT
- * message from one client to others.
+ * @fileoverview Memorelay plugin to drop duplicate incoming EVENT messages.
  */
 
 import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
-import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/clear-handlers';
 
 /**
- * Memorelay core plugin for broadcasting incoming EVENT messages from one
- * client to all other connected clients.
+ * Memorelay plugin to drop incoming EVENT messages if it has been seen before.
  * @param hub Event hub for inter-component communication.
- * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function broadcastIncomingEventMessages(hub: MemorelayHub): Handler {
+export function dropDuplicateIncomingEventMessages(hub: MemorelayHub): Handler {
+  const seenEventIds: Record<string, true> = {};
+
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
@@ -34,15 +32,16 @@ export function broadcastIncomingEventMessages(hub: MemorelayHub): Handler {
               return; // Preempted by another listener.
             }
 
-            const {
-              details: { clientEventMessage },
-            } = incomingEventMessageEvent;
-            hub.emitEvent(
-              new BroadcastEventMessageEvent(
-                { clientEventMessage, memorelayClient },
-                { parentEvent: incomingEventMessageEvent, targetEmitter: hub }
-              )
-            );
+            const [, { id: incomingEventId }] =
+              incomingEventMessageEvent.details.clientEventMessage;
+
+            if (incomingEventId in seenEventIds) {
+              // TODO(jimbo): Should this also emit an error/event?
+              incomingEventMessageEvent.preventDefault();
+              return;
+            }
+
+            seenEventIds[incomingEventId] = true;
           }
         ),
 
