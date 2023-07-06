@@ -15,8 +15,7 @@ import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/clear-handlers';
-import { RelayEventMessage } from '../../../lib/message-types';
-import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
+import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
@@ -94,15 +93,15 @@ export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
         for (const [subscriptionId, filters] of subscriptions.entries()) {
           if (!filters.length || matchFilters(filters, broadcastEvent)) {
             queueMicrotask(() => {
-              const outgoingEventMessage: RelayEventMessage = [
-                'EVENT',
-                subscriptionId,
-                broadcastEvent,
-              ];
-              // TODO(jimbo): Implement and switch to OutgoingEventMessageEvent.
               memorelayClient.emitEvent(
-                new OutgoingGenericMessageEvent(
-                  { genericMessage: outgoingEventMessage },
+                new OutgoingEventMessageEvent(
+                  {
+                    relayEventMessage: [
+                      'EVENT',
+                      subscriptionId,
+                      broadcastEvent,
+                    ],
+                  },
                   {
                     parentEvent: broadcastEventMessageEvent,
                     targetEmitter: memorelayClient,

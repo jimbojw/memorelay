@@ -84,7 +84,7 @@ describe('serializeOutgoingJsonMessages()', () => {
 
       memorelayClient.emitEvent(
         new OutgoingGenericMessageEvent({
-          genericMessage: ['PREVENT', 'ME'],
+          genericMessage: ['NEVER', 'RECEIVED'],
         })
       );
 

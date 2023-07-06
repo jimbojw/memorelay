@@ -12,8 +12,9 @@ import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/clear-handlers';
-import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { EventsDatabase } from '../../core/events-database';
+import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
+import { OutgoingEOSEMessageEvent } from '../../events/outgoing-eose-message-event';
 
 /**
  * Memorelay core plugin for sending stored events to incoming subscribers. Note
@@ -76,9 +77,9 @@ export function sendStoredEventsToSubscribers(hub: MemorelayHub): Handler {
               for (const matchingEvent of matchingEvents) {
                 queueMicrotask(() => {
                   memorelayClient.emitEvent(
-                    new OutgoingGenericMessageEvent(
+                    new OutgoingEventMessageEvent(
                       {
-                        genericMessage: [
+                        relayEventMessage: [
                           'EVENT',
                           subscriptionId,
                           matchingEvent,
@@ -95,9 +96,9 @@ export function sendStoredEventsToSubscribers(hub: MemorelayHub): Handler {
 
               queueMicrotask(() => {
                 memorelayClient.emitEvent(
-                  new OutgoingGenericMessageEvent(
+                  new OutgoingEOSEMessageEvent(
                     {
-                      genericMessage: ['EOSE', subscriptionId],
+                      relayEOSEMessage: ['EOSE', subscriptionId],
                     },
                     {
                       parentEvent: incomingReqMessageEvent,

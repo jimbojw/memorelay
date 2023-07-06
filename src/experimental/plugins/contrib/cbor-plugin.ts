@@ -16,6 +16,7 @@ import { GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
 import { BasicError } from '../../errors/basic-error';
+import { OutgoingNoticeMessageEvent } from '../../events/outgoing-notice-message-event';
 
 export class CborDecodingError extends BasicError {
   readonly type = 'cbor-decoding-error';
@@ -160,9 +161,9 @@ function handleMemorelayClientCreatedEvent({
 
     // Emit a NOTICE to inform the client.
     memorelayClient.emitEvent(
-      new OutgoingGenericMessageEvent(
+      new OutgoingNoticeMessageEvent(
         {
-          genericMessage: ['NOTICE', 'CBOR enabled'],
+          relayNoticeMessage: ['NOTICE', 'CBOR enabled'],
         },
         {
           parentEvent: incomingGenericMessageEvent,

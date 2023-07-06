@@ -9,6 +9,9 @@ import { clearHandlers } from '../../core/clear-handlers';
 import { MemorelayHub } from '../../core/memorelay-hub';
 import { Handler } from '../../types/handler';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
+import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
+import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-messages';
+import { generalizeOutgoingNoticeMessages } from './generalize-outgoing-notice-messages';
 
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
@@ -49,10 +52,9 @@ export function basicProtocol(hub: MemorelayHub): Handler {
 
     // Convert outgoing EVENT, EOSE and NOTICE message events to
     // OutgoingGenericMessageEvents.
-    // TODO(jimbo): Implement the following plugins.
-    // generalizeOutgoingEventMessages(hub),
-    // generalizeOutgoingEOSEMessages(hub),
-    // generalizeOutgoingNoticeMessages(hub),
+    generalizeOutgoingEventMessages(hub),
+    generalizeOutgoingEOSEMessages(hub),
+    generalizeOutgoingNoticeMessages(hub),
 
     // Serialize outgoing generic messages and send to the WebSocket.
     serializeOutgoingJsonMessages(hub),

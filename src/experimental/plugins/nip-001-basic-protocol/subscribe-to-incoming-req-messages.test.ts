@@ -16,8 +16,8 @@ import { createSignedTestEvent } from '../../test/signed-test-event';
 import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
 import { SubscriptionNotFoundError } from '../../errors/subscription-not-found-error';
-import { RelayEventMessage } from '../../../lib/message-types';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
 
 describe('subscribeToReqMessages()', () => {
   describe('#IncomingReqMessageEvent', () => {
@@ -28,10 +28,10 @@ describe('subscribeToReqMessages()', () => {
 
       const mockOutgoingListenerFn = jest.fn<
         unknown,
-        [OutgoingGenericMessageEvent]
+        [OutgoingEventMessageEvent]
       >();
       subscribingClient.onEvent(
-        OutgoingGenericMessageEvent,
+        OutgoingEventMessageEvent,
         mockOutgoingListenerFn
       );
 
@@ -50,7 +50,7 @@ describe('subscribeToReqMessages()', () => {
 
       expect(mockOutgoingListenerFn).toHaveBeenCalledTimes(1);
       const outgoingEventMessageEvent = mockOutgoingListenerFn.mock.calls[0][0];
-      expect(outgoingEventMessageEvent.details.genericMessage).toEqual([
+      expect(outgoingEventMessageEvent.details.relayEventMessage).toEqual([
         'EVENT',
         'SUBSCRIPTION_ID',
         testEvent,
@@ -68,10 +68,10 @@ describe('subscribeToReqMessages()', () => {
 
       const mockOutgoingListenerFn = jest.fn<
         unknown,
-        [OutgoingGenericMessageEvent]
+        [OutgoingEventMessageEvent]
       >();
       subscribingClient.onEvent(
-        OutgoingGenericMessageEvent,
+        OutgoingEventMessageEvent,
         mockOutgoingListenerFn
       );
 
@@ -82,12 +82,11 @@ describe('subscribeToReqMessages()', () => {
       subscribingClient.emitEvent(incomingReqMessageEvent);
 
       const testEvent = createSignedTestEvent({ content: 'TEST EVENT' });
-      hub.emitEvent(
-        new BroadcastEventMessageEvent({
-          clientEventMessage: ['EVENT', testEvent],
-          memorelayClient: sendingClient,
-        })
-      );
+      const broadcastEventMessageEvent = new BroadcastEventMessageEvent({
+        clientEventMessage: ['EVENT', testEvent],
+        memorelayClient: sendingClient,
+      });
+      hub.emitEvent(broadcastEventMessageEvent);
 
       await Promise.resolve();
 
@@ -103,10 +102,10 @@ describe('subscribeToReqMessages()', () => {
 
       const mockOutgoingListenerFn = jest.fn<
         unknown,
-        [OutgoingGenericMessageEvent]
+        [OutgoingEventMessageEvent]
       >();
       subscribingClient.onEvent(
-        OutgoingGenericMessageEvent,
+        OutgoingEventMessageEvent,
         mockOutgoingListenerFn
       );
 
@@ -140,10 +139,10 @@ describe('subscribeToReqMessages()', () => {
 
       const mockOutgoingListenerFn = jest.fn<
         unknown,
-        [OutgoingGenericMessageEvent]
+        [OutgoingEventMessageEvent]
       >();
       subscribingClient.onEvent(
-        OutgoingGenericMessageEvent,
+        OutgoingEventMessageEvent,
         mockOutgoingListenerFn
       );
 
@@ -198,10 +197,10 @@ describe('subscribeToReqMessages()', () => {
 
       const mockOutgoingListenerFn = jest.fn<
         unknown,
-        [OutgoingGenericMessageEvent]
+        [OutgoingEventMessageEvent]
       >();
       subscribingClient.onEvent(
-        OutgoingGenericMessageEvent,
+        OutgoingEventMessageEvent,
         mockOutgoingListenerFn
       );
 
@@ -229,7 +228,7 @@ describe('subscribeToReqMessages()', () => {
       expect(mockOutgoingListenerFn).toHaveBeenCalledTimes(1);
       const outgoingEventMessageEvent = mockOutgoingListenerFn.mock.calls[0][0];
       const [, outgoingSubscriptionId, outgoingEvent] =
-        outgoingEventMessageEvent.details.genericMessage as RelayEventMessage;
+        outgoingEventMessageEvent.details.relayEventMessage;
       expect(outgoingSubscriptionId).toBe('FILTERED_SUBSCRIPTION_ID');
       expect(outgoingEvent.content).toBe('MATCHES');
     });
