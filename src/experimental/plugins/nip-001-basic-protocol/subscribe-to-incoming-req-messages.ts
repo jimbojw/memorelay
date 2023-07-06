@@ -31,6 +31,18 @@ export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
       const subscriptions = new Map<string, Filter[]>();
 
       const handlers: Handler[] = [];
+
+      // Since every new client will add a listener on the hub, and there could
+      // be many clients, we increment the hub's maxEventListeners.
+      hub.maxEventListeners += 1;
+
+      // Then, on disconnect, in addition to clearing the handlers, we undo the
+      // addition to the maxEventListeners value.
+      function disconnect() {
+        clearHandlers(handlers);
+        hub.maxEventListeners -= 1; // Restore previous maxEventListeners.
+      }
+
       handlers.push(
         // Subscribe on incoming REQ event.
         memorelayClient.onEvent(IncomingReqMessageEvent, handleReqMessage),
@@ -42,10 +54,7 @@ export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
         hub.onEvent(BroadcastEventMessageEvent, handleBroadcastEventMessage),
 
         // Clean up on disconnect.
-        memorelayClient.onEvent(
-          MemorelayClientDisconnectEvent,
-          clearHandlers(handlers)
-        )
+        memorelayClient.onEvent(MemorelayClientDisconnectEvent, disconnect)
       );
 
       function handleReqMessage(

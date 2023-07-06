@@ -5,6 +5,9 @@
  * @fileoverview Tests for subscribeToReqMessages().
  */
 
+import { IncomingMessage } from 'http';
+import { WebSocket } from 'ws';
+
 import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-messages';
 import {
   setupTestClient,
@@ -18,8 +21,29 @@ import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-e
 import { SubscriptionNotFoundError } from '../../errors/subscription-not-found-error';
 import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
 import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
+import { MemorelayClient } from '../../core/memorelay-client';
+import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
 
 describe('subscribeToReqMessages()', () => {
+  describe('#MemorelayClientCreatedEvent', () => {
+    it('should increase the maxEventListeners of hub', () => {
+      const hub = setupTestHub(subscribeToIncomingReqMessages);
+
+      const initialMaxEventListeners = hub.maxEventListeners;
+
+      hub.emitEvent(
+        new MemorelayClientCreatedEvent({
+          memorelayClient: new MemorelayClient(
+            {} as WebSocket,
+            {} as IncomingMessage
+          ),
+        })
+      );
+
+      expect(hub.maxEventListeners).toBeGreaterThan(initialMaxEventListeners);
+    });
+  });
+
   describe('#IncomingReqMessageEvent', () => {
     it('should begin a subscription', async () => {
       const hub = setupTestHub(subscribeToIncomingReqMessages);
@@ -232,6 +256,54 @@ describe('subscribeToReqMessages()', () => {
       expect(outgoingSubscriptionId).toBe('FILTERED_SUBSCRIPTION_ID');
       expect(outgoingEvent.content).toBe('MATCHES');
     });
+
+    it('should send to large numbers of clients', async () => {
+      // TODO(jimbo): Assert that process.emitWarning() was not called.
+      const hub = setupTestHub(subscribeToIncomingReqMessages);
+      const sendingClient = setupTestClient(hub);
+      const subscribingClients = new Array(1000)
+        .fill(0)
+        .map(() => setupTestClient(hub));
+
+      const mockOutgoingListenerFn = jest.fn<
+        unknown,
+        [OutgoingEventMessageEvent]
+      >();
+      subscribingClients.forEach((subscribingClient, index) => {
+        subscribingClient.onEvent(
+          OutgoingEventMessageEvent,
+          mockOutgoingListenerFn
+        );
+        subscribingClient.emitEvent(
+          new IncomingReqMessageEvent({
+            reqMessage: ['REQ', `SUB INDEX: ${index}`],
+          })
+        );
+      });
+
+      const blastEvent = createSignedTestEvent({ content: 'BLAST EVENT' });
+      hub.emitEvent(
+        new BroadcastEventMessageEvent({
+          clientEventMessage: ['EVENT', blastEvent],
+          memorelayClient: sendingClient,
+        })
+      );
+
+      await Promise.resolve();
+
+      expect(mockOutgoingListenerFn).toHaveBeenCalledTimes(
+        subscribingClients.length
+      );
+
+      mockOutgoingListenerFn.mock.calls.forEach(
+        ([outgoingEventMessageEvent], index) => {
+          const [, subscriptionId, relayEvent] =
+            outgoingEventMessageEvent.details.relayEventMessage;
+          expect(subscriptionId).toBe(`SUB INDEX: ${index}`);
+          expect(relayEvent).toEqual(blastEvent);
+        }
+      );
+    });
   });
 
   describe('#MemorelayClientDisconnectEvent', () => {
@@ -277,6 +349,25 @@ describe('subscribeToReqMessages()', () => {
       await Promise.resolve();
 
       expect(mockOutgoingListenerFn).not.toHaveBeenCalled();
+    });
+
+    it('should restore maxEventListeners of hub', () => {
+      const hub = setupTestHub(subscribeToIncomingReqMessages);
+
+      const initialMaxEventListeners = hub.maxEventListeners;
+
+      const memorelayClient = new MemorelayClient(
+        {} as WebSocket,
+        {} as IncomingMessage
+      );
+
+      hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
+
+      memorelayClient.emitEvent(
+        new MemorelayClientDisconnectEvent({ memorelayClient })
+      );
+
+      expect(hub.maxEventListeners).toBe(initialMaxEventListeners);
     });
   });
 });
