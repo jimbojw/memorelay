@@ -6,13 +6,13 @@
  * in which the type string is unrecognized.
  */
 
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
-import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { BadMessageError } from '../errors/bad-message-error';
+import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
+import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { Handler } from '../../experimental/types/handler';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/lib/clear-handlers';
 
 /**
  * Memorelay core plugin that rejects any generic message with an unrecognized

@@ -6,13 +6,13 @@
  * generic messages.
  */
 
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
-import { OutgoingEOSEMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-eose-message-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { Handler } from '../../experimental/types/handler';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/lib/clear-handlers';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
+import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';
 
 /**
  * Memorelay plugin for re-casting outgoing EOSE messages as generic messages.

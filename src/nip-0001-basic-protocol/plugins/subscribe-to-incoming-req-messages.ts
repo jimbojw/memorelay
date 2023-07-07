@@ -5,17 +5,17 @@
  * @fileoverview Memorelay core plugin for subscribing to REQ messages.
  */
 
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { Filter, matchFilters } from 'nostr-tools';
-import { IncomingCloseMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-close-message-event';
-import { SubscriptionNotFoundError } from '../../../nip-0001-basic-protocol/errors/subscription-not-found-error';
-import { BroadcastEventMessageEvent } from '../../../nip-0001-basic-protocol/events/broadcast-event-message-event';
-import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
-import { OutgoingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-event-message-event';
+import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
+import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';
+import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
+import { Handler } from '../../experimental/types/handler';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/lib/clear-handlers';
+import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin

@@ -6,10 +6,10 @@
  */
 
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
+import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
+import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
+import { BadMessageError } from '../errors/bad-message-error';
 
 describe('validateIncomingReqMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {

@@ -6,9 +6,9 @@
  */
 
 import { basicProtocol } from '.';
-import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { setupTestHub } from '../../test/setup-hub-and-memorelay-client';
+import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { setupTestHub } from '../../experimental/test/setup-hub-and-memorelay-client';
 
 describe('basicProtocol()', () => {
   it('should increase maxEventListeners of hub', () => {

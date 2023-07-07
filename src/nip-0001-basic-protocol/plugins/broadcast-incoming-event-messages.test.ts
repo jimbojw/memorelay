@@ -5,13 +5,13 @@
  * @fileoverview Tests for broadcastIncomingEventMessages().
  */
 
-import { BroadcastEventMessageEvent } from '../../../nip-0001-basic-protocol/events/broadcast-event-message-event';
+import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
-import { IncomingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-event-message-event';
-import { ClientEventMessage } from '../../../lib/message-types';
-import { createSignedTestEvent } from '../../test/signed-test-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
+import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
+import { ClientEventMessage } from '../../lib/message-types';
+import { createSignedTestEvent } from '../../experimental/test/signed-test-event';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
 
 describe('broadcastIncomingEventMessages()', () => {
   describe('#IncomingEventMessageEvent', () => {

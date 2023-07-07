@@ -6,9 +6,9 @@
  */
 
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
+import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
+import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { BadMessageError } from '../errors/bad-message-error';
 
 describe('rejectUnrecognizedIncomingMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {

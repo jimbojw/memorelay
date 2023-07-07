@@ -2,20 +2,20 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for generalizeOutgoingEOSEMessages().
+ * @fileoverview Tests for generalizeOutgoingNoticeMessages().
  */
 
-import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
-import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { OutgoingEOSEMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-eose-message-event';
+import { generalizeOutgoingNoticeMessages } from './generalize-outgoing-notice-messages';
+import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-event';
 
-describe('generalizeOutgoingEOSEMessages()', () => {
-  describe('#OutgoingEOSEMessageEvent', () => {
-    it('should send an OutgoingEOSEMessageEvent', async () => {
+describe('generalizeOutgoingNoticeMessages()', () => {
+  describe('#OutgoingNoticeMessageEvent', () => {
+    it('should send an OutgoingNoticeMessageEvent', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
+        generalizeOutgoingNoticeMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
@@ -24,14 +24,14 @@ describe('generalizeOutgoingEOSEMessages()', () => {
       >();
       memorelayClient.onEvent(OutgoingGenericMessageEvent, mockMessageHandler);
 
-      const outgoingEOSEMessageEvent = new OutgoingEOSEMessageEvent({
-        relayEOSEMessage: ['EOSE', 'SUBSCRIPTION_ID'],
+      const outgoingNoticeMessageEvent = new OutgoingNoticeMessageEvent({
+        relayNoticeMessage: ['NOTICE', 'IMPORTANT ANNOUNCEMENT'],
       });
-      memorelayClient.emitEvent(outgoingEOSEMessageEvent);
+      memorelayClient.emitEvent(outgoingNoticeMessageEvent);
 
       await Promise.resolve();
 
-      expect(outgoingEOSEMessageEvent.defaultPrevented).toBe(true);
+      expect(outgoingNoticeMessageEvent.defaultPrevented).toBe(true);
 
       expect(mockMessageHandler.mock.calls).toHaveLength(1);
       const outgoingGenericMessageEvent = mockMessageHandler.mock.calls[0][0];
@@ -39,18 +39,18 @@ describe('generalizeOutgoingEOSEMessages()', () => {
         OutgoingGenericMessageEvent
       );
       expect(outgoingGenericMessageEvent.details.genericMessage).toEqual([
-        'EOSE',
-        'SUBSCRIPTION_ID',
+        'NOTICE',
+        'IMPORTANT ANNOUNCEMENT',
       ]);
       expect(outgoingGenericMessageEvent.parentEvent).toBe(
-        outgoingEOSEMessageEvent
+        outgoingNoticeMessageEvent
       );
       expect(outgoingGenericMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
     it('should ignore an outgoing EVENT message if defaultPrevented', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
+        generalizeOutgoingNoticeMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
@@ -59,11 +59,11 @@ describe('generalizeOutgoingEOSEMessages()', () => {
       >();
       memorelayClient.onEvent(OutgoingGenericMessageEvent, mockMessageHandler);
 
-      const outgoingEOSEMessageEvent = new OutgoingEOSEMessageEvent({
-        relayEOSEMessage: ['EOSE', 'SUBSCRIPTION_ID'],
+      const outgoingNoticeMessageEvent = new OutgoingNoticeMessageEvent({
+        relayNoticeMessage: ['NOTICE', 'IMPORTANT ANNOUNCEMENT'],
       });
-      outgoingEOSEMessageEvent.preventDefault();
-      memorelayClient.emitEvent(outgoingEOSEMessageEvent);
+      outgoingNoticeMessageEvent.preventDefault();
+      memorelayClient.emitEvent(outgoingNoticeMessageEvent);
 
       await Promise.resolve();
 
@@ -73,7 +73,7 @@ describe('generalizeOutgoingEOSEMessages()', () => {
   describe('#MemorelayClientDisconnectEvent', () => {
     it('should trigger disconnect', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
+        generalizeOutgoingNoticeMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
@@ -87,8 +87,8 @@ describe('generalizeOutgoingEOSEMessages()', () => {
       );
 
       memorelayClient.emitEvent(
-        new OutgoingEOSEMessageEvent({
-          relayEOSEMessage: ['EOSE', 'SUBSCRIPTION_ID'],
+        new OutgoingNoticeMessageEvent({
+          relayNoticeMessage: ['NOTICE', 'IMPORTANT ANNOUNCEMENT'],
         })
       );
 

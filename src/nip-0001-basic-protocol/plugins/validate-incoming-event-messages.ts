@@ -3,28 +3,28 @@
  */
 /**
  * @fileoverview Memorelay core plugin for validating incoming generic Nostr
- * messages of type 'REQ'.
+ * messages of type 'EVENT'.
  */
 
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
-import { checkReqMessage } from '../../../lib/buffer-to-message';
-import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { BadMessageError } from '../errors/bad-message-error';
+import { checkEventMessage } from '../../lib/buffer-to-message';
+import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
+import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
+import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { Handler } from '../../experimental/types/handler';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/lib/clear-handlers';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
- * 'REQ'. Incoming generic messages of any other type are ignored.
+ * 'EVENT'. Incoming generic messages of any other type are ignored.
  * @param hub Event hub for inter-component communication.
- * @event IncomingReqMessageEvent When a generic message is an REQ message.
- * @event BadMessageError When a REQ message is malformed.
+ * @event IncomingEventMessageEvent When a generic message is an EVENT message.
+ * @event BadMessageError When an EVENT message is malformed.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function validateIncomingReqMessages(hub: BasicEventEmitter): Handler {
+export function validateIncomingEventMessages(hub: BasicEventEmitter): Handler {
   return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
@@ -53,15 +53,15 @@ export function validateIncomingReqMessages(hub: BasicEventEmitter): Handler {
 
       const { genericMessage } = incomingGenericMessageEvent.details;
 
-      if (genericMessage[0] !== 'REQ') {
-        return; // The incoming message is not a 'REQ' message.
+      if (genericMessage[0] !== 'EVENT') {
+        return; // The incoming message is not an 'EVENT'.
       }
 
       try {
-        const reqMessage = checkReqMessage(genericMessage);
+        const eventMessage = checkEventMessage(genericMessage);
         memorelayClient.emitEvent(
-          new IncomingReqMessageEvent(
-            { reqMessage },
+          new IncomingEventMessageEvent(
+            { clientEventMessage: eventMessage },
             {
               parentEvent: incomingGenericMessageEvent,
               targetEmitter: memorelayClient,

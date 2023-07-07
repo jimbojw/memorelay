@@ -2,63 +2,66 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Tests for validateIncomingCloseEventMessages().
+ * @fileoverview Tests for validateIncomingEventMessages().
  */
 
-import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { IncomingCloseMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-close-message-event';
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
+import { validateIncomingEventMessages } from './validate-incoming-event-messages';
+import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
+import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
+import { createSignedTestEvent } from '../../experimental/test/signed-test-event';
+import { BadMessageError } from '../errors/bad-message-error';
 
-describe('validateIncomingCloseMessages()', () => {
+describe('validateIncomingEventMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
-    it('should validate and re-emit a CLOSE message', () => {
+    it('should validate an EVENT message', () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
+        validateIncomingEventMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
         unknown,
-        [IncomingCloseMessageEvent]
+        [IncomingEventMessageEvent]
       >();
-      memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
 
+      const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-        genericMessage: ['CLOSE', 'SUBSCRIPTION_ID'],
+        genericMessage: ['EVENT', nostrEvent],
       });
       memorelayClient.emitEvent(incomingGenericMessageEvent);
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
       expect(mockMessageHandler.mock.calls).toHaveLength(1);
-      const incomingCloseMessageEvent = mockMessageHandler.mock.calls[0][0];
-      expect(incomingCloseMessageEvent).toBeInstanceOf(
-        IncomingCloseMessageEvent
+      const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
+      expect(incomingEventMessageEvent).toBeInstanceOf(
+        IncomingEventMessageEvent
       );
-      expect(incomingCloseMessageEvent.details.closeMessage).toEqual([
-        'CLOSE',
-        'SUBSCRIPTION_ID',
+      expect(incomingEventMessageEvent.details.clientEventMessage).toEqual([
+        'EVENT',
+        nostrEvent,
       ]);
-      expect(incomingCloseMessageEvent.parentEvent).toBe(
+      expect(incomingEventMessageEvent.parentEvent).toBe(
         incomingGenericMessageEvent
       );
-      expect(incomingCloseMessageEvent.targetEmitter).toBe(memorelayClient);
+      expect(incomingEventMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
-    it('should ignore a CLOSE message if defaultPrevented', () => {
+    it('should ignore an EVENT message if defaultPrevented', () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
+        validateIncomingEventMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
         unknown,
-        [IncomingCloseMessageEvent]
+        [IncomingEventMessageEvent]
       >();
-      memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
 
+      const nostrEvent = createSignedTestEvent({ content: 'HELLO WORLD' });
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-        genericMessage: ['CLOSE', 'IGNORE_ME'],
+        genericMessage: ['EVENT', nostrEvent],
       });
       incomingGenericMessageEvent.preventDefault();
       memorelayClient.emitEvent(incomingGenericMessageEvent);
@@ -66,16 +69,16 @@ describe('validateIncomingCloseMessages()', () => {
       expect(mockMessageHandler.mock.calls).toHaveLength(0);
     });
 
-    it('should ignore non-CLOSE messages', () => {
+    it('should ignore non-EVENT messages', () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
+        validateIncomingEventMessages(hub);
       });
 
       const mockMessageHandler = jest.fn<
         unknown,
-        [IncomingCloseMessageEvent]
+        [IncomingEventMessageEvent]
       >();
-      memorelayClient.onEvent(IncomingCloseMessageEvent, mockMessageHandler);
+      memorelayClient.onEvent(IncomingEventMessageEvent, mockMessageHandler);
 
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
         genericMessage: ['UNKNOWN', 12345],
@@ -87,16 +90,16 @@ describe('validateIncomingCloseMessages()', () => {
       expect(mockMessageHandler.mock.calls).toHaveLength(0);
     });
 
-    it('should emit an error when CLOSE message is malformed', () => {
+    it('should emit an error when EVENT message is malformed', () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
+        validateIncomingEventMessages(hub);
       });
 
       const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
       memorelayClient.onError(BadMessageError, mockErrorHandler);
 
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-        genericMessage: ['CLOSE'], // Omit required subscription id.
+        genericMessage: ['EVENT', 12345],
       });
       memorelayClient.emitEvent(incomingGenericMessageEvent);
 

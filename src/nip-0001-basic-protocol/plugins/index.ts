@@ -5,9 +5,9 @@
  * @fileoverview Memorelay core plugins for implementing NIP-01.
  */
 
-import { clearHandlers } from '../../../core/lib/clear-handlers';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { Handler } from '../../types/handler';
+import { clearHandlers } from '../../core/lib/clear-handlers';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { Handler } from '../../experimental/types/handler';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
 import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-messages';
