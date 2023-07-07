@@ -6,10 +6,10 @@
  */
 
 const skipWords = `
-cbor comparator deduplicate dotenv ecma eose fileoverview fs lang localhost jsx
-memorelay microtask msg nostr pathname printf pubkey readonly req sig stateful
-stderr stdin stdout transformative tsconfig tsx uint unparseable upgradeable utf
-ws wss
+cbor comparator deduplicate disconnectable dotenv ecma eose fileoverview fs lang
+localhost jsx memorelay microtask msg nostr pathname printf pubkey readonly req
+sig stateful stderr stdin stdout transformative tsconfig tsx uint unparseable
+upgradeable utf ws wss
 `.match(/\w+/g);
 
 module.exports = {

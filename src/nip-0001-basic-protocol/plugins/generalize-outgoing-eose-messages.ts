@@ -7,7 +7,7 @@
  */
 
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
@@ -20,13 +20,15 @@ import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event'
  * @event OutgoingGenericMessageEvent
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function generalizeOutgoingEOSEMessages(hub: MemorelayHub): Handler {
+export function generalizeOutgoingEOSEMessages(
+  hub: MemorelayHub
+): Disconnectable {
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     (memorelayClientCreatedEvent: MemorelayClientCreatedEvent) => {
       const { memorelayClient } = memorelayClientCreatedEvent.details;
 
-      const handlers: Handler[] = [];
+      const handlers: Disconnectable[] = [];
       handlers.push(
         // Generalize incoming EVENT messages.
         memorelayClient.onEvent(

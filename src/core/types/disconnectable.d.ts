@@ -8,7 +8,7 @@
 /**
  * Object returned when setting up an event handler.
  */
-export interface Handler {
+export interface Disconnectable {
   /**
    * When called, disconnects the previously attached listener.
    */

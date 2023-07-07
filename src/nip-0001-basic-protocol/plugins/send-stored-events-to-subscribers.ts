@@ -9,7 +9,7 @@ import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { EventsDatabase } from '../lib/events-database';
@@ -23,10 +23,12 @@ import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event'
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function sendStoredEventsToSubscribers(hub: MemorelayHub): Handler {
+export function sendStoredEventsToSubscribers(
+  hub: MemorelayHub
+): Disconnectable {
   const eventsDatabase = new EventsDatabase();
 
-  const hubHandlers: Handler[] = [];
+  const hubHandlers: Disconnectable[] = [];
 
   hubHandlers.push(
     // Add every broadcasted event to the events database.
@@ -51,7 +53,7 @@ export function sendStoredEventsToSubscribers(hub: MemorelayHub): Handler {
     hub.onEvent(
       MemorelayClientCreatedEvent,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-        const handlers: Handler[] = [];
+        const handlers: Disconnectable[] = [];
         handlers.push(
           // Subscribe on incoming REQ event.
           memorelayClient.onEvent(

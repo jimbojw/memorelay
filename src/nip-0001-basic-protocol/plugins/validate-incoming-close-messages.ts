@@ -12,7 +12,7 @@ import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
@@ -24,7 +24,9 @@ import { clearHandlers } from '../../core/lib/clear-handlers';
  * @event BadMessageError When a CLOSE message is malformed.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function validateIncomingCloseMessages(hub: BasicEventEmitter): Handler {
+export function validateIncomingCloseMessages(
+  hub: BasicEventEmitter
+): Disconnectable {
   return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
@@ -32,7 +34,7 @@ export function validateIncomingCloseMessages(hub: BasicEventEmitter): Handler {
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
 
-    const handlers: Handler[] = [];
+    const handlers: Disconnectable[] = [];
     handlers.push(
       memorelayClient.onEvent(
         IncomingGenericMessageEvent,

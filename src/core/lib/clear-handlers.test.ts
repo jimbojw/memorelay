@@ -5,7 +5,7 @@
  * @fileoverview Tests for clearHandlers().
  */
 
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 import { clearHandlers } from './clear-handlers';
 
 describe('clearHandlers()', () => {
@@ -15,7 +15,7 @@ describe('clearHandlers()', () => {
       jest.fn<unknown, []>(),
       jest.fn<unknown, []>(),
     ];
-    const mockHandlers: Handler[] = mockDisconnectFns.map(
+    const mockHandlers: Disconnectable[] = mockDisconnectFns.map(
       (mockDisconnectFn) => ({ disconnect: mockDisconnectFn })
     );
 

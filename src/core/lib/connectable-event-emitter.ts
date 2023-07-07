@@ -7,7 +7,7 @@
  */
 
 import { BasicEventEmitter } from './basic-event-emitter';
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 
@@ -25,17 +25,17 @@ export abstract class ConnectableEventEmitter<
     ErrorType extends BasicError = BasicError
   >
   extends BasicEventEmitter<EventType, ErrorType>
-  implements Handler
+  implements Disconnectable
 {
-  private handlers?: Handler[];
+  private handlers?: Disconnectable[];
 
-  abstract setupHandlers(): Handler[];
+  abstract setupHandlers(): Disconnectable[];
 
-  get [HANDLERS](): Handler[] | undefined {
+  get [HANDLERS](): Disconnectable[] | undefined {
     return this.handlers;
   }
 
-  set [HANDLERS](handlers: Handler[] | undefined) {
+  set [HANDLERS](handlers: Disconnectable[] | undefined) {
     this.handlers = handlers;
   }
 

@@ -7,7 +7,7 @@
 
 import { EventEmitter } from 'events';
 
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 
 /**
  * Utility function for establishing an event listener on an emitter via its
@@ -28,7 +28,7 @@ export function onWithHandler(
   emitter: EventEmitter,
   eventType: string,
   callbackFn: (...args: any[]) => unknown
-): Handler {
+): Disconnectable {
   const wrapperFn = (...args: unknown[]) => {
     return callbackFn(...args);
   };

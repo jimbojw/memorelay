@@ -12,7 +12,7 @@ import { Filter, matchFilters } from 'nostr-tools';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
@@ -24,13 +24,15 @@ import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-even
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function subscribeToIncomingReqMessages(hub: MemorelayHub): Handler {
+export function subscribeToIncomingReqMessages(
+  hub: MemorelayHub
+): Disconnectable {
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
       const subscriptions = new Map<string, Filter[]>();
 
-      const handlers: Handler[] = [];
+      const handlers: Disconnectable[] = [];
 
       // Since every new client will add a listener on the hub, and there could
       // be many clients, we increment the hub's maxEventListeners.

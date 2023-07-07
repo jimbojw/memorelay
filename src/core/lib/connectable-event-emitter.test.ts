@@ -5,11 +5,11 @@
  * @fileoverview Tests for ConnectableEventEmitter.
  */
 
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 import { ConnectableEventEmitter, HANDLERS } from './connectable-event-emitter';
 
 class TestConnectableEventEmitter extends ConnectableEventEmitter {
-  constructor(readonly setupHandlers: () => Handler[]) {
+  constructor(readonly setupHandlers: () => Disconnectable[]) {
     super();
   }
 }
@@ -19,7 +19,9 @@ describe('ConnectableEventEmitter', () => {
     it('should call setupHandlers() and store the result', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
+      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
+        mockHandler,
+      ]);
 
       const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
@@ -38,7 +40,9 @@ describe('ConnectableEventEmitter', () => {
     it('should do nothing if already connected', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
+      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
+        mockHandler,
+      ]);
 
       const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
@@ -58,7 +62,9 @@ describe('ConnectableEventEmitter', () => {
     it('should call handlers disconnect() callbacks and remove them', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
+      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
+        mockHandler,
+      ]);
 
       const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
@@ -79,7 +85,9 @@ describe('ConnectableEventEmitter', () => {
     it('should do nothing if not connected', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
+      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
+        mockHandler,
+      ]);
 
       const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn

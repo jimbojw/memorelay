@@ -8,7 +8,7 @@
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
@@ -16,13 +16,15 @@ import { clearHandlers } from '../../core/lib/clear-handlers';
  * Memorelay plugin to drop incoming EVENT messages if it has been seen before.
  * @param hub Event hub for inter-component communication.
  */
-export function dropDuplicateIncomingEventMessages(hub: MemorelayHub): Handler {
+export function dropDuplicateIncomingEventMessages(
+  hub: MemorelayHub
+): Disconnectable {
   const seenEventIds: Record<string, true> = {};
 
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-      const handlers: Handler[] = [];
+      const handlers: Disconnectable[] = [];
       handlers.push(
         // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(

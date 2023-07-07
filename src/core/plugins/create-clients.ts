@@ -12,7 +12,7 @@ import { MemorelayClient } from '../lib/memorelay-client';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 import { MemorelayHub } from '../lib/memorelay-hub';
 
 /**
@@ -25,7 +25,7 @@ import { MemorelayHub } from '../lib/memorelay-hub';
 export function createClients(
   hub: MemorelayHub,
   webSocketClientMap = new Map<WebSocket, MemorelayClient>()
-): Handler {
+): Disconnectable {
   return hub.onEvent(
     WebSocketConnectedEvent,
     (webSocketConnectedEvent: WebSocketConnectedEvent) => {

@@ -7,7 +7,7 @@
 
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messages';
 import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
 import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-messages';
@@ -29,7 +29,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * @param hub Basic event emitter, often a Memorelay instance.
  * @returns Handler for disconnection.
  */
-export function basicProtocol(hub: MemorelayHub): Handler {
+export function basicProtocol(hub: MemorelayHub): Disconnectable {
   const plugins = [
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
     parseIncomingJsonMessages,

@@ -12,7 +12,7 @@ import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
@@ -29,7 +29,9 @@ import { clearHandlers } from '../../core/lib/clear-handlers';
  * @returns Handler for disconnection.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function parseIncomingJsonMessages(hub: BasicEventEmitter): Handler {
+export function parseIncomingJsonMessages(
+  hub: BasicEventEmitter
+): Disconnectable {
   return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
 
   function handleClientCreated(
@@ -37,7 +39,7 @@ export function parseIncomingJsonMessages(hub: BasicEventEmitter): Handler {
   ) {
     const { memorelayClient } = memorelayClientCreatedEvent.details;
 
-    const handlers: Handler[] = [];
+    const handlers: Disconnectable[] = [];
     handlers.push(
       memorelayClient.onEvent(WebSocketMessageEvent, handleWebSocketMessage),
       memorelayClient.onEvent(

@@ -10,7 +10,7 @@ import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Handler } from '../../core/types/handler';
+import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
@@ -20,11 +20,13 @@ import { clearHandlers } from '../../core/lib/clear-handlers';
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
-export function broadcastIncomingEventMessages(hub: MemorelayHub): Handler {
+export function broadcastIncomingEventMessages(
+  hub: MemorelayHub
+): Disconnectable {
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-      const handlers: Handler[] = [];
+      const handlers: Disconnectable[] = [];
       handlers.push(
         // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(

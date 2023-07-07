@@ -12,7 +12,7 @@ import { handleUpgrade } from './handle-upgrade';
 import { RelayEvent } from '../events/relay-event';
 import { RelayError } from '../errors/relay-error';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 
 /**
  * Symbol for accessing the internal WebSocket server instance.
@@ -37,7 +37,7 @@ export class MemorelayHub<
    */
   readonly [WEBSOCKET_SERVER] = this.webSocketServer;
 
-  constructor(readonly setupHandlers: () => Handler[]) {
+  constructor(readonly setupHandlers: () => Disconnectable[]) {
     super();
   }
 

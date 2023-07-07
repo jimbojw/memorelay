@@ -8,7 +8,7 @@
 import { defaultMaxListeners, EventEmitter } from 'events';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
-import { Handler } from '../types/handler';
+import { Disconnectable } from '../types/disconnectable';
 import { onWithHandler } from './on-with-handler';
 
 export class BasicEventEmitter<
@@ -54,7 +54,7 @@ export class BasicEventEmitter<
   onEvent<T extends EventType>(
     basicEventType: { type: string },
     callbackFn: (basicEvent: T) => void
-  ): Handler {
+  ): Disconnectable {
     return onWithHandler(this.internalEmitter, basicEventType.type, callbackFn);
   }
 
@@ -77,7 +77,7 @@ export class BasicEventEmitter<
   onError<E extends ErrorType>(
     errorType: { type: string },
     callbackFn: (error: E) => void
-  ): Handler {
+  ): Disconnectable {
     return onWithHandler(this.internalEmitter, errorType.type, callbackFn);
   }
 }
