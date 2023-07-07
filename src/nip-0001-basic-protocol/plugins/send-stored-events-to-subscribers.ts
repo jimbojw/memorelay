@@ -9,7 +9,7 @@ import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../../core/types/handler';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { EventsDatabase } from '../lib/events-database';

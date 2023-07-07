@@ -7,7 +7,7 @@
 
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { BadMessageError } from '../errors/bad-message-error';
 
 describe('rejectUnrecognizedIncomingMessages()', () => {

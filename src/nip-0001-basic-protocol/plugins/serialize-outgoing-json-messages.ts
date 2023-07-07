@@ -9,7 +9,7 @@
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../../core/types/handler';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 

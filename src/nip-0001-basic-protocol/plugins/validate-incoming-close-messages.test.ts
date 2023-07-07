@@ -7,7 +7,7 @@
 
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { BadMessageError } from '../errors/bad-message-error';
 

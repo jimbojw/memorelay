@@ -7,7 +7,7 @@
  */
 
 import { BasicEventEmitter } from './basic-event-emitter';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../types/handler';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 

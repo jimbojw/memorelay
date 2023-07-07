@@ -11,7 +11,7 @@ import {
   generatePrivateKey,
   getPublicKey,
 } from 'nostr-tools';
-import { signEvent } from '../../lib/sign-event';
+import { signEvent } from '../lib/sign-event';
 
 interface ExtendedUnsignedEvent extends UnsignedEvent {
   kind: number;

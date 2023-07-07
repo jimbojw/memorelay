@@ -6,7 +6,7 @@
  */
 
 import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
-import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';

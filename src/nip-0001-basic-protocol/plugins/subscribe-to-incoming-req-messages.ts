@@ -12,7 +12,7 @@ import { Filter, matchFilters } from 'nostr-tools';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../../core/types/handler';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';

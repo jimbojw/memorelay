@@ -10,7 +10,7 @@ import { Socket } from 'net';
 import { pathToRegexp } from 'path-to-regexp';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { UpgradeHandler } from '../../experimental/types/upgrade-handler';
+import { UpgradeHandler } from '../types/upgrade-handler';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { MemorelayHub } from './memorelay-hub';
 

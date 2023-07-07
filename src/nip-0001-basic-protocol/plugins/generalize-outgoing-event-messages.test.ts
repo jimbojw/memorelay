@@ -6,8 +6,8 @@
  */
 
 import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-messages';
-import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
-import { createSignedTestEvent } from '../../experimental/test/signed-test-event';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
+import { createSignedTestEvent } from '../../test/signed-test-event';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';

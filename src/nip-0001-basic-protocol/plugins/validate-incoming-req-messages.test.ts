@@ -7,7 +7,7 @@
 
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../experimental/test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BadMessageError } from '../errors/bad-message-error';
 

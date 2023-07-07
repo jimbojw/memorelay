@@ -8,9 +8,9 @@
 import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
-import { MemorelayClient } from '../../core/lib/memorelay-client';
-import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
-import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { MemorelayClient } from '../core/lib/memorelay-client';
+import { MemorelayClientCreatedEvent } from '../core/events/memorelay-client-created-event';
+import { MemorelayHub } from '../core/lib/memorelay-hub';
 
 /**
  * Convenience method for setting up an event emitter hub and a MemorelayClient

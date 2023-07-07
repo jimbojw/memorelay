@@ -8,7 +8,7 @@
 import { defaultMaxListeners, EventEmitter } from 'events';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../types/handler';
 import { onWithHandler } from './on-with-handler';
 
 export class BasicEventEmitter<

@@ -12,10 +12,10 @@ import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-mess
 import {
   setupTestClient,
   setupTestHub,
-} from '../../experimental/test/setup-hub-and-memorelay-client';
+} from '../../test/setup-hub-and-memorelay-client';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
-import { createSignedTestEvent } from '../../experimental/test/signed-test-event';
+import { createSignedTestEvent } from '../../test/signed-test-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';

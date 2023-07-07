@@ -5,7 +5,7 @@
  * @fileoverview Tests for ConnectableEventEmitter.
  */
 
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../types/handler';
 import { ConnectableEventEmitter, HANDLERS } from './connectable-event-emitter';
 
 describe('ConnectableEventEmitter', () => {

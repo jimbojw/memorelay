@@ -12,7 +12,7 @@ import { BasicEventEmitter } from '../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
-import { Handler } from '../../experimental/types/handler';
+import { Handler } from '../../core/types/handler';
 import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
