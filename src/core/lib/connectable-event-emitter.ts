@@ -20,18 +20,16 @@ export const HANDLERS = Symbol('handlers');
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
  * receives raw message events from the socket, and sends encoded messages back.
  */
-export class ConnectableEventEmitter<
-  EventType extends BasicEvent = BasicEvent,
-  ErrorType extends BasicError = BasicError
-> extends BasicEventEmitter<EventType, ErrorType> {
+export abstract class ConnectableEventEmitter<
+    EventType extends BasicEvent = BasicEvent,
+    ErrorType extends BasicError = BasicError
+  >
+  extends BasicEventEmitter<EventType, ErrorType>
+  implements Handler
+{
   private handlers?: Handler[];
 
-  /**
-   * @param setupHandlers Callback function to setup event handlers.
-   */
-  constructor(readonly setupHandlers: () => Handler[]) {
-    super();
-  }
+  abstract setupHandlers(): Handler[];
 
   get [HANDLERS](): Handler[] | undefined {
     return this.handlers;
@@ -52,8 +50,7 @@ export class ConnectableEventEmitter<
    */
   connect(): this {
     if (!this.handlers) {
-      const { setupHandlers } = this;
-      this.handlers = setupHandlers();
+      this.handlers = this.setupHandlers();
     }
     return this;
   }

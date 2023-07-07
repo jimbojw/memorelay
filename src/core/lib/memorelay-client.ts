@@ -15,6 +15,7 @@ import { ClientError } from '../errors/client-error';
 import { onWithHandler } from './on-with-handler';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
+import { Handler } from '../types/handler';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
@@ -35,7 +36,11 @@ export class MemorelayClient<
     readonly webSocket: WebSocket,
     readonly request: IncomingMessage
   ) {
-    super(() => [
+    super();
+  }
+
+  setupHandlers(): Handler[] {
+    return [
       // Upgrade native WebSocket 'message' events to WebSocketMessageEvents.
       onWithHandler(
         this.webSocket,
@@ -87,6 +92,6 @@ export class MemorelayClient<
           });
         }
       ),
-    ]);
+    ];
   }
 }

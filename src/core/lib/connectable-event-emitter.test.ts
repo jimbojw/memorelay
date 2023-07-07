@@ -8,6 +8,12 @@
 import { Handler } from '../types/handler';
 import { ConnectableEventEmitter, HANDLERS } from './connectable-event-emitter';
 
+class TestConnectableEventEmitter extends ConnectableEventEmitter {
+  constructor(readonly setupHandlers: () => Handler[]) {
+    super();
+  }
+}
+
 describe('ConnectableEventEmitter', () => {
   describe('connect()', () => {
     it('should call setupHandlers() and store the result', () => {
@@ -15,7 +21,7 @@ describe('ConnectableEventEmitter', () => {
       const mockHandler = { disconnect: mockDisconnectFn };
       const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
 
-      const connectableEventEmitter = new ConnectableEventEmitter(
+      const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
       );
 
@@ -34,7 +40,7 @@ describe('ConnectableEventEmitter', () => {
       const mockHandler = { disconnect: mockDisconnectFn };
       const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
 
-      const connectableEventEmitter = new ConnectableEventEmitter(
+      const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
       );
 
@@ -54,7 +60,7 @@ describe('ConnectableEventEmitter', () => {
       const mockHandler = { disconnect: mockDisconnectFn };
       const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
 
-      const connectableEventEmitter = new ConnectableEventEmitter(
+      const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
       );
 
@@ -75,7 +81,7 @@ describe('ConnectableEventEmitter', () => {
       const mockHandler = { disconnect: mockDisconnectFn };
       const mockSetupHandlersFn = jest.fn<Handler[], []>(() => [mockHandler]);
 
-      const connectableEventEmitter = new ConnectableEventEmitter(
+      const connectableEventEmitter = new TestConnectableEventEmitter(
         mockSetupHandlersFn
       );
 
