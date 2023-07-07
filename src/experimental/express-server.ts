@@ -10,8 +10,8 @@ import express, { Request, Response } from 'express';
 
 import { Memorelay } from '../memorelay';
 import { relayInformationDocument } from './plugins/nip-011-relay-information-document/relay-information-document';
-import { loggingPlugin } from './plugins/contrib/logging';
-import { cborPlugin } from './plugins/contrib/cbor-plugin';
+import { loggingPlugin } from '../contrib/logging/logging-plugin';
+import { cborPlugin } from '../contrib/cbor/cbor-plugin';
 
 const PORT = 3000;
 

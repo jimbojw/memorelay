@@ -7,16 +7,16 @@
 
 import { decode, encode } from 'cborg';
 
-import { Memorelay } from '../../../memorelay';
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
-import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
-import { checkGenericMessage } from '../../../lib/buffer-to-message';
-import { GenericMessage } from '../../../lib/message-types';
-import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
-import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
-import { BasicError } from '../../../core/errors/basic-error';
-import { OutgoingNoticeMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-notice-message-event';
+import { Memorelay } from '../../memorelay';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { IncomingGenericMessageEvent } from '../../nip-0001-basic-protocol/events/incoming-generic-message-event';
+import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
+import { checkGenericMessage } from '../../lib/buffer-to-message';
+import { GenericMessage } from '../../lib/message-types';
+import { BadMessageError } from '../../nip-0001-basic-protocol/errors/bad-message-error';
+import { OutgoingGenericMessageEvent } from '../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
+import { BasicError } from '../../core/errors/basic-error';
+import { OutgoingNoticeMessageEvent } from '../../nip-0001-basic-protocol/events/outgoing-notice-message-event';
 
 export class CborDecodingError extends BasicError {
   readonly type = 'cbor-decoding-error';
