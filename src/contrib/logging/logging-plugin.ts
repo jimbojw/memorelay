@@ -70,17 +70,18 @@ export class LoggingPlugin extends ConnectableEventEmitter {
     return (event: BasicEvent) => {
       const level = this.levels[event.type] ?? defaultLevel;
       if (level) {
-        this.logger.log(level, `${getEventWebSocketKey(event)}: ${event.type}`);
+        const key = getRequestKey(getEventRequest(event));
+        this.logger.log(level, `(${key}): ${event.type}`);
       }
     };
   }
 
   logClientError(memorelayClient: MemorelayClient, defaultLevel?: string) {
-    const secWebSocketKey = getRequestSecWebSocketKey(memorelayClient.request);
+    const key = getRequestKey(memorelayClient.request);
     return (error: BasicError) => {
       const level = this.levels[error.type] ?? defaultLevel;
       if (level) {
-        this.logger.log(level, `${secWebSocketKey}: ${error.message}`);
+        this.logger.log(level, `(${key}): ${error.message}`);
       }
     };
   }
@@ -131,19 +132,17 @@ function getEventRequest(event: BasicEvent): IncomingMessage | undefined {
 }
 
 /**
- * Given a request, return its sec-websocket-key value or the default value if
+ * Given a request, return the hex-encoded first few bytes of the
+ * sec-websocket-key header value, or the defaultValue if the header is
  * undefined.
  * @param request The request to investigate.
  * @param defaultValue Optional default value to use if header is undefined.
  * @returns The sec-websocket-key header or defaultValue.
  */
-function getRequestSecWebSocketKey(
-  request?: IncomingMessage,
-  defaultValue = 'undefined'
-) {
-  return request?.headers['sec-websocket-key'] ?? defaultValue;
-}
-
-function getEventWebSocketKey(event: BasicEvent) {
-  return getRequestSecWebSocketKey(getEventRequest(event));
+function getRequestKey(request?: IncomingMessage, defaultValue = 'undefined') {
+  const secWebSocketKey = request?.headers['sec-websocket-key'];
+  if (!secWebSocketKey) {
+    return defaultValue;
+  }
+  return Buffer.from(secWebSocketKey, 'base64').subarray(0, 4).toString('hex');
 }
