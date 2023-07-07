@@ -8,9 +8,9 @@
 
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { RelayInformationDocument } from '../../../lib/relay-information-document';
-import { RelayInformationDocumentEvent } from '../../events/relay-information-document-event';
-import { Memorelay } from '../../../memorelay';
+import { RelayInformationDocument } from '../../lib/relay-information-document';
+import { RelayInformationDocumentEvent } from '../events/relay-information-document-event';
+import { Memorelay } from '../../memorelay';
 
 /**
  * Produce an Express middleware handler for responding to Nostr NIP-11 relay

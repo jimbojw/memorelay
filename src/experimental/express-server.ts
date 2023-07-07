@@ -9,7 +9,7 @@
 import express, { Request, Response } from 'express';
 
 import { Memorelay } from '../memorelay';
-import { relayInformationDocument } from './plugins/nip-011-relay-information-document/relay-information-document';
+import { relayInformationDocument } from '../nip-0011-relay-information-document/plugins/relay-information-document';
 import { loggingPlugin } from '../contrib/logging/logging-plugin';
 import { cborPlugin } from '../contrib/cbor/cbor-plugin';
 
