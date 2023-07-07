@@ -22,25 +22,27 @@ import {
 } from 'node-mocks-http';
 import { Request, Response } from 'express';
 
+const PORT = 3456;
+
 describe('MemorelayServer', () => {
   it('should be a constructor function', () => {
     expect(typeof MemorelayServer).toBe('function');
     const logger = createLogger();
-    const server = new MemorelayServer(3000, logger);
+    const server = new MemorelayServer(PORT, logger);
     expect(server instanceof MemorelayServer).toBe(true);
   });
 
   describe('listen', () => {
     it('should begin listening for WebSocket connections', async () => {
       const expectedLogs: LogEntry[] = [
-        { level: 'info', message: 'Memorelay listening on port 3000' },
+        { level: 'info', message: `Memorelay listening on port ${PORT}` },
       ];
 
       const { fakeLogger, actualLogsPromise } = createExpectingLogger(
         expectedLogs.length
       );
 
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       expect(await server.listen()).toBe(true);
 
@@ -55,11 +57,11 @@ describe('MemorelayServer', () => {
     it('should fail if the port is in use', async () => {
       const { fakeLogger, actualLogsPromise } = createExpectingLogger(1);
 
-      const memorelayServer = new MemorelayServer(3000, fakeLogger);
+      const memorelayServer = new MemorelayServer(PORT, fakeLogger);
 
       const netServer = createServer();
       await new Promise((resolve) => {
-        netServer.listen(3000, undefined, undefined, () => {
+        netServer.listen(PORT, undefined, undefined, () => {
           resolve('BLOCKING_PORT');
         });
       });
@@ -90,14 +92,14 @@ describe('MemorelayServer', () => {
 
     it('should return false if already listening', async () => {
       const expectedLogs: LogEntry[] = [
-        { level: 'info', message: 'Memorelay listening on port 3000' },
+        { level: 'info', message: `Memorelay listening on port ${PORT}` },
       ];
 
       const { fakeLogger, actualLogsPromise } = createExpectingLogger(
         expectedLogs.length
       );
 
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       await server.listen();
 
@@ -118,14 +120,14 @@ describe('MemorelayServer', () => {
     it('should return false if never listening', async () => {
       const { fakeLogger } = createExpectingLogger(0);
 
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       expect(await server.stop()).toBe(false);
     });
 
     it('should stop the server from listening', async () => {
       const expectedLogs: LogEntry[] = [
-        { level: 'info', message: 'Memorelay listening on port 3000' },
+        { level: 'info', message: `Memorelay listening on port ${PORT}` },
         { level: 'info', message: 'Memorelay closed' },
       ];
 
@@ -133,7 +135,7 @@ describe('MemorelayServer', () => {
         expectedLogs.length
       );
 
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       await server.listen();
 
@@ -146,7 +148,7 @@ describe('MemorelayServer', () => {
 
     it('should return false if the server has already stopped', async () => {
       const expectedLogs: LogEntry[] = [
-        { level: 'info', message: 'Memorelay listening on port 3000' },
+        { level: 'info', message: `Memorelay listening on port ${PORT}` },
         { level: 'info', message: 'Memorelay closed' },
       ];
 
@@ -154,7 +156,7 @@ describe('MemorelayServer', () => {
         expectedLogs.length
       );
 
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       await server.listen();
 
@@ -172,7 +174,7 @@ describe('MemorelayServer', () => {
     it('should accept a connecting WebSocket', () => {
       const webSocket = new WebSocket(null);
       const { fakeLogger } = createExpectingLogger(0);
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
       const fakeMessage = {
         headers: { 'sec-websocket-key': 'FAKE_WEBSOCKET_KEY' },
       } as unknown as IncomingMessage;
@@ -184,7 +186,7 @@ describe('MemorelayServer', () => {
   describe('handleRequest', () => {
     it('should handle an incoming HTTP request', () => {
       const { fakeLogger } = createExpectingLogger(0);
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       const request: IncomingMessage = createRequest({
         method: 'GET',
@@ -203,7 +205,7 @@ describe('MemorelayServer', () => {
 
     it('should reject non-GET/HEAD methods', () => {
       const { fakeLogger } = createExpectingLogger(0);
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       const request: MockRequest<Request> = createRequest({
         method: 'POST',
@@ -222,7 +224,7 @@ describe('MemorelayServer', () => {
 
     it('should return the relay information document', () => {
       const { fakeLogger } = createExpectingLogger(0);
-      const server = new MemorelayServer(3000, fakeLogger);
+      const server = new MemorelayServer(PORT, fakeLogger);
 
       const request: MockRequest<Request> = createRequest({
         method: 'GET',
