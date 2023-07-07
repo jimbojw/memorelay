@@ -16,6 +16,7 @@ import { onWithHandler } from './on-with-handler';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
 import { Disconnectable } from '../types/disconnectable';
+import { BasicEvent } from '../events/basic-event';
 
 /**
  * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
@@ -31,10 +32,12 @@ export class MemorelayClient<
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.
+   * @param parentEvent Optional parent event that spawned the client.
    */
   constructor(
     readonly webSocket: WebSocket,
-    readonly request: IncomingMessage
+    readonly request: IncomingMessage,
+    readonly parentEvent?: BasicEvent
   ) {
     super();
   }
@@ -49,7 +52,7 @@ export class MemorelayClient<
           this.emitEvent(
             new WebSocketMessageEvent(
               { data, isBinary },
-              { targetEmitter: this }
+              { targetEmitter: this, parentEvent: this.parentEvent }
             )
           );
         }
@@ -58,7 +61,10 @@ export class MemorelayClient<
       // Upgrade native WebSocket 'close' events to WebSocketCloseEvents.
       onWithHandler(this.webSocket, 'close', (code: number) => {
         this.emitEvent(
-          new WebSocketCloseEvent({ code }, { targetEmitter: this })
+          new WebSocketCloseEvent(
+            { code },
+            { targetEmitter: this, parentEvent: this.parentEvent }
+          )
         );
       }),
 
@@ -66,10 +72,10 @@ export class MemorelayClient<
       this.onEvent(
         WebSocketCloseEvent,
         (webSocketCloseEvent: WebSocketCloseEvent) => {
+          if (webSocketCloseEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+          }
           queueMicrotask(() => {
-            if (webSocketCloseEvent.defaultPrevented) {
-              return; // Preempted by another handler.
-            }
             this.emitEvent(
               new MemorelayClientDisconnectEvent(
                 { memorelayClient: this },
@@ -84,10 +90,10 @@ export class MemorelayClient<
       this.onEvent(
         MemorelayClientDisconnectEvent,
         (memorelayClientDisconnectedEvent: MemorelayClientDisconnectEvent) => {
+          if (memorelayClientDisconnectedEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+          }
           queueMicrotask(() => {
-            if (memorelayClientDisconnectedEvent.defaultPrevented) {
-              return; // Preempted by another handler.
-            }
             this.disconnect();
           });
         }

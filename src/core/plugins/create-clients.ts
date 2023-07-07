@@ -41,7 +41,11 @@ export function createClients(
         return;
       }
 
-      const memorelayClient = new MemorelayClient(webSocket, request);
+      const memorelayClient = new MemorelayClient(
+        webSocket,
+        request,
+        webSocketConnectedEvent
+      );
       webSocketClientMap.set(webSocket, memorelayClient);
 
       const memorelayClientCreatedEvent = new MemorelayClientCreatedEvent(
