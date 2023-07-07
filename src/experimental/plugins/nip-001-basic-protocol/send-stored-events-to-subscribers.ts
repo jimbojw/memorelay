@@ -12,7 +12,7 @@ import { BroadcastEventMessageEvent } from '../../../nip-0001-basic-protocol/eve
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
-import { EventsDatabase } from '../../core/events-database';
+import { EventsDatabase } from '../../../nip-0001-basic-protocol/lib/events-database';
 import { OutgoingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-event-message-event';
 import { OutgoingEOSEMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-eose-message-event';
 
