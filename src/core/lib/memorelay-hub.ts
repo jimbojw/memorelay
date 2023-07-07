@@ -5,6 +5,7 @@
  * @fileoverview Memorelay event hub.
  */
 
+import { IncomingMessage, RequestListener, ServerResponse } from 'http';
 import { WebSocketServer } from 'ws';
 
 import { UpgradeHandler } from '../types/upgrade-handler';
@@ -13,6 +14,7 @@ import { RelayEvent } from '../events/relay-event';
 import { RelayError } from '../errors/relay-error';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
 import { Disconnectable } from '../types/disconnectable';
+import { HttpServerRequestEvent } from '../events/http-server-request-event';
 
 /**
  * Symbol for accessing the internal WebSocket server instance.
@@ -22,10 +24,10 @@ export const WEBSOCKET_SERVER = Symbol('webSocketServer');
 /**
  * Memorelay main class. Allows for configurable Nostr relay behavior.
  */
-export class MemorelayHub<
-  RelayEventType extends RelayEvent = RelayEvent,
-  RelayErrorType extends RelayError = RelayError
-> extends ConnectableEventEmitter<RelayEventType, RelayErrorType> {
+export class MemorelayHub extends ConnectableEventEmitter<
+  RelayEvent,
+  RelayError
+> {
   /**
    * WebSocket server for handling requests.
    */
@@ -42,14 +44,35 @@ export class MemorelayHub<
   }
 
   /**
+   * Return a handler for responding to regular HTTP requests.
+   *
+   * Usage:
+   *
+   *   const memorelay = new Memorelay();
+   *   const httpServer = createServer(memorelay.handleRequest());
+   *   httpServer.on('upgrade', memorelay.handleUpgrade());
+   *   httpServer.listen({ port: 3000 });
+   */
+  handleRequest(): RequestListener {
+    return (request: IncomingMessage, response: ServerResponse) => {
+      this.emitEvent(
+        new HttpServerRequestEvent(
+          { request, response },
+          { targetEmitter: this }
+        )
+      );
+    };
+  }
+
+  /**
    * Return a handler for upgrading HTTP client connections to WebSockets.
    *
    * Usage:
    *
    *   const memorelay = new Memorelay();
-   *   const app = express();
-   *   const server = app.listen(PORT);
-   *   server.on('upgrade', memorelay.handleUpgrade());
+   *   const httpServer = createServer(memorelay.handleRequest());
+   *   httpServer.on('upgrade', memorelay.handleUpgrade());
+   *   httpServer.listen({ port: 3000 });
    *
    * @param path Optional Express path to match. Defaults to '/'.
    * @returns Upgrade handler function.

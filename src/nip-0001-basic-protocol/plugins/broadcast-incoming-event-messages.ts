@@ -15,8 +15,8 @@ import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-clie
 import { clearHandlers } from '../../core/lib/clear-handlers';
 
 /**
- * Memorelay core plugin for broadcasting incoming EVENT messages from one
- * client to all other connected clients.
+ * Memorelay plugin for broadcasting incoming EVENT messages from one client to
+ * all other connected clients.
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
