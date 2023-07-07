@@ -5,7 +5,9 @@
  * @fileoverview Memorelay plugin for basic logging.
  */
 
-import { Logger, createLogger, format, transports } from 'winston';
+import { Logger } from 'winston';
+import { IncomingMessage } from 'http';
+
 import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { BadMessageError } from '../../nip-0001-basic-protocol/errors/bad-message-error';
@@ -13,114 +15,135 @@ import { MemorelayClient } from '../../core/lib/memorelay-client';
 import { WebSocketConnectedEvent } from '../../core/events/web-socket-connected-event';
 import { WebSocketCloseEvent } from '../../core/events/web-socket-close-event';
 
-/**
- * Rudimentary logging plugin for seeing what's going on under the hood.
- *
- * Usage:
- *
- *   const memorelay = new Memorelay().connect();
- *   loggingPlugin('silly')(memorelay);
- *
- * @param level Log level to display.
- * @returns Memorelay plugin function.
- */
-export function loggingPlugin(level = 'warn'): (memorelay: Memorelay) => void {
-  const formatOptions = [
-    format.colorize(),
-    format.timestamp(),
-    format.splat(),
-    format.printf(({ timestamp, level, message }) => {
-      return `[${timestamp as string}] ${level}: ${message as string}`;
-    }),
-  ];
+import { Disconnectable } from '../../core/types/disconnectable';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
+import { ConnectableEventEmitter } from '../../core/lib/connectable-event-emitter';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
+import { clearHandlers } from '../../core/lib/clear-handlers';
+import { BasicEvent } from '../../core/events/basic-event';
+import { BasicError } from '../../core/errors/basic-error';
 
-  const logger = createLogger({
-    transports: [new transports.Console({ level })],
-    format: format.combine(...formatOptions),
-  });
+export interface LoggingPluginOptions {
+  /**
+   * Instance to use for logging Memorelay events.
+   */
+  logger: Logger;
 
-  return (memorelay: Memorelay) => {
-    logWebSocketConnected(memorelay, logger);
+  /**
+   * Memorelay instance to log.
+   */
+  memorelay: MemorelayHub;
 
-    logMemorelayClientCreated(memorelay, logger);
+  /**
+   * Mapping from event types to logging levels. Set value to undefined to
+   * prevent logging of that event type entirely.
+   */
+  levels?: Record<string, string | undefined>;
+}
 
-    memorelay.onEvent(
+export class LoggingPlugin extends ConnectableEventEmitter {
+  readonly logger: Logger;
+  readonly memorelay: Memorelay;
+  readonly levels: Record<string, string | undefined>;
+
+  constructor(options: LoggingPluginOptions) {
+    super();
+    this.logger = options.logger;
+    this.memorelay = options.memorelay;
+    this.levels = Object.assign({}, options.levels);
+  }
+
+  override setupHandlers() {
+    return [
+      this.memorelay.onEvent(WebSocketConnectedEvent, this.logEvent('silly')),
+
+      this.memorelay.onEvent(
+        MemorelayClientCreatedEvent,
+        this.logEvent('silly')
+      ),
+
+      this.logMemorelayClientEvents(),
+    ];
+  }
+
+  logEvent(defaultLevel?: string) {
+    return (event: BasicEvent) => {
+      const level = this.levels[event.type] ?? defaultLevel;
+      if (level) {
+        this.logger.log(level, `${getEventWebSocketKey(event)}: ${event.type}`);
+      }
+    };
+  }
+
+  logClientError(memorelayClient: MemorelayClient, defaultLevel?: string) {
+    const secWebSocketKey = getRequestSecWebSocketKey(memorelayClient.request);
+    return (error: BasicError) => {
+      const level = this.levels[error.type] ?? defaultLevel;
+      if (level) {
+        this.logger.log(level, `${secWebSocketKey}: ${error.message}`);
+      }
+    };
+  }
+
+  logMemorelayClientEvents() {
+    return this.memorelay.onEvent(
       MemorelayClientCreatedEvent,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-        logWebSocketClose(memorelayClient, logger);
-        logWebSocketError(memorelayClient, logger);
-        logBadMessageError(memorelayClient, logger);
+        const handlers: Disconnectable[] = [];
+
+        handlers.push(
+          memorelayClient.onEvent(WebSocketCloseEvent, this.logEvent('silly')),
+          memorelayClient.onError(
+            BadMessageError,
+            this.logClientError(memorelayClient, 'silly')
+          ),
+          memorelayClient.onEvent(
+            MemorelayClientDisconnectEvent,
+            this.logEvent('silly')
+          ),
+          memorelayClient.onEvent(
+            MemorelayClientDisconnectEvent,
+            clearHandlers(handlers)
+          )
+        );
+
+        return { disconnect: clearHandlers(handlers) };
       }
     );
-  };
+  }
 }
 
-function logWebSocketConnected(
-  memorelay: Memorelay,
-  logger: Logger,
-  level = 'silly'
-) {
-  memorelay.onEvent(
-    WebSocketConnectedEvent,
-    (webSocketConnectedEvent: WebSocketConnectedEvent) => {
-      const { request } = webSocketConnectedEvent.details;
-      const key = request.headers['sec-websocket-key'];
-      logger.log(level, `socket connected: ${key ?? 'undefined'}`);
-    }
+/**
+ * Given an event, search through itself and its parents for the original
+ * request that spawned it.
+ * @param event The event to search.
+ * @returns Found request, or undefined if one couldn't be found.
+ */
+function getEventRequest(event: BasicEvent): IncomingMessage | undefined {
+  const details = event.details as
+    | { request?: IncomingMessage; memorelayClient?: MemorelayClient }
+    | undefined;
+  return (
+    details?.request ??
+    details?.memorelayClient?.request ??
+    (event.parentEvent && getEventRequest(event.parentEvent))
   );
 }
 
-function logMemorelayClientCreated(
-  memorelay: Memorelay,
-  logger: Logger,
-  level = 'silly'
+/**
+ * Given a request, return its sec-websocket-key value or the default value if
+ * undefined.
+ * @param request The request to investigate.
+ * @param defaultValue Optional default value to use if header is undefined.
+ * @returns The sec-websocket-key header or defaultValue.
+ */
+function getRequestSecWebSocketKey(
+  request?: IncomingMessage,
+  defaultValue = 'undefined'
 ) {
-  memorelay.onEvent(
-    MemorelayClientCreatedEvent,
-    (memorelayClientCreatedEvent: MemorelayClientCreatedEvent) => {
-      const { request } = memorelayClientCreatedEvent.details.memorelayClient;
-      const secWebSocketKey =
-        request.headers['sec-websocket-key'] ?? 'undefined';
-      logger.log(level, `client connected: ${secWebSocketKey}`);
-    }
-  );
+  return request?.headers['sec-websocket-key'] ?? defaultValue;
 }
 
-function logBadMessageError(
-  memorelayClient: MemorelayClient,
-  logger: Logger,
-  level = 'debug'
-) {
-  memorelayClient.onError(
-    BadMessageError,
-    (badMessageError: BadMessageError) => {
-      logger.log(level, badMessageError.message);
-    }
-  );
-}
-
-function logWebSocketClose(
-  memorelayClient: MemorelayClient,
-  logger: Logger,
-  level = 'silly'
-) {
-  const secWebSocketKey =
-    memorelayClient.request.headers['sec-websocket-key'] ?? 'undefined';
-  memorelayClient.onEvent(
-    WebSocketCloseEvent,
-    (webSocketCloseEvent: WebSocketCloseEvent) => {
-      const { code } = webSocketCloseEvent.details;
-      logger.log(level, `socket closed: ${secWebSocketKey} ${code}`);
-    }
-  );
-}
-
-function logWebSocketError(
-  memorelayClient: MemorelayClient,
-  logger: Logger,
-  level = 'debug'
-) {
-  memorelayClient.webSocket.on('error', (error) => {
-    logger.log(level, error);
-  });
+function getEventWebSocketKey(event: BasicEvent) {
+  return getRequestSecWebSocketKey(getEventRequest(event));
 }
