@@ -23,6 +23,7 @@ import { validateIncomingCloseMessages } from './validate-incoming-close-message
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { PluginFn } from '../../core/types/plugin-types';
+import { increaseClientMaxEventListeners } from '../../core/plugins/increase-client-max-event-listeners';
 
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
@@ -32,6 +33,9 @@ import { PluginFn } from '../../core/types/plugin-types';
  */
 export function basicProtocol(hub: MemorelayHub): Disconnectable {
   const plugins: PluginFn[] = [
+    // Increase max event listeners for clients.
+    increaseClientMaxEventListeners(20),
+
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
     parseIncomingJsonMessages,
 

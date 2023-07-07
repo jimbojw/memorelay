@@ -48,12 +48,17 @@ export function setupTestHub(
  * Test harness to create a client and emit it through the hub.
  * @param hub Hub through which to emit the new client.
  */
-export function setupTestClient(hub: MemorelayHub): MemorelayClient {
+export function setupTestClient(hub?: MemorelayHub): MemorelayClient {
   const mockRequest = {} as IncomingMessage;
   const mockWebSocket = {} as WebSocket;
   const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-  hub.emitEvent(
-    new MemorelayClientCreatedEvent({ memorelayClient }, { targetEmitter: hub })
-  );
+  if (hub) {
+    hub.emitEvent(
+      new MemorelayClientCreatedEvent(
+        { memorelayClient },
+        { targetEmitter: hub }
+      )
+    );
+  }
   return memorelayClient;
 }
