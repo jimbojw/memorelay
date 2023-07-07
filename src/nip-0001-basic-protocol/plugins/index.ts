@@ -22,6 +22,7 @@ import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-mess
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
+import { PluginFn } from '../../core/types/plugin-types';
 
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
@@ -30,7 +31,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
  * @returns Handler for disconnection.
  */
 export function basicProtocol(hub: MemorelayHub): Disconnectable {
-  const plugins = [
+  const plugins: PluginFn[] = [
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
     parseIncomingJsonMessages,
 
