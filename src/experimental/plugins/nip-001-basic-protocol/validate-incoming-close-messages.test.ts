@@ -6,10 +6,10 @@
  */
 
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
-import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
+import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
-import { BadMessageError } from '../../errors/bad-message-error';
+import { IncomingCloseMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-close-message-event';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 
 describe('validateIncomingCloseMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {

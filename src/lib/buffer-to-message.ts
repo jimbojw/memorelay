@@ -10,7 +10,7 @@ import {
   validateEvent,
   verifySignature,
 } from 'nostr-tools';
-import { BadMessageError } from '../experimental/errors/bad-message-error';
+import { BadMessageError } from '../nip-0001-basic-protocol/errors/bad-message-error';
 import { verifyFilter } from './verify-filters';
 
 import {

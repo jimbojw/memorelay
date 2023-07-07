@@ -6,11 +6,11 @@
  * messages of type 'CLOSE'.
  */
 
-import { BadMessageError } from '../../errors/bad-message-error';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 import { checkCloseMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
-import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
+import { IncomingCloseMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-close-message-event';
+import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';

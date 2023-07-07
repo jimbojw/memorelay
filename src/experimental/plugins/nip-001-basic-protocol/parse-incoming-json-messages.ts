@@ -6,10 +6,10 @@
  * payloads as generic JSON client messages.
  */
 
-import { BadMessageError } from '../../errors/bad-message-error';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
+import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
 import { Handler } from '../../types/handler';

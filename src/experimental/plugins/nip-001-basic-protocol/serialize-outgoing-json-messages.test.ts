@@ -13,7 +13,7 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
+import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 
 describe('serializeOutgoingJsonMessages()', () => {

@@ -12,8 +12,8 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
-import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { BadMessageError } from '../../errors/bad-message-error';
+import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 

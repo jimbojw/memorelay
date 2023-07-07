@@ -7,14 +7,14 @@
 
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
-import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
+import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
+import { BroadcastEventMessageEvent } from '../../../nip-0001-basic-protocol/events/broadcast-event-message-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { EventsDatabase } from '../../core/events-database';
-import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
-import { OutgoingEOSEMessageEvent } from '../../events/outgoing-eose-message-event';
+import { OutgoingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-event-message-event';
+import { OutgoingEOSEMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-eose-message-event';
 
 /**
  * Memorelay core plugin for sending stored events to incoming subscribers. Note

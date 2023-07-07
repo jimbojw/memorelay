@@ -13,14 +13,14 @@ import {
   setupTestClient,
   setupTestHub,
 } from '../../test/setup-hub-and-memorelay-client';
-import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
-import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
+import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
+import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
-import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
-import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
-import { SubscriptionNotFoundError } from '../../errors/subscription-not-found-error';
+import { BroadcastEventMessageEvent } from '../../../nip-0001-basic-protocol/events/broadcast-event-message-event';
+import { IncomingCloseMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-close-message-event';
+import { SubscriptionNotFoundError } from '../../../nip-0001-basic-protocol/errors/subscription-not-found-error';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
+import { OutgoingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-event-message-event';
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 

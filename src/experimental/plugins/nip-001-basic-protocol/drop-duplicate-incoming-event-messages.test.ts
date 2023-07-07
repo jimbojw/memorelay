@@ -6,7 +6,7 @@
  */
 
 import { dropDuplicateIncomingEventMessages } from './drop-duplicate-incoming-event-messages';
-import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
+import { IncomingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
 import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';

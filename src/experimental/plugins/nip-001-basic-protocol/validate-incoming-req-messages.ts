@@ -6,11 +6,11 @@
  * messages of type 'REQ'.
  */
 
-import { BadMessageError } from '../../errors/bad-message-error';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 import { checkReqMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
-import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
+import { IncomingReqMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-req-message-event';
+import { IncomingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';

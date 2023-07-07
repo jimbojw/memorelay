@@ -8,7 +8,7 @@
 import { Logger, createLogger, format, transports } from 'winston';
 import { Memorelay } from '../../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { BadMessageError } from '../../errors/bad-message-error';
+import { BadMessageError } from '../../../nip-0001-basic-protocol/errors/bad-message-error';
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { WebSocketConnectedEvent } from '../../../core/events/web-socket-connected-event';
 import { WebSocketCloseEvent } from '../../../core/events/web-socket-close-event';

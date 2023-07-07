@@ -11,8 +11,8 @@ import { Handler } from '../../types/handler';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
-import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';
-import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
+import { OutgoingEventMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-event-message-event';
+import { OutgoingGenericMessageEvent } from '../../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
 
 /**
  * Memorelay plugin for re-casting outgoing EVENT messages as generic messages.
