@@ -8,9 +8,9 @@
 import { decode, encode } from 'cborg';
 
 import { Memorelay } from '../../../memorelay';
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
+import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
 import { checkGenericMessage } from '../../../lib/buffer-to-message';
 import { GenericMessage } from '../../../lib/message-types';
 import { BadMessageError } from '../../errors/bad-message-error';

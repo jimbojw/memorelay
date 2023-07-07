@@ -5,11 +5,11 @@
  * @fileoverview Memorelay plugin to drop duplicate incoming EVENT messages.
  */
 
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 
 /**

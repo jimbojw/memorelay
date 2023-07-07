@@ -9,7 +9,7 @@ import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
 import { MemorelayClient } from '../../core/lib/memorelay-client';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 
 /**

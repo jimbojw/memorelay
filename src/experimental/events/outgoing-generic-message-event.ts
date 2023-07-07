@@ -6,7 +6,10 @@
  */
 
 import { GenericMessage } from '../../lib/message-types';
-import { ClientEvent, ClientEventOptions } from './client-event';
+import {
+  ClientEvent,
+  ClientEventOptions,
+} from '../../core/events/client-event';
 
 export const OUTGOING_GENERIC_MESSAGE_EVENT_TYPE = 'outgoing-generic-message';
 

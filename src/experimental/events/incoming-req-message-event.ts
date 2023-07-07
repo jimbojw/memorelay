@@ -6,7 +6,10 @@
  */
 
 import { ClientReqMessage } from '../../lib/message-types';
-import { ClientEvent, ClientEventOptions } from './client-event';
+import {
+  ClientEvent,
+  ClientEventOptions,
+} from '../../core/events/client-event';
 
 export const INCOMING_REQ_MESSAGE_EVENT_TYPE = 'incoming-req-message';
 

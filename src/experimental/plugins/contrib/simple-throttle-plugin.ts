@@ -5,8 +5,8 @@
  * @fileoverview EXPERIMENTAL - Brainstorming API usage.
  */
 
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
+import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
 import { Memorelay } from '../../../memorelay';
 
 /**

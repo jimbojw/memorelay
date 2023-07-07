@@ -5,12 +5,12 @@
  * @fileoverview Memorelay core plugin for sending stored events to subscribers.
  */
 
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../../events/incoming-req-message-event';
 import { BroadcastEventMessageEvent } from '../../events/broadcast-event-message-event';
 import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { EventsDatabase } from '../../core/events-database';
 import { OutgoingEventMessageEvent } from '../../events/outgoing-event-message-event';

@@ -9,8 +9,8 @@ import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
 
 import { createClients } from './create-clients';
-import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
-import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
+import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
+import { WebSocketConnectedEvent } from '../../core/events/web-socket-connected-event';
 import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 

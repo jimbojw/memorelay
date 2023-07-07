@@ -5,7 +5,7 @@
  * @fileoverview Event signaling immanent disconnect of remaining listeners.
  */
 
-import { MemorelayClient } from '../../core/lib/memorelay-client';
+import { MemorelayClient } from '../lib/memorelay-client';
 import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE =

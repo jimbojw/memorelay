@@ -7,7 +7,7 @@
  */
 
 import { RelayInformationDocument } from '../../lib/relay-information-document';
-import { RelayEvent, RelayEventOptions } from './relay-event';
+import { RelayEvent, RelayEventOptions } from '../../core/events/relay-event';
 
 export const RELAY_INFORMATION_DOCUMENT_EVENT_TYPE =
   'relay-information-document';

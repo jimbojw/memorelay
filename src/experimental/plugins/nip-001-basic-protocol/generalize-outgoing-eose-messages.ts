@@ -6,9 +6,9 @@
  * generic messages.
  */
 
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';

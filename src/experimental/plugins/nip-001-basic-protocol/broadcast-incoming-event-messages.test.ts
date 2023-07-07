@@ -10,7 +10,7 @@ import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messa
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { ClientEventMessage } from '../../../lib/message-types';
 import { createSignedTestEvent } from '../../test/signed-test-event';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 
 describe('broadcastIncomingEventMessages()', () => {

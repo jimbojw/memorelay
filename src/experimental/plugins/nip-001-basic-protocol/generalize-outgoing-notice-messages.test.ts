@@ -8,7 +8,7 @@
 import { generalizeOutgoingNoticeMessages } from './generalize-outgoing-notice-messages';
 import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
 import { OutgoingGenericMessageEvent } from '../../events/outgoing-generic-message-event';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { OutgoingNoticeMessageEvent } from '../../events/outgoing-notice-message-event';
 
 describe('generalizeOutgoingNoticeMessages()', () => {

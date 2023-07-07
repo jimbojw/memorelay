@@ -9,7 +9,7 @@ import { dropDuplicateIncomingEventMessages } from './drop-duplicate-incoming-ev
 import { IncomingEventMessageEvent } from '../../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../test/signed-test-event';
 import { setupTestHubAndClient } from '../../test/setup-hub-and-memorelay-client';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 
 describe('dropDuplicateIncomingEventMessages()', () => {
   describe('#IncomingEventMessageEvent', () => {

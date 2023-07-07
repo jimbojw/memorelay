@@ -11,7 +11,7 @@ import { pathToRegexp } from 'path-to-regexp';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import { UpgradeHandler } from '../../experimental/types/upgrade-handler';
-import { WebSocketConnectedEvent } from '../../experimental/events/web-socket-connected-event';
+import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { MemorelayHub } from './memorelay-hub';
 
 /**

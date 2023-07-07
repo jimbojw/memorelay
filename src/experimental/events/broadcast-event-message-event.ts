@@ -8,7 +8,7 @@
 
 import { ClientEventMessage } from '../../lib/message-types';
 import { MemorelayClient } from '../../core/lib/memorelay-client';
-import { RelayEvent, RelayEventOptions } from './relay-event';
+import { RelayEvent, RelayEventOptions } from '../../core/events/relay-event';
 
 export const BROADCAST_EVENT_MESSAGE_EVENT_TYPE = 'broadcast-event-message';
 

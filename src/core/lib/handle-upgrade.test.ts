@@ -11,9 +11,9 @@ import { Request } from 'express';
 import { WebSocketServer } from 'ws';
 
 import { handleUpgrade } from './handle-upgrade';
-import { WebSocketConnectedEvent } from '../../experimental/events/web-socket-connected-event';
+import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
 import { MemorelayHub } from './memorelay-hub';
-import { RelayEvent } from '../../experimental/events/relay-event';
+import { RelayEvent } from '../events/relay-event';
 
 describe('handleUpgrade()', () => {
   it('should return a handler function', () => {

@@ -6,7 +6,10 @@
  */
 
 import { RelayNoticeMessage } from '../../lib/message-types';
-import { ClientEvent, ClientEventOptions } from './client-event';
+import {
+  ClientEvent,
+  ClientEventOptions,
+} from '../../core/events/client-event';
 
 export const OUTGOING_NOTICE_MESSAGE_EVENT_TYPE = 'outgoing-notice-message';
 

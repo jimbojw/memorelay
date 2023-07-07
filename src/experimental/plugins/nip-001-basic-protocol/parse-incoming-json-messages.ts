@@ -10,10 +10,10 @@ import { BadMessageError } from '../../errors/bad-message-error';
 import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
-import { WebSocketMessageEvent } from '../../events/web-socket-message-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
+import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-event';
 import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 
 /**

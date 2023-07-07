@@ -11,9 +11,9 @@ import { checkCloseMessage } from '../../../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingCloseMessageEvent } from '../../events/incoming-close-message-event';
 import { IncomingGenericMessageEvent } from '../../events/incoming-generic-message-event';
-import { MemorelayClientCreatedEvent } from '../../events/memorelay-client-created-event';
+import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Handler } from '../../types/handler';
-import { MemorelayClientDisconnectEvent } from '../../events/memorelay-client-disconnect-event';
+import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 
 /**
