@@ -5,11 +5,14 @@
  * @fileoverview Entry point for Memorelay server (bin file).
  */
 
-import { MemorelayServer } from './lib/memorelay-server';
-import { readPackageJson } from './lib/package-json';
-
 import { createLogger, format, transports } from 'winston';
 import { program } from 'commander';
+import { createServer } from 'http';
+import { AddressInfo } from 'net';
+
+import { Memorelay } from './memorelay';
+import { LoggingPlugin } from './contrib/logging/logging-plugin';
+import { readPackageJson } from './lib/package-json';
 
 const packageJson = readPackageJson();
 
@@ -74,29 +77,35 @@ const logger = createLogger({
   format: format.combine(...formatOptions),
 });
 
-const server = new MemorelayServer(portNumber, logger);
+const memorelay = new Memorelay();
+
+new LoggingPlugin({ logger, memorelay }).connect();
+
+memorelay.connect();
+
+const httpServer = createServer(memorelay.handleRequest());
+
+httpServer.on('upgrade', memorelay.handleUpgrade());
 
 function reportErrorAndExit(error: unknown) {
   logger.log('error', error);
   process.exit(1);
 }
 
+httpServer.on('error', reportErrorAndExit);
+
 function shutdownAndExit(signalName: string) {
   logger.log('info', `${signalName} signal received, stopping...`);
-  server
-    .stop()
-    .then((success) => {
-      if (success) {
-        return process.exit(0);
-      }
-      logger.log('warning', 'Server did not stop cleanly');
-      process.exit(1);
-    })
-    .catch(reportErrorAndExit);
+  httpServer.closeAllConnections();
+  httpServer.close();
+  process.exit(0);
 }
 
 process.once('SIGBREAK', shutdownAndExit);
 process.once('SIGINT', shutdownAndExit);
 process.once('SIGTERM', shutdownAndExit);
 
-server.listen().catch(reportErrorAndExit);
+httpServer.listen({ port: portNumber }, () => {
+  const listeningPort = (httpServer.address() as AddressInfo).port;
+  logger.log('info', `Memorelay listening on port ${listeningPort}`);
+});
