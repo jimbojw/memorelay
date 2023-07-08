@@ -15,6 +15,7 @@ import { RelayError } from '../errors/relay-error';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
 import { Disconnectable } from '../types/disconnectable';
 import { HttpServerRequestEvent } from '../events/http-server-request-event';
+import { NextFunction } from 'express';
 
 /**
  * Symbol for accessing the internal WebSocket server instance.
@@ -22,7 +23,9 @@ import { HttpServerRequestEvent } from '../events/http-server-request-event';
 export const WEBSOCKET_SERVER = Symbol('webSocketServer');
 
 /**
- * Memorelay main class. Allows for configurable Nostr relay behavior.
+ * Hub that underlies the Memorelay main class. Provides handler methods for
+ * responding to HTTP requests and upgrading WebSocket connections.
+ * @see Memorelay
  */
 export class MemorelayHub extends ConnectableEventEmitter<
   RelayEvent,
@@ -54,13 +57,19 @@ export class MemorelayHub extends ConnectableEventEmitter<
    *   httpServer.listen({ port: 3000 });
    */
   handleRequest(): RequestListener {
-    return (request: IncomingMessage, response: ServerResponse) => {
-      this.emitEvent(
-        new HttpServerRequestEvent(
-          { request, response },
-          { targetEmitter: this }
-        )
+    return (
+      request: IncomingMessage,
+      response: ServerResponse,
+      nextFn?: NextFunction
+    ) => {
+      const httpServerRequestEvent = new HttpServerRequestEvent(
+        { request, response },
+        { targetEmitter: this }
       );
+      this.emitEvent(httpServerRequestEvent);
+      if (nextFn && !httpServerRequestEvent.defaultPrevented) {
+        nextFn();
+      }
     };
   }
 
