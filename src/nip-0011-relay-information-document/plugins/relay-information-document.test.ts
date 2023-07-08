@@ -6,133 +6,254 @@
  */
 
 import {
+  Headers,
+  RequestMethod,
   createRequest,
   createResponse,
-  MockRequest,
-  MockResponse,
-  RequestMethod,
 } from 'node-mocks-http';
-import { Request, Response } from 'express';
 
-import { Memorelay } from '../../memorelay';
+import { HttpServerRequestEvent } from '../../core/events/http-server-request-event';
+import { setupTestHub } from '../../test/setup-hub-and-memorelay-client';
+import { RelayInformationDocumentEvent } from '../events/relay-information-document-event';
 import { relayInformationDocument } from './relay-information-document';
+import { RelayInformationDocument } from '../../lib/relay-information-document';
 
-describe('relayInformationDocument', () => {
-  it('should return an Express middleware handler function', () => {
-    const memorelay = new Memorelay();
-    const handlerFunction = relayInformationDocument(memorelay);
-    expect(typeof handlerFunction).toBe('function');
-  });
+describe('relayInformationDocument()', () => {
+  describe('#HttpServerRequestEvent', () => {
+    describe('Accept: application/nostr+json', () => {
+      describe('Method: GET', () => {
+        it('should return relay information document', async () => {
+          const hub = setupTestHub(relayInformationDocument);
 
-  it('should send the relay document', () => {
-    const memorelay = new Memorelay();
-    const handlerFunction = relayInformationDocument(memorelay);
+          const mockRequest = createRequest({
+            method: 'GET',
+            headers: { accept: 'application/nostr+json' },
+          });
 
-    const request: MockRequest<Request> = createRequest({
-      method: 'GET',
-      url: '/',
-      headers: { accept: 'application/nostr+json' },
+          const mockResponse = createResponse();
+
+          hub.emitEvent(
+            new HttpServerRequestEvent({
+              request: mockRequest,
+              response: mockResponse,
+            })
+          );
+
+          await Promise.resolve();
+
+          expect(mockResponse.statusCode).toBe(200);
+          const responseText = mockResponse._getData() as string;
+          const doc = JSON.parse(responseText) as RelayInformationDocument;
+          expect(doc.supported_nips).toContain(1);
+          expect(doc.supported_nips).toContain(11);
+        });
+
+        it('should incorporate other plugin changes to document', async () => {
+          const hub = setupTestHub(relayInformationDocument);
+
+          hub.onEvent(
+            RelayInformationDocumentEvent,
+            ({
+              details: { relayInformationDocument: doc },
+            }: RelayInformationDocumentEvent) => {
+              // Pretend to add support for event deletion.
+              doc.supported_nips?.push(9);
+            }
+          );
+
+          const mockRequest = createRequest({
+            method: 'GET',
+            headers: { accept: 'application/nostr+json' },
+          });
+
+          const mockResponse = createResponse();
+
+          hub.emitEvent(
+            new HttpServerRequestEvent({
+              request: mockRequest,
+              response: mockResponse,
+            })
+          );
+
+          await Promise.resolve();
+
+          expect(mockResponse.statusCode).toBe(200);
+          const responseText = mockResponse._getData() as string;
+          const doc = JSON.parse(responseText) as RelayInformationDocument;
+          expect(doc.supported_nips).toContain(1);
+          expect(doc.supported_nips).toContain(9);
+          expect(doc.supported_nips).toContain(11);
+        });
+      });
+
+      describe('Method: GET|HEAD|OPTIONS', () => {
+        it('should respond with Access-Control-Allow-* headers', () => {
+          const hub = setupTestHub(relayInformationDocument);
+
+          for (const includeAccessControlRequestHeaders of [true, false]) {
+            for (const method of [
+              'GET',
+              'HEAD',
+              'OPTIONS',
+            ] as RequestMethod[]) {
+              const headers: Headers = { accept: 'application/nostr+json' };
+
+              if (includeAccessControlRequestHeaders) {
+                headers['access-control-request-headers'] =
+                  'Accept, Content-Type';
+              }
+
+              const mockRequest = createRequest({
+                method,
+                headers,
+              });
+
+              const mockResponse = createResponse();
+
+              const httpServerRequestEvent = new HttpServerRequestEvent({
+                request: mockRequest,
+                response: mockResponse,
+              });
+              hub.emitEvent(httpServerRequestEvent);
+
+              expect(httpServerRequestEvent.defaultPrevented).toBe(true);
+
+              expect(mockResponse.statusCode).toBe(200);
+
+              const accessControlAllowMethods = mockResponse.getHeader(
+                'Access-Control-Allow-Methods'
+              );
+              expect(accessControlAllowMethods).toContain('GET');
+              expect(accessControlAllowMethods).toContain('HEAD');
+              expect(accessControlAllowMethods).toContain('OPTIONS');
+
+              expect(
+                mockResponse.getHeader('Access-Control-Allow-Origin')
+              ).toBe('*');
+
+              if (includeAccessControlRequestHeaders) {
+                expect(
+                  mockResponse.getHeader('Access-Control-Allow-Headers')
+                ).toBe('*');
+              }
+            }
+          }
+        });
+      });
+
+      describe('Method: undefined', () => {
+        it('should respond with 400 Bad Request', async () => {
+          const hub = setupTestHub(relayInformationDocument);
+
+          const mockHandlerFn = jest.fn<
+            unknown,
+            [RelayInformationDocumentEvent]
+          >();
+          hub.onEvent(RelayInformationDocumentEvent, mockHandlerFn);
+
+          const mockRequest = createRequest({
+            headers: { accept: 'application/nostr+json' },
+          });
+
+          // Force the request method to be undefined. Technically, Node's http
+          // library permits the possibility, even though in practice it should
+          // be impossible.
+          mockRequest.method = undefined as unknown as RequestMethod;
+
+          const mockResponse = createResponse();
+
+          const httpServerRequestEvent = new HttpServerRequestEvent({
+            request: mockRequest,
+            response: mockResponse,
+          });
+          hub.emitEvent(httpServerRequestEvent);
+
+          expect(httpServerRequestEvent.defaultPrevented).toBe(true);
+          expect(mockResponse.statusCode).toBe(400);
+
+          await Promise.resolve();
+
+          expect(mockHandlerFn).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('Method: <other>', () => {
+        it('should respond with 501 Not Implemented', async () => {
+          const hub = setupTestHub(relayInformationDocument);
+
+          const mockHandlerFn = jest.fn<
+            unknown,
+            [RelayInformationDocumentEvent]
+          >();
+          hub.onEvent(RelayInformationDocumentEvent, mockHandlerFn);
+
+          for (const method of ['DELETE', 'POST', 'PUT'] as RequestMethod[]) {
+            const mockRequest = createRequest({
+              method,
+              headers: { accept: 'application/nostr+json' },
+            });
+
+            const mockResponse = createResponse();
+
+            const httpServerRequestEvent = new HttpServerRequestEvent({
+              request: mockRequest,
+              response: mockResponse,
+            });
+            hub.emitEvent(httpServerRequestEvent);
+
+            expect(httpServerRequestEvent.defaultPrevented).toBe(true);
+            expect(mockResponse.statusCode).toBe(501);
+
+            await Promise.resolve();
+
+            expect(mockHandlerFn).not.toHaveBeenCalled();
+          }
+        });
+      });
     });
-    const response: MockResponse<Response> = createResponse();
 
-    const nextFunction = () => {
-      throw new Error('unexpected function call');
-    };
+    it('should do nothing if defaultPrevented', async () => {
+      const hub = setupTestHub(relayInformationDocument);
 
-    handlerFunction(request, response, nextFunction);
+      const mockHandlerFn = jest.fn<unknown, [RelayInformationDocumentEvent]>();
+      hub.onEvent(RelayInformationDocumentEvent, mockHandlerFn);
 
-    expect(response.statusCode).toBe(200);
-    expect(response._isEndCalled()).toBe(true);
-    expect(response._getData()).toEqual({ supported_nips: [1, 11] });
-
-    const headers = response._getHeaders();
-
-    expect(headers['access-control-allow-methods']).toBeDefined();
-    expect(headers['access-control-allow-methods']).toContain('GET');
-    expect(headers['access-control-allow-methods']).toContain('HEAD');
-    expect(headers['access-control-allow-methods']).toContain('OPTIONS');
-
-    expect(headers['access-control-allow-origin']).toBeDefined();
-  });
-
-  it('should respond to preflight requests', () => {
-    const memorelay = new Memorelay();
-    const handlerFunction = relayInformationDocument(memorelay);
-
-    const request: MockRequest<Request> = createRequest({
-      method: 'OPTIONS',
-      url: '/',
-      headers: {
-        accept: 'application/nostr+json',
-        'access-control-request-headers': 'Accept',
-      },
-    });
-    const response: MockResponse<Response> = createResponse();
-
-    const nextFunction = jest.fn();
-
-    handlerFunction(request, response, nextFunction);
-
-    expect(nextFunction.mock.calls).toHaveLength(1);
-
-    expect(response.statusCode).toBe(200);
-    expect(response._isEndCalled()).toBe(false);
-
-    const headers = response._getHeaders();
-
-    expect(headers['access-control-allow-headers']).toBeDefined();
-
-    expect(headers['access-control-allow-methods']).toBeDefined();
-    expect(headers['access-control-allow-methods']).toContain('GET');
-    expect(headers['access-control-allow-methods']).toContain('HEAD');
-    expect(headers['access-control-allow-methods']).toContain('OPTIONS');
-
-    expect(headers['access-control-allow-origin']).toBeDefined();
-  });
-
-  it('should reject unsupported methods', () => {
-    const memorelay = new Memorelay();
-    const handlerFunction = relayInformationDocument(memorelay);
-
-    (['PUT', 'POST', 'DELETE'] as RequestMethod[]).map((method) => {
-      const request: MockRequest<Request> = createRequest({
-        method,
-        url: '/',
+      const mockRequest = createRequest({
+        method: 'GET',
         headers: { accept: 'application/nostr+json' },
       });
-      const response: MockResponse<Response> = createResponse();
+      const httpServerRequestEvent = new HttpServerRequestEvent({
+        request: mockRequest,
+        response: createResponse(),
+      });
+      httpServerRequestEvent.preventDefault();
+      hub.emitEvent(httpServerRequestEvent);
 
-      const nextFunction = () => {
-        throw new Error('unexpected function call');
-      };
+      await Promise.resolve();
 
-      handlerFunction(request, response, nextFunction);
-
-      expect(response.statusCode).toBe(501);
-      expect(response._isEndCalled()).toBe(true);
+      expect(mockHandlerFn).not.toHaveBeenCalled();
     });
-  });
 
-  it('should ignore unrelated requests', () => {
-    const memorelay = new Memorelay();
-    const handlerFunction = relayInformationDocument(memorelay);
+    it('should ignore unrelated requests', async () => {
+      const hub = setupTestHub(relayInformationDocument);
 
-    (['GET', 'HEAD', 'PUT', 'POST', 'DELETE'] as RequestMethod[]).map(
-      (method) => {
-        const request: MockRequest<Request> = createRequest({
-          method,
-          url: '/',
-          // NOTE: No 'Accept' header specified.
-        });
-        const response: MockResponse<Response> = createResponse();
+      const mockHandlerFn = jest.fn<unknown, [RelayInformationDocumentEvent]>();
+      hub.onEvent(RelayInformationDocumentEvent, mockHandlerFn);
 
-        const nextFunction = jest.fn();
+      const mockRequest = createRequest({
+        method: 'GET',
+        headers: { accept: 'application/json' }, // NOT application/nostr+json.
+      });
+      hub.emitEvent(
+        new HttpServerRequestEvent({
+          request: mockRequest,
+          response: createResponse(),
+        })
+      );
 
-        handlerFunction(request, response, nextFunction);
+      await Promise.resolve();
 
-        expect(response._isEndCalled()).toBe(false);
-        expect(nextFunction.mock.calls).toHaveLength(1);
-      }
-    );
+      expect(mockHandlerFn).not.toHaveBeenCalled();
+    });
   });
 });
