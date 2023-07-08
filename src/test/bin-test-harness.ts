@@ -49,7 +49,8 @@ export class BinTestHarness {
       childProcess.on('error', reject);
     });
 
-    childProcess.removeAllListeners();
+    childProcess.removeAllListeners('spawn');
+    childProcess.removeAllListeners('error');
 
     const logMessage = (this.logMessage = await new Promise<string>(
       (resolve, reject) => {
@@ -60,7 +61,8 @@ export class BinTestHarness {
       }
     ));
 
-    childProcess.removeAllListeners();
+    childProcess.stdout.removeAllListeners('data');
+    childProcess.removeAllListeners('error');
 
     this.boundPort = getPortFromLogMessage(logMessage);
   }
@@ -88,6 +90,9 @@ export class BinTestHarness {
       childProcess.on('exit', resolve);
       childProcess.kill('SIGINT');
     });
+
+    childProcess.removeAllListeners('error');
+    childProcess.removeAllListeners('exit');
   }
 
   /**
@@ -100,6 +105,7 @@ export class BinTestHarness {
     }
 
     const webSocket = new WebSocket(`ws://localhost:${this.boundPort}`);
+    this.webSockets.add(webSocket);
 
     // Wait for WebSocket to connect.
     await new Promise<void>((resolve, reject) => {
@@ -107,7 +113,8 @@ export class BinTestHarness {
       webSocket.on('error', reject);
     });
 
-    webSocket.removeAllListeners();
+    webSocket.removeAllListeners('open');
+    webSocket.removeAllListeners('error');
 
     return webSocket;
   }
