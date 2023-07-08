@@ -13,8 +13,8 @@
     "prettier:check": "prettier --check '**/*.{js,ts}'",
     "prettier:write": "prettier --write '**/*.{js,ts}'",
     "start": "ts-node",
-    "start:dev": "ts-node nodemon ./src/bin.ts",
-    "start:express": "ts-node nodemon ./src/examples/express-server.ts",
+    "start:dev": "nodemon ./src/bin.ts",
+    "start:express": "nodemon ./src/examples/express-server.ts",
     "test:ci": "jest --testTimeout=15000",
     "test:dev": "jest --watchAll --coverage",
     "test:trace": "node --trace-warnings node_modules/.bin/jest --maxWorkers=1 --no-cache --verbose"
