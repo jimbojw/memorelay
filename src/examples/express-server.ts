@@ -10,7 +10,6 @@ import { createLogger, format, transports } from 'winston';
 import express, { Request, Response } from 'express';
 
 import { Memorelay } from '../memorelay';
-import { relayInformationDocument } from '../nip-0011-relay-information-document/plugins/relay-information-document';
 import { LoggingPlugin } from '../contrib/logging/logging-plugin';
 import { cborPlugin } from '../contrib/cbor/cbor-plugin';
 
@@ -39,7 +38,7 @@ memorelay.connect();
 
 const app = express();
 
-app.use('/', relayInformationDocument(memorelay));
+app.use('/', memorelay.handleRequest());
 
 app.get('/', (req: Request, res: Response) => {
   res.send('HELLO WORLD');
