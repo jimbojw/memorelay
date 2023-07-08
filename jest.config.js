@@ -6,6 +6,7 @@
  */
 
 module.exports = {
+  collectCoverageFrom: ['src/{!(test),}/**'],
   coverageReporters: ['clover', 'json', 'lcov', ['text', { skipFull: true }]],
   testEnvironment: 'node',
   testRegex: '/(src|test)/.*\\.(spec|test)?\\.(ts|tsx)$',
