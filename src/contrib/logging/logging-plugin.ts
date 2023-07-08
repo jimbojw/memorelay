@@ -22,6 +22,7 @@ import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-clie
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { BasicEvent } from '../../core/events/basic-event';
 import { BasicError } from '../../core/errors/basic-error';
+import { HttpServerRequestEvent } from '../../core/events/http-server-request-event';
 
 export interface LoggingPluginOptions {
   /**
@@ -61,6 +62,8 @@ export class LoggingPlugin extends ConnectableEventEmitter {
         MemorelayClientCreatedEvent,
         this.logEvent('silly')
       ),
+
+      this.memorelay.onEvent(HttpServerRequestEvent, this.logEvent('silly')),
 
       this.logMemorelayClientEvents(),
     ];
