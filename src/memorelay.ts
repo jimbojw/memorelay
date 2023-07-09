@@ -7,8 +7,8 @@
 
 import { MemorelayHub } from './core/lib/memorelay-hub';
 import { createClients } from './core/plugins/create-clients';
-import { basicProtocol } from './nip-0001-basic-protocol/plugins';
-import { relayInformationDocument } from './nip-0011-relay-information-document/plugins/relay-information-document';
+import { basicProtocol } from './nips/nip-0001-basic-protocol/plugins';
+import { relayInformationDocument } from './nips/nip-0011-relay-information-document/plugins/relay-information-document';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
