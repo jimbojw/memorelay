@@ -7,7 +7,7 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { bufferToGenericMessage } from '../../../lib/buffer-to-message';
+import { bufferToGenericMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';

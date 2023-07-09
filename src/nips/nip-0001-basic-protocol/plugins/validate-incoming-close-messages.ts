@@ -7,7 +7,7 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { checkCloseMessage } from '../../../lib/buffer-to-message';
+import { checkCloseMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';

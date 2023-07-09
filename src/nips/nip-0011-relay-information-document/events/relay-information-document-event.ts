@@ -6,7 +6,7 @@
  * about to be served.
  */
 
-import { RelayInformationDocument } from '../../../lib/relay-information-document';
+import { RelayInformationDocument } from '../types/relay-information-document';
 import {
   RelayEvent,
   RelayEventOptions,

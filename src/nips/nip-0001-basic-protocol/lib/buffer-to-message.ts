@@ -10,7 +10,7 @@ import {
   validateEvent,
   verifySignature,
 } from 'nostr-tools';
-import { BadMessageError } from '../nips/nip-0001-basic-protocol/errors/bad-message-error';
+import { BadMessageError } from '../errors/bad-message-error';
 import { verifyFilter } from './verify-filters';
 
 import {
@@ -20,11 +20,10 @@ import {
   ClientCloseMessage,
   RelayEOSEMessage,
   RelayNoticeMessage,
-  RelayOKMessage,
   RelayMessage,
   GenericMessage,
   RelayEventMessage,
-} from './message-types';
+} from '../types/message-types';
 
 /**
  * Check whether the subscription id is valid.
@@ -253,61 +252,6 @@ export function bufferToRelayMessage(payloadRawData: Buffer): RelayMessage {
     }
 
     return genericMessage as RelayNoticeMessage;
-  }
-
-  if (eventType === 'OK') {
-    if (genericMessage.length < 2) {
-      throw new BadMessageError('event id missing');
-    }
-
-    const eventId = genericMessage[1] as string;
-    if (typeof eventId !== 'string') {
-      throw new BadMessageError('event id type mismatch');
-    }
-
-    if (eventId.length !== 64) {
-      throw new BadMessageError('event id malformed');
-    }
-
-    if (genericMessage.length < 3) {
-      throw new BadMessageError('status missing');
-    }
-
-    const status = genericMessage[2] as boolean;
-    if (typeof status !== 'boolean') {
-      throw new BadMessageError('status type mismatch');
-    }
-
-    if (genericMessage.length < 4) {
-      throw new BadMessageError('description missing');
-    }
-
-    const description = genericMessage[3] as string;
-    if (typeof description !== 'string') {
-      throw new BadMessageError('description type mismatch');
-    }
-
-    if (description.length) {
-      const colonIndex = description.indexOf(':');
-      if (colonIndex < 1) {
-        throw new BadMessageError('reason missing');
-      }
-
-      const reason = description.substring(0, colonIndex).trim();
-      if (!reason.length) {
-        throw new BadMessageError('reason missing');
-      }
-
-      if (reason !== 'duplicate' && reason !== 'deleted') {
-        throw new BadMessageError(`unrecognized reason: ${reason}`);
-      }
-    }
-
-    if (genericMessage.length > 4) {
-      throw new BadMessageError('extra elements detected');
-    }
-
-    return genericMessage as RelayOKMessage;
   }
 
   throw new BadMessageError('unrecognized event type');

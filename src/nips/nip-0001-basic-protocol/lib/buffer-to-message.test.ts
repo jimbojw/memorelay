@@ -10,14 +10,7 @@ import {
   bufferToGenericMessage,
   bufferToRelayMessage,
 } from './buffer-to-message';
-import {
-  RelayNoticeMessage,
-  RelayOKMessage,
-  ClientReqMessage,
-} from './message-types';
-
-// A valid event id consisting of all zeros.
-const ZERO_ID = Array(64).fill(0).join('');
+import { RelayNoticeMessage, ClientReqMessage } from '../types/message-types';
 
 // An identifier that exceeds the 32-byte (64 char) expected length.
 const LONG_ID = Array(65).fill('f').join('');
@@ -450,116 +443,6 @@ describe('bufferToRelayMessage', () => {
           objectToBuffer(['NOTICE', 'reason', 'EXTRA ELEMENT'])
         );
       }).toThrow('bad msg: extra elements detected');
-    });
-  });
-
-  describe('OK', () => {
-    it('should reject OK message with missing event id', () => {
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK']));
-      }).toThrow('bad msg: event id missing');
-    });
-
-    it('should reject OK message with malformed id', () => {
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', null]));
-      }).toThrow('bad msg: event id type mismatch');
-
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', 5]));
-      }).toThrow('bad msg: event id type mismatch');
-
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', 'abcde']));
-      }).toThrow('bad msg: event id malformed');
-    });
-
-    it('should reject OK message missing status', () => {
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID]));
-      }).toThrow('bad msg: status missing');
-    });
-
-    it('should reject OK message with non-boolean status', () => {
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID, null]));
-      }).toThrow('bad msg: status type mismatch');
-
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID, 7]));
-      }).toThrow('bad msg: status type mismatch');
-
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID, 'false']));
-      }).toThrow('bad msg: status type mismatch');
-    });
-
-    it('should reject OK message missing description', () => {
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID, true]));
-      }).toThrow('bad msg: description missing');
-
-      expect(() => {
-        bufferToRelayMessage(objectToBuffer(['OK', ZERO_ID, false]));
-      }).toThrow('bad msg: description missing');
-    });
-
-    it('should accept OK message with empty description', () => {
-      const payload = objectToBuffer(['OK', ZERO_ID, true, '']);
-      const message = bufferToRelayMessage(payload) as RelayOKMessage;
-      expect(Array.isArray(message)).toBe(true);
-      expect(message[0]).toBe('OK');
-      expect(message[1]).toBe(ZERO_ID);
-      expect(message[2]).toBe(true);
-      expect(message[3]).toBe('');
-    });
-
-    it('should accept OK message marking duplicate', () => {
-      const payload = objectToBuffer(['OK', ZERO_ID, true, 'duplicate:']);
-      const message = bufferToRelayMessage(payload) as RelayOKMessage;
-      expect(Array.isArray(message)).toBe(true);
-      expect(message[0]).toBe('OK');
-      expect(message[1]).toBe(ZERO_ID);
-      expect(message[2]).toBe(true);
-      expect(message[3]).toBe('duplicate:');
-    });
-
-    it('should accept OK message marking deleted event', () => {
-      const payload = objectToBuffer(['OK', ZERO_ID, true, 'deleted:']);
-      const message = bufferToRelayMessage(payload) as RelayOKMessage;
-      expect(Array.isArray(message)).toBe(true);
-      expect(message[0]).toBe('OK');
-      expect(message[1]).toBe(ZERO_ID);
-      expect(message[2]).toBe(true);
-      expect(message[3]).toBe('deleted:');
-    });
-
-    it('should reject OK message with missing reason', () => {
-      expect(() => {
-        bufferToRelayMessage(
-          objectToBuffer(['OK', ZERO_ID, true, 'no reason'])
-        );
-      }).toThrow('bad msg: reason missing');
-
-      expect(() => {
-        bufferToRelayMessage(
-          objectToBuffer(['OK', ZERO_ID, true, ':no reason'])
-        );
-      }).toThrow('bad msg: reason missing');
-
-      expect(() => {
-        bufferToRelayMessage(
-          objectToBuffer(['OK', ZERO_ID, true, '     :  no reason'])
-        );
-      }).toThrow('bad msg: reason missing');
-    });
-
-    it('should reject OK message with unrecognized reason', () => {
-      expect(() => {
-        bufferToRelayMessage(
-          objectToBuffer(['OK', ZERO_ID, true, 'unspecified: no reason'])
-        );
-      }).toThrow('bad msg: unrecognized reason: unspecified');
     });
   });
 });

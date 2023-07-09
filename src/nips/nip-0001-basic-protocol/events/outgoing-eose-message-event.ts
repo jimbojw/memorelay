@@ -5,7 +5,7 @@
  * @fileoverview Signifies a relay EOSE message on its way out to the client.
  */
 
-import { RelayEOSEMessage } from '../../../lib/message-types';
+import { RelayEOSEMessage } from '../types/message-types';
 import {
   ClientEvent,
   ClientEventOptions,

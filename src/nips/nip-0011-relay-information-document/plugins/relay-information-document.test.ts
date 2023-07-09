@@ -16,7 +16,7 @@ import { HttpServerRequestEvent } from '../../../core/events/http-server-request
 import { setupTestHub } from '../../../test/setup-hub-and-memorelay-client';
 import { RelayInformationDocumentEvent } from '../events/relay-information-document-event';
 import { relayInformationDocument } from './relay-information-document';
-import { RelayInformationDocument } from '../../../lib/relay-information-document';
+import { RelayInformationDocument } from '../types/relay-information-document';
 
 describe('relayInformationDocument()', () => {
   describe('#HttpServerRequestEvent', () => {

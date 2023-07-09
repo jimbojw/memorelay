@@ -10,12 +10,7 @@ import {
   validateEvent,
   verifySignature,
 } from 'nostr-tools';
-
-/**
- * Error thrown when a Nostr event is determined to be invalid or failed
- * verification.
- */
-export class BadEventError extends Error {}
+import { BadEventError } from '../errors/bad-event-error';
 
 /**
  * Verify that an object is a valid Nostr event and has a verified signature.

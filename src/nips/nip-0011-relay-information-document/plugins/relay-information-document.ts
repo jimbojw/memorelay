@@ -6,7 +6,7 @@
  * information document.
  */
 
-import { RelayInformationDocument } from '../../../lib/relay-information-document';
+import { RelayInformationDocument } from '../types/relay-information-document';
 import { RelayInformationDocumentEvent } from '../events/relay-information-document-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';

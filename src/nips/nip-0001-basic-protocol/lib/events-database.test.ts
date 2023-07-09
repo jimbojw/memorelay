@@ -8,8 +8,8 @@
 import { EventsDatabase } from './events-database';
 
 import { Filter, Event as NostrEvent } from 'nostr-tools';
-import { BadEventError } from '../../../lib/verify-event';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
+import { BadEventError } from '../errors/bad-event-error';
 
 const EXAMPLE_SIGNED_EVENT: NostrEvent = Object.freeze({
   content: 'BRB, turning on the miners',

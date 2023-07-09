@@ -5,7 +5,10 @@
  * @fileoverview Integration tests for binary (entry point bin.ts).
  */
 
-import { RelayEOSEMessage, RelayEventMessage } from './lib/message-types';
+import {
+  RelayEOSEMessage,
+  RelayEventMessage,
+} from './nips/nip-0001-basic-protocol/types/message-types';
 import { BinTestHarness } from './test/bin-test-harness';
 import { createSignedTestEvent } from './test/signed-test-event';
 

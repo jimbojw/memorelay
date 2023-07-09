@@ -5,7 +5,7 @@
  * @fileoverview Event to signal an incoming CLOSE Nostr event.
  */
 
-import { ClientCloseMessage } from '../../../lib/message-types';
+import { ClientCloseMessage } from '../types/message-types';
 import {
   ClientEvent,
   ClientEventOptions,

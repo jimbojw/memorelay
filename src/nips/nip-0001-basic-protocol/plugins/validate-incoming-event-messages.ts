@@ -7,7 +7,7 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { checkEventMessage } from '../../../lib/buffer-to-message';
+import { checkEventMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';

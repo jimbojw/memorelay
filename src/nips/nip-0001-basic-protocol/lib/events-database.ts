@@ -5,8 +5,8 @@
  * @fileoverview Rudimentary database for managing events.
  */
 
-import { verifyEvent } from '../../../lib/verify-event';
-import { verifyFilters } from '../../../lib/verify-filters';
+import { verifyEvent } from './verify-event';
+import { verifyFilters } from './verify-filters';
 
 import binarySearch from 'binary-search';
 import { Filter, Event as NostrEvent, matchFilters } from 'nostr-tools';
