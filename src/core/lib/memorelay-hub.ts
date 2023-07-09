@@ -5,7 +5,7 @@
  * @fileoverview Memorelay event hub.
  */
 
-import { IncomingMessage, RequestListener, ServerResponse } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 import { WebSocketServer } from 'ws';
 
 import { UpgradeHandler } from '../types/upgrade-handler';
@@ -56,7 +56,7 @@ export class MemorelayHub extends ConnectableEventEmitter<
    *   httpServer.on('upgrade', memorelay.handleUpgrade());
    *   httpServer.listen({ port: 3000 });
    */
-  handleRequest(): RequestListener {
+  handleRequest() {
     return (
       request: IncomingMessage,
       response: ServerResponse,
