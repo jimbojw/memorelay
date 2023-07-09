@@ -66,6 +66,12 @@ describe('checkOKMessage()', () => {
     expect(checkOKMessage(okMessage)).toBe(okMessage);
   });
 
+  it('should reject OK message with non-string description', () => {
+    expect(() => {
+      checkOKMessage(['OK', ZERO_ID, true, { BAD: 'DESCRIPTION' }]);
+    }).toThrow('bad msg: description type mismatch');
+  });
+
   it('should accept OK message marking duplicate', () => {
     const okMessage: ['OK', ...unknown[]] = ['OK', ZERO_ID, true, 'duplicate:'];
     expect(checkOKMessage(okMessage)).toBe(okMessage);
@@ -94,5 +100,11 @@ describe('checkOKMessage()', () => {
     expect(() => {
       checkOKMessage(['OK', ZERO_ID, true, 'unspecified: no reason']);
     }).toThrow('bad msg: unrecognized reason: unspecified');
+  });
+
+  it('should reject OK message with extra elements', () => {
+    expect(() => {
+      checkOKMessage(['OK', ZERO_ID, true, '', 'EXTRA_ELEMENT']);
+    }).toThrow('bad msg: extra elements detected');
   });
 });
