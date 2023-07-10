@@ -5,9 +5,10 @@
   "bin": "dist/bin/index.js",
   "scripts": {
     "check-licenses": "check-license-header check --config .github/license-check/license-config.json --strict",
-    "checks": "npm run lint; npm run prettier:check; npm run check-licenses",
+    "checks": "npm run lint; npm run prettier:check; npm run check-licenses; npm run build:dry-run",
     "clean": "rimraf ./dist && mkdir dist",
     "build": "tsc --emitDeclarationOnly",
+    "build:dry-run": "tsc --noEmit",
     "lint": "eslint **/*.{js,ts}",
     "package": "ncc build src/bin.ts --license LICENSE --out dist/bin && prepend dist/bin/index.js '#!/usr/bin/env node\n\n'",
     "prettier:check": "prettier --check '**/*.{js,ts}'",
