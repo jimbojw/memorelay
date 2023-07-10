@@ -23,6 +23,7 @@ import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-mess
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
+import { sendNoticeOnClientError } from './send-notice-on-client-error';
 
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
@@ -45,6 +46,9 @@ export function basicProtocol(hub: MemorelayHub): Disconnectable {
 
     // Reject any message type other than EVENT, REQ and CLOSE.
     rejectUnrecognizedIncomingMessages,
+
+    // Send NOTICE in response to a client error such as a bad message.
+    sendNoticeOnClientError,
 
     // Drop incoming EVENT messages where the clientEvent has been seen before.
     dropDuplicateIncomingEventMessages,
