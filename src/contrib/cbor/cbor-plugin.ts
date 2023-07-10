@@ -91,7 +91,7 @@ function handleMemorelayClientCreatedEvent({
       payloadObject = decode(dataArray) as unknown;
     } catch (error) {
       if (!(error instanceof Error)) {
-        // TODO(jimbo): Determine what data type is actulally thrown here.
+        // TODO(jimbo): Determine what data type is actually thrown here.
         throw error;
       }
 
