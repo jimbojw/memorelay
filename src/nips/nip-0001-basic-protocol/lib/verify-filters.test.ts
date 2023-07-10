@@ -5,7 +5,7 @@
  * @fileoverview Tests for the verifyFilters() function.
  */
 
-import { verifyFilter } from './verify-filters';
+import { verifyFilter, verifyFilters } from './verify-filters';
 import {
   FILTER_INTEGER_ARRAY_FIELDS,
   FILTER_INTEGER_FIELDS,
@@ -16,8 +16,10 @@ import {
 const LONG_ID = Array(65).fill('f').join('');
 
 describe('verifyFilters', () => {
-  it('should be a function', () => {
-    expect(typeof verifyFilter).toBe('function');
+  it('should reject non-array arguments', () => {
+    expect(() => {
+      verifyFilters(undefined);
+    }).toThrow('filters value is not an array');
   });
 
   it('should reject non-object parameters', () => {
@@ -82,6 +84,16 @@ describe('verifyFilters', () => {
         expect(() => {
           verifyFilter({ [field]: ['1', '2', '3'] });
         }).not.toThrow();
+      });
+
+      it('should reject an array of non-strings', () => {
+        expect(() => {
+          verifyFilter({ [field]: [1] });
+        }).toThrow(`non-string value in ${field} array`);
+
+        expect(() => {
+          verifyFilter({ [field]: [1, 2, 3] });
+        }).toThrow(`non-string value in ${field} array`);
       });
 
       it('should reject values longer than 64 characters', () => {

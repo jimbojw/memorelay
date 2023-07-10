@@ -13,51 +13,8 @@ import {
 } from './filters';
 
 import { Filter } from 'nostr-tools';
-
-// Maximum length of a filter value when checking id-based fields.
-const MAX_FILTER_LENGTH = 64;
-
-/**
- * Verify that the values object is an array of strings.
- * @param field Name of the field being checked.
- * @param values Possibly an array of strings.
- * @param maxLength Maximum allowed length of a string value.
- */
-export function verifyStringArrayField(
-  field: string,
-  values: unknown,
-  maxLength = Infinity
-) {
-  if (!Array.isArray(values)) {
-    throw new Error(`${field} value is not an array`);
-  }
-
-  for (const value of values) {
-    if (typeof value !== 'string') {
-      throw new Error(`non-string value in ${field} array`);
-    }
-    if (value.length > maxLength) {
-      throw new Error(`${field} element value too long`);
-    }
-  }
-}
-
-/**
- * Verify that the values object is an array of numbers.
- * @param field Name of the field being checked.
- * @param values Possibly an array of numbers.
- */
-export function verifyIntegerArrayField(field: string, values: unknown) {
-  if (!Array.isArray(values)) {
-    throw new Error(`${field} value is not an array`);
-  }
-
-  for (const value of values) {
-    if (!Number.isInteger(value)) {
-      throw new Error(`${field} contains a non-integer value`);
-    }
-  }
-}
+import { verifyFilterIdArrayField } from './verify-filter-id-array-field';
+import { verifyFilterIntegerArrayField } from './verify-filter-integer-array-field';
 
 /**
  * Verify that the provided filter object is valid.
@@ -78,10 +35,9 @@ export function verifyFilter(filter: unknown) {
     if (!(field in filter)) {
       continue;
     }
-    verifyStringArrayField(
+    verifyFilterIdArrayField(
       field as string,
-      (filter as Record<keyof Filter, unknown>)[field],
-      MAX_FILTER_LENGTH
+      (filter as Record<keyof Filter, unknown>)[field]
     );
   }
 
@@ -89,7 +45,7 @@ export function verifyFilter(filter: unknown) {
     if (!(field in filter)) {
       continue;
     }
-    verifyIntegerArrayField(
+    verifyFilterIntegerArrayField(
       field,
       (filter as Record<keyof Filter, unknown>)[field]
     );
