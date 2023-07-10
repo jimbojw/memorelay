@@ -11,12 +11,12 @@ import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { IncomingGenericMessageEvent } from '../../nips/nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
-import { checkGenericMessage } from '../../nips/nip-0001-basic-protocol/lib/buffer-to-message';
 import { GenericMessage } from '../../nips/nip-0001-basic-protocol/types/message-types';
 import { BadMessageError } from '../../nips/nip-0001-basic-protocol/errors/bad-message-error';
 import { OutgoingGenericMessageEvent } from '../../nips/nip-0001-basic-protocol/events/outgoing-generic-message-event';
 import { BasicError } from '../../core/errors/basic-error';
 import { OutgoingNoticeMessageEvent } from '../../nips/nip-0001-basic-protocol/events/outgoing-notice-message-event';
+import { checkGenericMessage } from '../../nips/nip-0001-basic-protocol/lib/check-generic-message';
 
 export class CborDecodingError extends BasicError {
   readonly type = 'cbor-decoding-error';
