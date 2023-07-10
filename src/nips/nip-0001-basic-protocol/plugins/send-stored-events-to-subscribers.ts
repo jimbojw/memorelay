@@ -35,17 +35,19 @@ export function sendStoredEventsToSubscribers(
     hub.onEvent(
       BroadcastEventMessageEvent,
       (broadcastEventMessageEvent: BroadcastEventMessageEvent) => {
-        queueMicrotask(() => {
-          if (broadcastEventMessageEvent.defaultPrevented) {
-            return; // Preempted by another listener.
-          }
-          const event =
-            broadcastEventMessageEvent.details.clientEventMessage[1];
-          if (eventsDatabase.hasEvent(event.id)) {
-            return; // Ignore seen events.
-          }
-          eventsDatabase.addEvent(event);
-        });
+        if (broadcastEventMessageEvent.defaultPrevented) {
+          return; // Preempted by another listener.
+        }
+
+        const event = broadcastEventMessageEvent.details.clientEventMessage[1];
+
+        if (eventsDatabase.hasEvent(event.id)) {
+          // NOTE: In is not necessary to do more here than simply ignore the
+          // duplicate event. Other plugins will take additional steps.
+          return;
+        }
+
+        eventsDatabase.addEvent(event);
       }
     ),
 
