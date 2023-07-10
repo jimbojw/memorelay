@@ -7,7 +7,7 @@
 
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { setupTestHubAndClient } from '../../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { BadMessageError } from '../errors/bad-message-error';

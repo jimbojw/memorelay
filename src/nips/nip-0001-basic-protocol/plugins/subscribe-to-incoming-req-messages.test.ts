@@ -12,7 +12,7 @@ import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-mess
 import {
   setupTestClient,
   setupTestHub,
-} from '../../../test/setup-hub-and-memorelay-client';
+} from '../../../test/setup-test-hub-and-client';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { createSignedTestEvent } from '../../../test/signed-test-event';

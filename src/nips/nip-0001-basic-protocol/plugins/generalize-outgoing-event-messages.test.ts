@@ -6,7 +6,7 @@
  */
 
 import { generalizeOutgoingEventMessages } from './generalize-outgoing-event-messages';
-import { setupTestHubAndClient } from '../../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';

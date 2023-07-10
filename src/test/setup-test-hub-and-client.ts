@@ -2,7 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Utility scaffolding to streamline tests.
+ * @fileoverview Scaffolding for setting up hubs and clients in tests.
  */
 
 import { IncomingMessage } from 'http';
@@ -13,34 +13,15 @@ import { MemorelayClientCreatedEvent } from '../core/events/memorelay-client-cre
 import { MemorelayHub } from '../core/lib/memorelay-hub';
 
 /**
- * Convenience method for setting up an event emitter hub and a MemorelayClient
- * wrapping a mock WebSocket. This construction is useful for streamlining tests
- * that want to operate on MemorelayClient events.
- * @param pluginFns Functions to invoke before emitting the client. This is
- * where the code under test will generally be ran.
- * @returns An object with both the created hub and memorelayClient.
- */
-export function setupTestHubAndClient(
-  ...pluginFns: ((hub: MemorelayHub) => void)[]
-): {
-  hub: MemorelayHub;
-  memorelayClient: MemorelayClient;
-} {
-  const hub = setupTestHub(...pluginFns);
-  const memorelayClient = setupTestClient(hub);
-  return { hub, memorelayClient };
-}
-
-/**
  * Test harness to setup a test hub with one or more plugins under test.
  */
 export function setupTestHub(
   ...pluginFns: ((hub: MemorelayHub) => void)[]
 ): MemorelayHub {
   const hub = new MemorelayHub(() => []);
-  pluginFns.forEach((pluginFn) => {
+  for (const pluginFn of pluginFns) {
     pluginFn(hub);
-  });
+  }
   return hub;
 }
 
@@ -61,4 +42,23 @@ export function setupTestClient(hub?: MemorelayHub): MemorelayClient {
     );
   }
   return memorelayClient;
+}
+
+/**
+ * Convenience method for setting up an event emitter hub and a MemorelayClient
+ * wrapping a mock WebSocket. This construction is useful for streamlining tests
+ * that want to operate on MemorelayClient events.
+ * @param pluginFns Functions to invoke before emitting the client. This is
+ * where the code under test will generally be ran.
+ * @returns An object with both the created hub and memorelayClient.
+ */
+export function setupTestHubAndClient(
+  ...pluginFns: ((hub: MemorelayHub) => void)[]
+): {
+  hub: MemorelayHub;
+  memorelayClient: MemorelayClient;
+} {
+  const hub = setupTestHub(...pluginFns);
+  const memorelayClient = setupTestClient(hub);
+  return { hub, memorelayClient };
 }

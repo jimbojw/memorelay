@@ -13,7 +13,7 @@ import {
 } from 'node-mocks-http';
 
 import { HttpServerRequestEvent } from '../../../core/events/http-server-request-event';
-import { setupTestHub } from '../../../test/setup-hub-and-memorelay-client';
+import { setupTestHub } from '../../../test/setup-test-hub-and-client';
 import { RelayInformationDocumentEvent } from '../events/relay-information-document-event';
 import { relayInformationDocument } from './relay-information-document';
 import { RelayInformationDocument } from '../types/relay-information-document';

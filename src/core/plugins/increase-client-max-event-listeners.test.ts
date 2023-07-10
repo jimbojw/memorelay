@@ -8,7 +8,7 @@
 import {
   setupTestClient,
   setupTestHub,
-} from '../../test/setup-hub-and-memorelay-client';
+} from '../../test/setup-test-hub-and-client';
 import { increaseClientMaxEventListeners } from './increase-client-max-event-listeners';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';

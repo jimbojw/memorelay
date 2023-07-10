@@ -11,7 +11,7 @@ import { IncomingEventMessageEvent } from '../events/incoming-event-message-even
 import { ClientEventMessage } from '../types/message-types';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { setupTestHubAndClient } from '../../../test/setup-hub-and-memorelay-client';
+import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 
 describe('broadcastIncomingEventMessages()', () => {
   describe('#IncomingEventMessageEvent', () => {
