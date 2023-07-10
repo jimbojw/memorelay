@@ -5,6 +5,8 @@
  * @fileoverview Integration tests for binary (entry point bin.ts).
  */
 
+import { bufferToGenericMessage } from './nips/nip-0001-basic-protocol/lib/buffer-to-generic-message';
+import { objectToJsonBuffer } from './nips/nip-0001-basic-protocol/lib/object-to-json-buffer';
 import {
   RelayEOSEMessage,
   RelayEventMessage,
@@ -21,18 +23,16 @@ describe('bin.ts', () => {
 
     // Send a test event to store.
     const senderWebSocket = await harness.openWebSocket();
-    senderWebSocket.send(
-      Buffer.from(JSON.stringify(['EVENT', testEvent]), 'utf-8')
-    );
+    senderWebSocket.send(objectToJsonBuffer(['EVENT', testEvent]));
 
     // Request all events.
     const receiverWebSocket = await harness.openWebSocket();
     const eventMessage = await new Promise((resolve) => {
       receiverWebSocket
         .on('message', (buffer: Buffer) => {
-          resolve(JSON.parse(buffer.toString('utf-8')) as RelayEventMessage);
+          resolve(bufferToGenericMessage(buffer) as RelayEventMessage);
         })
-        .send(Buffer.from(JSON.stringify(['REQ', 'SUBSCRIPTION_ID']), 'utf-8'));
+        .send(objectToJsonBuffer(['REQ', 'SUBSCRIPTION_ID']));
     });
 
     expect(eventMessage).toEqual(['EVENT', 'SUBSCRIPTION_ID', testEvent]);
@@ -51,9 +51,9 @@ describe('bin.ts', () => {
     const eoseMessage = await new Promise((resolve) => {
       receiverWebSocket
         .on('message', (buffer: Buffer) => {
-          resolve(JSON.parse(buffer.toString('utf-8')) as RelayEOSEMessage);
+          resolve(bufferToGenericMessage(buffer) as RelayEOSEMessage);
         })
-        .send(Buffer.from(JSON.stringify(['REQ', 'SUBSCRIPTION_ID']), 'utf-8'));
+        .send(objectToJsonBuffer(['REQ', 'SUBSCRIPTION_ID']));
     });
 
     expect(eoseMessage).toEqual(['EOSE', 'SUBSCRIPTION_ID']);
@@ -62,15 +62,13 @@ describe('bin.ts', () => {
 
     const receiverPromise = new Promise((resolve) => {
       receiverWebSocket.on('message', (buffer: Buffer) => {
-        resolve(JSON.parse(buffer.toString('utf-8')) as RelayEventMessage);
+        resolve(bufferToGenericMessage(buffer) as RelayEventMessage);
       });
     });
 
     // Send a test event to store.
     const senderWebSocket = await harness.openWebSocket();
-    senderWebSocket.send(
-      Buffer.from(JSON.stringify(['EVENT', testEvent]), 'utf-8')
-    );
+    senderWebSocket.send(objectToJsonBuffer(['EVENT', testEvent]));
 
     const eventMessage = await receiverPromise;
 

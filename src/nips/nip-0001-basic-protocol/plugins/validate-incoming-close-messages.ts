@@ -7,7 +7,6 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { checkCloseMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
@@ -15,6 +14,7 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { checkClientCloseMessage } from '../lib/check-client-close-message';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
@@ -60,7 +60,7 @@ export function validateIncomingCloseMessages(
       }
 
       try {
-        const closeMessage = checkCloseMessage(genericMessage);
+        const closeMessage = checkClientCloseMessage(genericMessage);
         memorelayClient.emitEvent(
           new IncomingCloseMessageEvent(
             { closeMessage },

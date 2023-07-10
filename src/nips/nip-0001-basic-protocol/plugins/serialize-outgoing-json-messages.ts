@@ -12,6 +12,7 @@ import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { objectToJsonBuffer } from '../lib/object-to-json-buffer';
 
 /**
  * Memorelay core plugin for serializing generic, outgoing Nostr messages as
@@ -54,7 +55,7 @@ export function serializeOutgoingJsonMessages(
 
       // TODO(jimbo): What kinds of errors could occur that should be caught?
       const { genericMessage } = outgoingGenericMessage.details;
-      const buffer = Buffer.from(JSON.stringify(genericMessage), 'utf8');
+      const buffer = objectToJsonBuffer(genericMessage);
       memorelayClient.webSocket.send(buffer);
     }
   }

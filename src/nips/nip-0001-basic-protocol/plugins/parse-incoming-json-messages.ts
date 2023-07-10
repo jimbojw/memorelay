@@ -7,7 +7,6 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { bufferToGenericMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
@@ -15,6 +14,7 @@ import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-e
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { bufferToGenericMessage } from '../lib/buffer-to-generic-message';
 
 /**
  * Memorelay core plugin for parsing incoming WebSocket 'message' payload

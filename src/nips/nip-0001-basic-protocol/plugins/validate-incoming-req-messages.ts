@@ -7,7 +7,6 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { checkReqMessage } from '../lib/buffer-to-message';
 import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
@@ -15,6 +14,7 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { checkClientReqMessage } from '../lib/check-client-req-message';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
@@ -60,7 +60,9 @@ export function validateIncomingReqMessages(
       }
 
       try {
-        const reqMessage = checkReqMessage(genericMessage);
+        const reqMessage = checkClientReqMessage(
+          genericMessage as ['REQ', ...unknown[]]
+        );
         memorelayClient.emitEvent(
           new IncomingReqMessageEvent(
             { reqMessage },
