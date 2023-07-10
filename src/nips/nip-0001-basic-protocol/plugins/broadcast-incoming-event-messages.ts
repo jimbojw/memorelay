@@ -11,8 +11,7 @@ import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
  * Memorelay plugin for broadcasting incoming EVENT messages from one client to
@@ -26,32 +25,27 @@ export function broadcastIncomingEventMessages(
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-      const handlers: Disconnectable[] = [];
-      handlers.push(
-        // Broadcast incoming EVENT messages up to hub.
+      autoDisconnect(
+        memorelayClient,
         memorelayClient.onEvent(
           IncomingEventMessageEvent,
           (incomingEventMessageEvent: IncomingEventMessageEvent) => {
             if (incomingEventMessageEvent.defaultPrevented) {
               return; // Preempted by another listener.
             }
-
-            const {
-              details: { clientEventMessage },
-            } = incomingEventMessageEvent;
-            hub.emitEvent(
-              new BroadcastEventMessageEvent(
-                { clientEventMessage, memorelayClient },
-                { parentEvent: incomingEventMessageEvent, targetEmitter: hub }
-              )
-            );
+            queueMicrotask(() => {
+              hub.emitEvent(
+                new BroadcastEventMessageEvent(
+                  {
+                    clientEventMessage:
+                      incomingEventMessageEvent.details.clientEventMessage,
+                    memorelayClient,
+                  },
+                  { parentEvent: incomingEventMessageEvent, targetEmitter: hub }
+                )
+              );
+            });
           }
-        ),
-
-        // Clean up on disconnect.
-        memorelayClient.onEvent(
-          MemorelayClientDisconnectEvent,
-          clearHandlers(handlers)
         )
       );
     }

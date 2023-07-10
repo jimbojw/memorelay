@@ -9,8 +9,7 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
  * Memorelay plugin to drop incoming EVENT messages if it has been seen before.
@@ -24,8 +23,8 @@ export function dropDuplicateIncomingEventMessages(
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-      const handlers: Disconnectable[] = [];
-      handlers.push(
+      autoDisconnect(
+        memorelayClient,
         // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(
           IncomingEventMessageEvent,
@@ -45,12 +44,6 @@ export function dropDuplicateIncomingEventMessages(
 
             seenEventIds[incomingEventId] = true;
           }
-        ),
-
-        // Clean up on disconnect.
-        memorelayClient.onEvent(
-          MemorelayClientDisconnectEvent,
-          clearHandlers(handlers)
         )
       );
     }

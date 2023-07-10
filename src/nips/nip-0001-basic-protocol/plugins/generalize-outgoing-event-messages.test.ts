@@ -10,7 +10,6 @@ import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 
 describe('generalizeOutgoingEventMessages()', () => {
   describe('#OutgoingEventMessageEvent', () => {
@@ -68,37 +67,6 @@ describe('generalizeOutgoingEventMessages()', () => {
       });
       outgoingEventMessageEvent.preventDefault();
       memorelayClient.emitEvent(outgoingEventMessageEvent);
-
-      await Promise.resolve();
-
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
-    });
-  });
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEventMessages(hub);
-      });
-
-      const mockMessageHandler = jest.fn<
-        unknown,
-        [OutgoingGenericMessageEvent]
-      >();
-      memorelayClient.onEvent(OutgoingGenericMessageEvent, mockMessageHandler);
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({ memorelayClient })
-      );
-
-      memorelayClient.emitEvent(
-        new OutgoingEventMessageEvent({
-          relayEventMessage: [
-            'EVENT',
-            'SUBSCRIPTION_ID',
-            createSignedTestEvent({ content: 'HELLO WORLD' }),
-          ],
-        })
-      );
 
       await Promise.resolve();
 

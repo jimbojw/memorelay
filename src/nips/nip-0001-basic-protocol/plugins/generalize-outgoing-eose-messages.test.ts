@@ -8,7 +8,6 @@
 import { generalizeOutgoingEOSEMessages } from './generalize-outgoing-eose-messages';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';
 
 describe('generalizeOutgoingEOSEMessages()', () => {
@@ -64,33 +63,6 @@ describe('generalizeOutgoingEOSEMessages()', () => {
       });
       outgoingEOSEMessageEvent.preventDefault();
       memorelayClient.emitEvent(outgoingEOSEMessageEvent);
-
-      await Promise.resolve();
-
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
-    });
-  });
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
-      });
-
-      const mockMessageHandler = jest.fn<
-        unknown,
-        [OutgoingGenericMessageEvent]
-      >();
-      memorelayClient.onEvent(OutgoingGenericMessageEvent, mockMessageHandler);
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({ memorelayClient })
-      );
-
-      memorelayClient.emitEvent(
-        new OutgoingEOSEMessageEvent({
-          relayEOSEMessage: ['EOSE', 'SUBSCRIPTION_ID'],
-        })
-      );
 
       await Promise.resolve();
 

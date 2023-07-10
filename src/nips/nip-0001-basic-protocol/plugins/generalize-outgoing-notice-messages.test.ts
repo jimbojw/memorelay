@@ -8,7 +8,6 @@
 import { generalizeOutgoingNoticeMessages } from './generalize-outgoing-notice-messages';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-event';
 
 describe('generalizeOutgoingNoticeMessages()', () => {
@@ -29,11 +28,13 @@ describe('generalizeOutgoingNoticeMessages()', () => {
       });
       memorelayClient.emitEvent(outgoingNoticeMessageEvent);
 
-      await Promise.resolve();
-
       expect(outgoingNoticeMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      expect(mockMessageHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockMessageHandler).toHaveBeenCalledTimes(1);
       const outgoingGenericMessageEvent = mockMessageHandler.mock.calls[0][0];
       expect(outgoingGenericMessageEvent).toBeInstanceOf(
         OutgoingGenericMessageEvent
@@ -64,33 +65,6 @@ describe('generalizeOutgoingNoticeMessages()', () => {
       });
       outgoingNoticeMessageEvent.preventDefault();
       memorelayClient.emitEvent(outgoingNoticeMessageEvent);
-
-      await Promise.resolve();
-
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
-    });
-  });
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingNoticeMessages(hub);
-      });
-
-      const mockMessageHandler = jest.fn<
-        unknown,
-        [OutgoingGenericMessageEvent]
-      >();
-      memorelayClient.onEvent(OutgoingGenericMessageEvent, mockMessageHandler);
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({ memorelayClient })
-      );
-
-      memorelayClient.emitEvent(
-        new OutgoingNoticeMessageEvent({
-          relayNoticeMessage: ['NOTICE', 'IMPORTANT ANNOUNCEMENT'],
-        })
-      );
 
       await Promise.resolve();
 

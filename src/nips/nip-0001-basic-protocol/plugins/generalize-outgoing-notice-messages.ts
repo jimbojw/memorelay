@@ -8,11 +8,10 @@
 
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-event';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
  * Memorelay plugin for re-casting outgoing NOTICE messages as generic messages.
@@ -27,22 +26,22 @@ export function generalizeOutgoingNoticeMessages(
     MemorelayClientCreatedEvent,
     (memorelayClientCreatedEvent: MemorelayClientCreatedEvent) => {
       const { memorelayClient } = memorelayClientCreatedEvent.details;
-
-      const handlers: Disconnectable[] = [];
-      handlers.push(
-        // Generalize incoming EVENT messages.
+      autoDisconnect(
+        memorelayClient,
         memorelayClient.onEvent(
           OutgoingNoticeMessageEvent,
           (outgoingNoticeMessageEvent: OutgoingNoticeMessageEvent) => {
+            if (outgoingNoticeMessageEvent.defaultPrevented) {
+              return; // Preempted by another handler.
+            }
+            outgoingNoticeMessageEvent.preventDefault();
             queueMicrotask(() => {
-              if (outgoingNoticeMessageEvent.defaultPrevented) {
-                return; // Preempted by another handler.
-              }
-              outgoingNoticeMessageEvent.preventDefault();
-              const { relayNoticeMessage } = outgoingNoticeMessageEvent.details;
               memorelayClient.emitEvent(
                 new OutgoingGenericMessageEvent(
-                  { genericMessage: relayNoticeMessage },
+                  {
+                    genericMessage:
+                      outgoingNoticeMessageEvent.details.relayNoticeMessage,
+                  },
                   {
                     parentEvent: outgoingNoticeMessageEvent,
                     targetEmitter: memorelayClient,
@@ -51,12 +50,6 @@ export function generalizeOutgoingNoticeMessages(
               );
             });
           }
-        ),
-
-        // Clean up on disconnect.
-        memorelayClient.onEvent(
-          MemorelayClientDisconnectEvent,
-          clearHandlers(handlers)
         )
       );
     }

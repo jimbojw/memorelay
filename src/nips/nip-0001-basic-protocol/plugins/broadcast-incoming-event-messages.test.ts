@@ -10,7 +10,6 @@ import { broadcastIncomingEventMessages } from './broadcast-incoming-event-messa
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { ClientEventMessage } from '../types/message-types';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 
 describe('broadcastIncomingEventMessages()', () => {
@@ -31,6 +30,8 @@ describe('broadcastIncomingEventMessages()', () => {
         clientEventMessage: eventMessage,
       });
       memorelayClient.emitEvent(incomingEventMessageEvent);
+
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       await Promise.resolve();
 
@@ -68,33 +69,6 @@ describe('broadcastIncomingEventMessages()', () => {
       });
       incomingEventMessageEvent.preventDefault();
       memorelayClient.emitEvent(incomingEventMessageEvent);
-
-      await Promise.resolve();
-
-      expect(mockHandlerFn).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const { hub, memorelayClient } = setupTestHubAndClient(
-        broadcastIncomingEventMessages
-      );
-
-      const mockHandlerFn = jest.fn<unknown, [BroadcastEventMessageEvent]>();
-      hub.onEvent(BroadcastEventMessageEvent, mockHandlerFn);
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({ memorelayClient })
-      );
-
-      const eventMessage: ClientEventMessage = [
-        'EVENT',
-        createSignedTestEvent({ content: 'testing testing' }),
-      ];
-      memorelayClient.emitEvent(
-        new IncomingEventMessageEvent({ clientEventMessage: eventMessage })
-      );
 
       await Promise.resolve();
 
