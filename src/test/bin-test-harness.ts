@@ -72,7 +72,7 @@ export class BinTestHarness {
    */
   async teardown() {
     if (!this.childProcess) {
-      throw new Error('child process not found');
+      throw new Error('child process missing');
     }
 
     // Close all open WebSockets.
