@@ -134,7 +134,8 @@ export class LoggingPlugin extends ConnectableEventEmitter {
       const level = this.levels[event.type] ?? defaultLevel;
       if (level) {
         const key = getRequestKey(getEventRequest(event));
-        this.logger.log(level, `(${key}): ${event.type}`);
+        const depth = '.'.repeat(countAncestors(event));
+        this.logger.log(level, `(${key}): ${depth}${event.type}`);
       }
     };
   }
@@ -153,7 +154,8 @@ export class LoggingPlugin extends ConnectableEventEmitter {
       const level = this.levels[event.type] ?? defaultLevel;
       if (level) {
         const key = getRequestKey(memorelayClient.request);
-        this.logger.log(level, `(${key}): ${event.type}`);
+        const depth = '.'.repeat(countAncestors(event));
+        this.logger.log(level, `(${key}): ${depth}${event.type}`);
       }
     };
   }
@@ -200,4 +202,20 @@ function getRequestKey(request?: IncomingMessage, defaultValue = 'undefined') {
     return defaultValue;
   }
   return Buffer.from(secWebSocketKey, 'base64').subarray(0, 4).toString('hex');
+}
+
+/**
+ * Determine the number of ancestor events a given event has. An event with an
+ * undefined parentEvent has an ancestor count of 0. An event with a parentEvent
+ * has its parentEvent's ancestor count plus 1.
+ * @param basicEvent
+ */
+function countAncestors(basicEvent: BasicEvent): number {
+  let ancestorCount = 0;
+  let parentEvent = basicEvent.parentEvent;
+  while (parentEvent) {
+    ancestorCount++;
+    parentEvent = parentEvent.parentEvent;
+  }
+  return ancestorCount;
 }
