@@ -13,7 +13,6 @@ import { IncomingCloseMessageEvent } from '../events/incoming-close-message-even
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { SubscriptionNotFoundEvent } from '../events/subscription-not-found-event';
 import { ClientCloseMessage } from '../types/client-close-message';

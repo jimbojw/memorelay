@@ -15,6 +15,8 @@ import { EventsDatabase } from '../lib/events-database';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { WillAddEventToDatabaseEvent } from '../events/will-add-event-to-database-event';
+import { DidAddEventToDatabaseEvent } from '../events/did-add-event-to-database-event';
 
 /**
  * Memorelay plugin for sending stored events to incoming subscribers. Note that
@@ -41,13 +43,38 @@ export function sendStoredEventsToSubscribers(
 
         const event = broadcastEventMessageEvent.details.clientEventMessage[1];
 
-        if (eventsDatabase.hasEvent(event.id)) {
-          // NOTE: In is not necessary to do more here than simply ignore the
-          // duplicate event. Other plugins will take additional steps.
-          return;
-        }
+        queueMicrotask(() => {
+          if (!eventsDatabase.hasEvent(event.id)) {
+            hub.emitEvent(
+              new WillAddEventToDatabaseEvent(
+                { event },
+                { parentEvent: broadcastEventMessageEvent, targetEmitter: hub }
+              )
+            );
+          }
+        });
+      }
+    ),
 
-        eventsDatabase.addEvent(event);
+    hub.onEvent(
+      WillAddEventToDatabaseEvent,
+      (willAddEventToDatabaseEvent: WillAddEventToDatabaseEvent) => {
+        if (willAddEventToDatabaseEvent.defaultPrevented) {
+          return; // Preempted by another listener.
+        }
+        willAddEventToDatabaseEvent.preventDefault();
+        const { event } = willAddEventToDatabaseEvent.details;
+        if (!eventsDatabase.hasEvent(event.id)) {
+          eventsDatabase.addEvent(event);
+          queueMicrotask(() => {
+            hub.emitEvent(
+              new DidAddEventToDatabaseEvent(
+                { event },
+                { parentEvent: willAddEventToDatabaseEvent, targetEmitter: hub }
+              )
+            );
+          });
+        }
       }
     ),
 
