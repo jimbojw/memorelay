@@ -14,6 +14,10 @@ import {
   PREFLIGHT_EVENT_TYPE,
   PreflightEvent,
 } from '../events/preflight-event';
+import {
+  PREFLIGHT_ERROR_EVENT_TYPE,
+  PreflightErrorEvent,
+} from '../events/preflight-error-event';
 
 describe('BasicEventEmitter', () => {
   describe('get maxEventListeners()', () => {
@@ -125,10 +129,10 @@ describe('BasicEventEmitter', () => {
   });
 
   describe('emitError()', () => {
-    it('should emit an error and return it', () => {
+    it('should emit a PreflightErrorEvent, then an error and return it', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
-      const mockEmitFn = jest.fn<boolean, [string, BasicEvent]>();
+      const mockEmitFn = jest.fn<boolean, [string, BasicEvent | BasicError]>();
       basicEventEmitter.internalEmitter.emit = mockEmitFn;
 
       const mockError = {
@@ -140,9 +144,16 @@ describe('BasicEventEmitter', () => {
 
       expect(result).toBe(mockError);
 
-      expect(mockEmitFn.mock.calls).toHaveLength(1);
-      expect(mockEmitFn.mock.calls[0][0]).toBe('EXAMPLE_ERROR');
-      expect(mockEmitFn.mock.calls[0][1]).toBe(mockError);
+      expect(mockEmitFn).toHaveBeenCalledTimes(2);
+
+      expect(mockEmitFn.mock.calls[0][0]).toBe(PREFLIGHT_ERROR_EVENT_TYPE);
+      const preflightErrorEvent = mockEmitFn.mock
+        .calls[0][1] as PreflightErrorEvent;
+      expect(preflightErrorEvent).toBeInstanceOf(PreflightErrorEvent);
+      expect(preflightErrorEvent.details.error).toBe(mockError);
+
+      expect(mockEmitFn.mock.calls[1][0]).toBe('EXAMPLE_ERROR');
+      expect(mockEmitFn.mock.calls[1][1]).toBe(mockError);
     });
   });
 
