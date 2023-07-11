@@ -25,7 +25,6 @@ export function dropDuplicateIncomingEventMessages(
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
       autoDisconnect(
         memorelayClient,
-        // Broadcast incoming EVENT messages up to hub.
         memorelayClient.onEvent(
           IncomingEventMessageEvent,
           (incomingEventMessageEvent: IncomingEventMessageEvent) => {
