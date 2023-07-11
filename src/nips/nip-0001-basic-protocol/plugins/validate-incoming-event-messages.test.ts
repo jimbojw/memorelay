@@ -14,7 +14,7 @@ import { BadMessageError } from '../errors/bad-message-error';
 
 describe('validateIncomingEventMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
-    it('should validate an EVENT message', () => {
+    it('should validate an EVENT message', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingEventMessages(hub);
       });
@@ -33,7 +33,11 @@ describe('validateIncomingEventMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      expect(mockMessageHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockMessageHandler).toHaveBeenCalledTimes(1);
       const incomingEventMessageEvent = mockMessageHandler.mock.calls[0][0];
       expect(incomingEventMessageEvent).toBeInstanceOf(
         IncomingEventMessageEvent
@@ -48,7 +52,7 @@ describe('validateIncomingEventMessages()', () => {
       expect(incomingEventMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
-    it('should ignore an EVENT message if defaultPrevented', () => {
+    it('should ignore an EVENT message if defaultPrevented', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingEventMessages(hub);
       });
@@ -66,10 +70,12 @@ describe('validateIncomingEventMessages()', () => {
       incomingGenericMessageEvent.preventDefault();
       memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockMessageHandler).not.toHaveBeenCalled();
     });
 
-    it('should ignore non-EVENT messages', () => {
+    it('should ignore non-EVENT messages', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingEventMessages(hub);
       });
@@ -87,10 +93,12 @@ describe('validateIncomingEventMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockMessageHandler).not.toHaveBeenCalled();
     });
 
-    it('should emit an error when EVENT message is malformed', () => {
+    it('should emit an error when EVENT message is malformed', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingEventMessages(hub);
       });
@@ -105,7 +113,11 @@ describe('validateIncomingEventMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockErrorHandler.mock.calls).toHaveLength(1);
+      expect(mockErrorHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
       const badMessageError = mockErrorHandler.mock.calls[0][0];
       expect(badMessageError).toBeInstanceOf(BadMessageError);
     });

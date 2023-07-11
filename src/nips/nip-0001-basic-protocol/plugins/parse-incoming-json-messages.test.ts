@@ -14,7 +14,6 @@ import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { BadMessageError } from '../errors/bad-message-error';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 
 describe('parseIncomingJsonMessages()', () => {
@@ -134,41 +133,6 @@ describe('parseIncomingJsonMessages()', () => {
       );
 
       expect(mockErrorHandler.mock.calls).toHaveLength(1);
-    });
-  });
-
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const hub = new MemorelayHub(() => []);
-      parseIncomingJsonMessages(hub);
-
-      const mockRequest = {} as IncomingMessage;
-      const mockWebSocket = {} as WebSocket;
-      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-      hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({ memorelayClient })
-      );
-
-      await Promise.resolve();
-
-      const mockMessageHandler = jest.fn<
-        unknown,
-        [IncomingGenericMessageEvent]
-      >();
-      memorelayClient.onEvent(IncomingGenericMessageEvent, mockMessageHandler);
-
-      memorelayClient.emitEvent(
-        new WebSocketMessageEvent({
-          data: Buffer.from('["PAYLOAD","IGNORE"]'),
-          isBinary: false,
-        })
-      );
-
-      await Promise.resolve();
-
-      expect(mockMessageHandler).not.toBeCalled();
     });
   });
 });

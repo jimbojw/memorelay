@@ -195,6 +195,7 @@ describe('sendStoredEventsToSubscribers()', () => {
       ]);
     });
   });
+
   describe('#IncomingReqMessageEvent', () => {
     it('it should ignore REQ messages with defaultPrevented', async () => {
       const hub = setupTestHub(sendStoredEventsToSubscribers);

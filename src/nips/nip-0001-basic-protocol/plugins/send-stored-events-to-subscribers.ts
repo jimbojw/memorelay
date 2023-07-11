@@ -10,15 +10,15 @@ import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { EventsDatabase } from '../lib/events-database';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
- * Memorelay core plugin for sending stored events to incoming subscribers. Note
- * that this plugin does not handle later, live events. It only handles sending
+ * Memorelay plugin for sending stored events to incoming subscribers. Note that
+ * this plugin does not handle later, live events. It only handles sending
  * previously stored events.
  * @param hub Event hub for inter-component communication.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
@@ -55,8 +55,9 @@ export function sendStoredEventsToSubscribers(
     hub.onEvent(
       MemorelayClientCreatedEvent,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-        const handlers: Disconnectable[] = [];
-        handlers.push(
+        autoDisconnect(
+          memorelayClient,
+
           // Subscribe on incoming REQ event.
           memorelayClient.onEvent(
             IncomingReqMessageEvent,
@@ -122,12 +123,6 @@ export function sendStoredEventsToSubscribers(
                 );
               });
             }
-          ),
-
-          // Clean up on disconnect.
-          memorelayClient.onEvent(
-            MemorelayClientDisconnectEvent,
-            clearHandlers(handlers)
           )
         );
       }

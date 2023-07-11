@@ -13,7 +13,7 @@ import { BadMessageError } from '../errors/bad-message-error';
 
 describe('validateIncomingCloseMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
-    it('should validate and re-emit a CLOSE message', () => {
+    it('should validate and re-emit a CLOSE message', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingCloseMessages(hub);
       });
@@ -31,7 +31,11 @@ describe('validateIncomingCloseMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      expect(mockMessageHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockMessageHandler).toHaveBeenCalledTimes(1);
       const incomingCloseMessageEvent = mockMessageHandler.mock.calls[0][0];
       expect(incomingCloseMessageEvent).toBeInstanceOf(
         IncomingCloseMessageEvent
@@ -46,7 +50,7 @@ describe('validateIncomingCloseMessages()', () => {
       expect(incomingCloseMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
-    it('should ignore a CLOSE message if defaultPrevented', () => {
+    it('should ignore a CLOSE message if defaultPrevented', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingCloseMessages(hub);
       });
@@ -63,10 +67,12 @@ describe('validateIncomingCloseMessages()', () => {
       incomingGenericMessageEvent.preventDefault();
       memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockMessageHandler).not.toHaveBeenCalled();
     });
 
-    it('should ignore non-CLOSE messages', () => {
+    it('should ignore non-CLOSE messages', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingCloseMessages(hub);
       });
@@ -84,10 +90,12 @@ describe('validateIncomingCloseMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(false);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockMessageHandler).not.toHaveBeenCalled();
     });
 
-    it('should emit an error when CLOSE message is malformed', () => {
+    it('should emit an error when CLOSE message is malformed', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         validateIncomingCloseMessages(hub);
       });
@@ -102,7 +110,11 @@ describe('validateIncomingCloseMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockErrorHandler.mock.calls).toHaveLength(1);
+      expect(mockErrorHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
       const badMessageError = mockErrorHandler.mock.calls[0][0];
       expect(badMessageError).toBeInstanceOf(BadMessageError);
     });

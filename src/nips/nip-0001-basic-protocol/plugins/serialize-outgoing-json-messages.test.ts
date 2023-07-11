@@ -14,7 +14,6 @@ import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 
 describe('serializeOutgoingJsonMessages()', () => {
   describe('#OutgoingGenericMessageEvent', () => {
@@ -59,36 +58,6 @@ describe('serializeOutgoingJsonMessages()', () => {
       outgoingGenericMessage.preventDefault(); // Prevent sending.
 
       memorelayClient.emitEvent(outgoingGenericMessage);
-
-      expect(mockSendFn.mock.calls).toHaveLength(0);
-    });
-  });
-
-  describe('#MemorelayClientDisconnectEvent', () => {
-    it('should trigger disconnect', async () => {
-      const hub = new BasicEventEmitter();
-      serializeOutgoingJsonMessages(hub as MemorelayHub);
-
-      const mockSendFn = jest.fn<unknown, [Buffer]>();
-      const mockWebSocket = {} as WebSocket;
-      mockWebSocket.send = mockSendFn;
-      const mockRequest = {} as IncomingMessage;
-      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-      hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
-
-      memorelayClient.emitEvent(
-        new MemorelayClientDisconnectEvent({
-          memorelayClient,
-        })
-      );
-
-      memorelayClient.emitEvent(
-        new OutgoingGenericMessageEvent({
-          genericMessage: ['NEVER', 'RECEIVED'],
-        })
-      );
-
-      await Promise.resolve();
 
       expect(mockSendFn.mock.calls).toHaveLength(0);
     });

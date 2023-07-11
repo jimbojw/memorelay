@@ -12,9 +12,8 @@ import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { checkClientReqMessage } from '../lib/check-client-req-message';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
@@ -27,56 +26,45 @@ import { checkClientReqMessage } from '../lib/check-client-req-message';
 export function validateIncomingReqMessages(
   hub: BasicEventEmitter
 ): Disconnectable {
-  return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
-
-  function handleClientCreated(
-    memorelayClientCreatedEvent: MemorelayClientCreatedEvent
-  ) {
-    const { memorelayClient } = memorelayClientCreatedEvent.details;
-
-    const handlers: Disconnectable[] = [];
-    handlers.push(
-      memorelayClient.onEvent(
-        IncomingGenericMessageEvent,
-        handleIncomingMessage
-      ),
-      memorelayClient.onEvent(
-        MemorelayClientDisconnectEvent,
-        clearHandlers(handlers)
-      )
-    );
-
-    function handleIncomingMessage(
-      incomingGenericMessageEvent: IncomingGenericMessageEvent
-    ) {
-      if (incomingGenericMessageEvent.defaultPrevented) {
-        return; // Preempted by another handler.
-      }
-
-      const { genericMessage } = incomingGenericMessageEvent.details;
-
-      if (genericMessage[0] !== 'REQ') {
-        return; // The incoming message is not a 'REQ' message.
-      }
-
-      try {
-        const reqMessage = checkClientReqMessage(
-          genericMessage as ['REQ', ...unknown[]]
-        );
-        memorelayClient.emitEvent(
-          new IncomingReqMessageEvent(
-            { reqMessage },
-            {
-              parentEvent: incomingGenericMessageEvent,
-              targetEmitter: memorelayClient,
+  return hub.onEvent(
+    MemorelayClientCreatedEvent,
+    ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+      autoDisconnect(
+        memorelayClient,
+        memorelayClient.onEvent(
+          IncomingGenericMessageEvent,
+          (incomingGenericMessageEvent: IncomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+              return; // Preempted by another handler.
             }
-          )
-        );
-      } catch (error) {
-        memorelayClient.emitError(error as BadMessageError);
-      } finally {
-        incomingGenericMessageEvent.preventDefault();
-      }
+
+            const { genericMessage } = incomingGenericMessageEvent.details;
+
+            if (genericMessage[0] !== 'REQ') {
+              return; // The incoming message is not a 'REQ' message.
+            }
+
+            incomingGenericMessageEvent.preventDefault();
+
+            queueMicrotask(() => {
+              try {
+                const reqMessage = checkClientReqMessage(genericMessage);
+                memorelayClient.emitEvent(
+                  new IncomingReqMessageEvent(
+                    { reqMessage },
+                    {
+                      parentEvent: incomingGenericMessageEvent,
+                      targetEmitter: memorelayClient,
+                    }
+                  )
+                );
+              } catch (error) {
+                memorelayClient.emitError(error as BadMessageError);
+              }
+            });
+          }
+        )
+      );
     }
-  }
+  );
 }
