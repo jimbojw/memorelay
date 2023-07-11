@@ -16,6 +16,8 @@ import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-c
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { SubscriptionNotFoundEvent } from '../events/subscription-not-found-event';
+import { ClientCloseMessage } from '../types/client-close-message';
+import { disconnectAll } from '../../../core/lib/disconnect-all';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
@@ -41,7 +43,7 @@ export function subscribeToIncomingReqMessages(
       // Then, on disconnect, in addition to clearing the handlers, we undo the
       // addition to the maxEventListeners value.
       function disconnect() {
-        clearHandlers(handlers);
+        disconnectAll(handlers);
         hub.maxEventListeners -= 1; // Restore previous maxEventListeners.
       }
 
@@ -77,8 +79,8 @@ export function subscribeToIncomingReqMessages(
           return; // Preempted by another handler.
         }
 
-        const [, subscriptionId] =
-          incomingCloseMessageEvent.details.closeMessage;
+        const [, subscriptionId] = incomingCloseMessageEvent.details
+          .closeMessage as ClientCloseMessage;
 
         if (!subscriptions.has(subscriptionId)) {
           queueMicrotask(() => {

@@ -6,6 +6,7 @@
  */
 
 import { Disconnectable } from '../types/disconnectable';
+import { disconnectAll } from './disconnect-all';
 
 /**
  * Returns a function which when called will remove all elements from the
@@ -15,8 +16,6 @@ import { Disconnectable } from '../types/disconnectable';
  */
 export function clearHandlers(handlers: Disconnectable[]): () => void {
   return () => {
-    handlers.splice(0).forEach((handler) => {
-      handler.disconnect();
-    });
+    disconnectAll(handlers);
   };
 }
