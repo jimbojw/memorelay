@@ -10,19 +10,18 @@ import { IncomingMessage } from 'http';
 
 import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
-import { BadMessageError } from '../../nips/nip-0001-basic-protocol/errors/bad-message-error';
 import { MemorelayClient } from '../../core/lib/memorelay-client';
-import { WebSocketConnectedEvent } from '../../core/events/web-socket-connected-event';
-import { WebSocketCloseEvent } from '../../core/events/web-socket-close-event';
 
 import { Disconnectable } from '../../core/types/disconnectable';
 import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { ConnectableEventEmitter } from '../../core/lib/connectable-event-emitter';
-import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { BasicEvent } from '../../core/events/basic-event';
 import { BasicError } from '../../core/errors/basic-error';
-import { HttpServerRequestEvent } from '../../core/events/http-server-request-event';
+import { PreflightEvent } from '../../core/events/preflight-event';
+import { RelayEvent } from '../../core/events/relay-event';
+import { ClientEvent } from '../../core/events/client-event';
+import { PreflightErrorEvent } from '../../core/events/preflight-error-event';
 
 export interface LoggingPluginOptions {
   /**
@@ -46,6 +45,8 @@ export class LoggingPlugin extends ConnectableEventEmitter {
   readonly logger: Logger;
   readonly memorelay: Memorelay;
   readonly levels: Record<string, string | undefined>;
+  readonly hubEventTypes = new Set<string>();
+  readonly hubErrorTypes = new Set<string>();
 
   constructor(options: LoggingPluginOptions) {
     super();
@@ -54,18 +55,77 @@ export class LoggingPlugin extends ConnectableEventEmitter {
     this.levels = Object.assign({}, options.levels);
   }
 
+  /**
+   * Handle preflight events on the hub and clients by listening for the payload
+   * event type.
+   */
   override setupHandlers() {
     return [
-      this.memorelay.onEvent(WebSocketConnectedEvent, this.logEvent('silly')),
+      this.memorelay.onEvent(
+        PreflightEvent,
+        (preflightEvent: PreflightEvent<RelayEvent>) => {
+          const { event } = preflightEvent.details;
+          if (!this.hubEventTypes.has(event.type)) {
+            this.hubEventTypes.add(event.type);
+            this.memorelay.onEvent(event, this.logEvent('silly'));
+          }
+        }
+      ),
+
+      this.memorelay.onEvent(
+        PreflightErrorEvent,
+        (preflightErrorEvent: PreflightErrorEvent) => {
+          const { error } = preflightErrorEvent.details;
+          if (!this.hubErrorTypes.has(error.type)) {
+            this.hubErrorTypes.add(error.type);
+            this.memorelay.onError(error, this.logError('silly'));
+          }
+        }
+      ),
 
       this.memorelay.onEvent(
         MemorelayClientCreatedEvent,
-        this.logEvent('silly')
+        ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+          const clientEventTypes = new Set<string>();
+          const clientErrorTypes = new Set<string>();
+          const handlers: Disconnectable[] = [];
+
+          handlers.push(
+            memorelayClient.onEvent(
+              PreflightEvent,
+              (preflightEvent: PreflightEvent<ClientEvent>) => {
+                const { event } = preflightEvent.details;
+                if (!clientEventTypes.has(event.type)) {
+                  clientEventTypes.add(event.type);
+                  handlers.push(
+                    memorelayClient.onEvent(
+                      event,
+                      this.logClientEvent(memorelayClient, 'silly')
+                    )
+                  );
+                }
+              }
+            ),
+            memorelayClient.onEvent(
+              PreflightErrorEvent,
+              (preflightErrorEvent: PreflightErrorEvent) => {
+                const { error } = preflightErrorEvent.details;
+                if (!clientErrorTypes.has(error.type)) {
+                  clientErrorTypes.add(error.type);
+                  handlers.push(
+                    memorelayClient.onError(
+                      error,
+                      this.logClientError(memorelayClient, 'silly')
+                    )
+                  );
+                }
+              }
+            )
+          );
+
+          return { disconnect: clearHandlers(handlers) };
+        }
       ),
-
-      this.memorelay.onEvent(HttpServerRequestEvent, this.logEvent('silly')),
-
-      this.logMemorelayClientEvents(),
     ];
   }
 
@@ -79,41 +139,33 @@ export class LoggingPlugin extends ConnectableEventEmitter {
     };
   }
 
+  logError(defaultLevel?: string) {
+    return (error: BasicError) => {
+      const level = this.levels[error.type] ?? defaultLevel;
+      if (level) {
+        this.logger.log(level, `${error.type}: ${error.message}`);
+      }
+    };
+  }
+
+  logClientEvent(memorelayClient: MemorelayClient, defaultLevel?: string) {
+    return (event: BasicEvent) => {
+      const level = this.levels[event.type] ?? defaultLevel;
+      if (level) {
+        const key = getRequestKey(memorelayClient.request);
+        this.logger.log(level, `(${key}): ${event.type}`);
+      }
+    };
+  }
+
   logClientError(memorelayClient: MemorelayClient, defaultLevel?: string) {
     const key = getRequestKey(memorelayClient.request);
     return (error: BasicError) => {
       const level = this.levels[error.type] ?? defaultLevel;
       if (level) {
-        this.logger.log(level, `(${key}): ${error.message}`);
+        this.logger.log(level, `(${key}): ${error.type}: ${error.message}`);
       }
     };
-  }
-
-  logMemorelayClientEvents() {
-    return this.memorelay.onEvent(
-      MemorelayClientCreatedEvent,
-      ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-        const handlers: Disconnectable[] = [];
-
-        handlers.push(
-          memorelayClient.onEvent(WebSocketCloseEvent, this.logEvent('silly')),
-          memorelayClient.onError(
-            BadMessageError,
-            this.logClientError(memorelayClient, 'silly')
-          ),
-          memorelayClient.onEvent(
-            MemorelayClientDisconnectEvent,
-            this.logEvent('silly')
-          ),
-          memorelayClient.onEvent(
-            MemorelayClientDisconnectEvent,
-            clearHandlers(handlers)
-          )
-        );
-
-        return { disconnect: clearHandlers(handlers) };
-      }
-    );
   }
 }
 
