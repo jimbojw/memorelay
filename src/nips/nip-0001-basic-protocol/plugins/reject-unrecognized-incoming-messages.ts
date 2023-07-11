@@ -2,8 +2,7 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Memorelay core plugin for rejecting incoming generic messages
- * in which the type string is unrecognized.
+ * @fileoverview Memorelay plugin for rejecting incoming messages.
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
@@ -11,12 +10,17 @@ import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
+import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 
 /**
- * Memorelay core plugin that rejects any generic message with an unrecognized
- * type string.
+ * Memorelay plugin which rejects any incoming message by emitting a
+ * BadMessageError.
+ *
+ * This plugin is intended to follow other plugins which identify message types
+ * and emit specific incoming events. Note: order is important. If this plugin
+ * is incorrectly connected before a plugin that intends to implement an event
+ * type, the later will already see defaultPrevented, and a BadMessageError will
+ * already be outbound.
  * @param hub Event hub for inter-component communication.
  * @event BadMessageError When an incoming generic message is unrecognized.
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
@@ -24,50 +28,26 @@ import { clearHandlers } from '../../../core/lib/clear-handlers';
 export function rejectUnrecognizedIncomingMessages(
   hub: BasicEventEmitter
 ): Disconnectable {
-  return hub.onEvent(MemorelayClientCreatedEvent, handleClientCreated);
-
-  function handleClientCreated(
-    memorelayClientCreatedEvent: MemorelayClientCreatedEvent
-  ) {
-    const { memorelayClient } = memorelayClientCreatedEvent.details;
-
-    const handlers: Disconnectable[] = [];
-    handlers.push(
-      memorelayClient.onEvent(
-        IncomingGenericMessageEvent,
-        handleIncomingMessage
-      ),
-      memorelayClient.onEvent(
-        MemorelayClientDisconnectEvent,
-        clearHandlers(handlers)
-      )
-    );
-
-    function handleIncomingMessage(
-      incomingGenericMessageEvent: IncomingGenericMessageEvent
-    ) {
-      if (incomingGenericMessageEvent.defaultPrevented) {
-        return; // Preempted by another handler.
-      }
-
-      const {
-        genericMessage: [messageType],
-      } = incomingGenericMessageEvent.details;
-
-      if (
-        messageType === 'EVENT' ||
-        messageType === 'REQ' ||
-        messageType === 'CLOSE'
-      ) {
-        // Nothing to do. Event type was recognized.
-        return;
-      }
-
-      incomingGenericMessageEvent.preventDefault();
-
-      memorelayClient.emitError(
-        new BadMessageError('unrecognized message type')
+  return hub.onEvent(
+    MemorelayClientCreatedEvent,
+    ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+      autoDisconnect(
+        memorelayClient,
+        memorelayClient.onEvent(
+          IncomingGenericMessageEvent,
+          (incomingGenericMessageEvent: IncomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+              return; // Preempted by another handler.
+            }
+            incomingGenericMessageEvent.preventDefault();
+            queueMicrotask(() => {
+              memorelayClient.emitError(
+                new BadMessageError('unrecognized message type')
+              );
+            });
+          }
+        )
       );
     }
-  }
+  );
 }

@@ -12,34 +12,7 @@ import { BadMessageError } from '../errors/bad-message-error';
 
 describe('rejectUnrecognizedIncomingMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
-    it('should ignore known message types', () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        rejectUnrecognizedIncomingMessages(hub);
-      });
-
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
-
-      memorelayClient.emitEvent(
-        new IncomingGenericMessageEvent({
-          genericMessage: ['EVENT', 'IGNORE_ME'],
-        })
-      );
-      memorelayClient.emitEvent(
-        new IncomingGenericMessageEvent({
-          genericMessage: ['REQ', 'IGNORE_ME'],
-        })
-      );
-      memorelayClient.emitEvent(
-        new IncomingGenericMessageEvent({
-          genericMessage: ['CLOSE', 'IGNORE_ME'],
-        })
-      );
-
-      expect(mockErrorHandler.mock.calls).toHaveLength(0);
-    });
-
-    it('should ignore events with defaultPrevented', () => {
+    it('should ignore events with defaultPrevented', async () => {
       const { memorelayClient } = setupTestHubAndClient((hub) => {
         rejectUnrecognizedIncomingMessages(hub);
       });
@@ -53,27 +26,42 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
       incomingGenericMessageEvent.preventDefault();
       memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-      expect(mockErrorHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockErrorHandler).not.toHaveBeenCalled();
     });
 
-    it('should emit an error when message type is unrecognized', () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        rejectUnrecognizedIncomingMessages(hub);
-      });
+    it('should emit an error when message type is unrecognized', async () => {
+      const testMessageTypes = [
+        'AUTH',
+        'EVENT',
+        'CLOSE',
+        'NOTICE',
+        'REQ',
+        'UNKNOWN',
+      ];
+      for (const messageType of testMessageTypes) {
+        const { memorelayClient } = setupTestHubAndClient((hub) => {
+          rejectUnrecognizedIncomingMessages(hub);
+        });
+        const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
+        memorelayClient.onError(BadMessageError, mockErrorHandler);
 
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
+        const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
+          genericMessage: [messageType],
+        });
+        memorelayClient.emitEvent(incomingGenericMessageEvent);
 
-      const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
-        genericMessage: ['UNKNOWN_TYPE'],
-      });
-      memorelayClient.emitEvent(incomingGenericMessageEvent);
+        expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
+        expect(mockErrorHandler).not.toHaveBeenCalled();
 
-      expect(mockErrorHandler.mock.calls).toHaveLength(1);
-      const badMessageError = mockErrorHandler.mock.calls[0][0];
-      expect(badMessageError).toBeInstanceOf(BadMessageError);
+        await Promise.resolve();
+
+        expect(mockErrorHandler.mock.calls).toHaveLength(1);
+        const badMessageError = mockErrorHandler.mock.calls[0][0];
+        expect(badMessageError).toBeInstanceOf(BadMessageError);
+      }
     });
   });
 });
