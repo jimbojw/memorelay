@@ -18,11 +18,11 @@ import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
-import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
+import { SubscriptionNotFoundEvent } from '../events/subscription-not-found-event';
 
 describe('subscribeToReqMessages()', () => {
   describe('#MemorelayClientCreatedEvent', () => {
@@ -193,15 +193,12 @@ describe('subscribeToReqMessages()', () => {
       expect(mockOutgoingListenerFn).toHaveBeenCalledTimes(1);
     });
 
-    it('should trigger an error for unknown subscription id', () => {
+    it('should trigger an error for unknown subscription id', async () => {
       const hub = setupTestHub(subscribeToIncomingReqMessages);
       const subscribingClient = setupTestClient(hub);
 
-      const mockErrorListenerFn = jest.fn<
-        unknown,
-        [SubscriptionNotFoundError]
-      >();
-      subscribingClient.onError(SubscriptionNotFoundError, mockErrorListenerFn);
+      const mockHandlerFn = jest.fn<unknown, [SubscriptionNotFoundEvent]>();
+      subscribingClient.onEvent(SubscriptionNotFoundEvent, mockHandlerFn);
 
       subscribingClient.emitEvent(
         new IncomingCloseMessageEvent({
@@ -209,7 +206,11 @@ describe('subscribeToReqMessages()', () => {
         })
       );
 
-      expect(mockErrorListenerFn).toHaveBeenCalledTimes(1);
+      expect(mockHandlerFn).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
     });
   });
 

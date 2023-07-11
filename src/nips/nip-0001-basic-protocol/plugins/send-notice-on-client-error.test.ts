@@ -7,6 +7,7 @@
 
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-event';
 import { sendNoticeOnClientError } from './send-notice-on-client-error';
 
@@ -20,7 +21,11 @@ describe('sendNoticeOnClientError()', () => {
       const mockHandlerFn = jest.fn<unknown, [OutgoingNoticeMessageEvent]>();
       memorelayClient.onEvent(OutgoingNoticeMessageEvent, mockHandlerFn);
 
-      memorelayClient.emitError(new BadMessageError('EXAMPLE'));
+      memorelayClient.emitEvent(
+        new BadMessageErrorEvent({
+          badMessageError: new BadMessageError('EXAMPLE'),
+        })
+      );
 
       await Promise.resolve();
 

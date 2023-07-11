@@ -13,8 +13,8 @@ import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-e
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { BadMessageError } from '../errors/bad-message-error';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 describe('parseIncomingJsonMessages()', () => {
   describe('#WebSocketMessageEvent', () => {
@@ -132,8 +132,8 @@ describe('parseIncomingJsonMessages()', () => {
       const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
       hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
 
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
+      const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
+      memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 
       memorelayClient.emitEvent(
         new WebSocketMessageEvent({
@@ -142,11 +142,11 @@ describe('parseIncomingJsonMessages()', () => {
         })
       );
 
-      expect(mockErrorHandler).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       await Promise.resolve();
 
-      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
     });
   });
 });

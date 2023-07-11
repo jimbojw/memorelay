@@ -7,16 +7,11 @@
 
 import { defaultMaxListeners, EventEmitter } from 'events';
 import { BasicEvent } from '../events/basic-event';
-import { BasicError } from '../errors/basic-error';
 import { Disconnectable } from '../types/disconnectable';
 import { onWithHandler } from './on-with-handler';
 import { PreflightEvent } from '../events/preflight-event';
-import { PreflightErrorEvent } from '../events/preflight-error-event';
 
-export class BasicEventEmitter<
-  EventType extends BasicEvent = BasicEvent,
-  ErrorType extends BasicError = BasicError
-> {
+export class BasicEventEmitter<EventType extends BasicEvent = BasicEvent> {
   /**
    * Maximum number of event listeners known to be permitted without warning.
    *
@@ -57,40 +52,10 @@ export class BasicEventEmitter<
    * @param callbackFn Callback function to invoke when event is emitted.
    * @returns this.
    */
-  onEvent<
-    T extends
-      | EventType
-      | PreflightEvent<EventType>
-      | PreflightErrorEvent<ErrorType>
-  >(
+  onEvent<T extends EventType | PreflightEvent<EventType>>(
     basicEventType: { type: string },
     callbackFn: (basicEvent: T) => void
   ): Disconnectable {
     return onWithHandler(this.internalEmitter, basicEventType.type, callbackFn);
-  }
-
-  /**
-   * Emits the provided object then returns the object.
-   * @param error The error object to emit. Must have a type string.
-   * @returns The same error object which was passed in.
-   */
-  emitError(error: ErrorType) {
-    const preflightErrorEvent = new PreflightErrorEvent({ error });
-    this.internalEmitter.emit(preflightErrorEvent.type, preflightErrorEvent);
-    this.internalEmitter.emit(error.type, error);
-    return error;
-  }
-
-  /**
-   * Listen for an Error.
-   * @param basicEventType Type of error to listen for.
-   * @param callbackFn Callback function to invoke when error is emitted.
-   * @returns this.
-   */
-  onError<E extends ErrorType>(
-    errorType: { type: string },
-    callbackFn: (error: E) => void
-  ): Disconnectable {
-    return onWithHandler(this.internalEmitter, errorType.type, callbackFn);
   }
 }

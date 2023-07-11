@@ -9,15 +9,10 @@ import { defaultMaxListeners, EventEmitter } from 'events';
 
 import { BasicEventEmitter } from './basic-event-emitter';
 import { BasicEvent } from '../events/basic-event';
-import { BasicError } from '../errors/basic-error';
 import {
   PREFLIGHT_EVENT_TYPE,
   PreflightEvent,
 } from '../events/preflight-event';
-import {
-  PREFLIGHT_ERROR_EVENT_TYPE,
-  PreflightErrorEvent,
-} from '../events/preflight-error-event';
 
 describe('BasicEventEmitter', () => {
   describe('get maxEventListeners()', () => {
@@ -110,85 +105,6 @@ describe('BasicEventEmitter', () => {
 
       const mockCallbackFn = jest.fn<unknown, [BasicEvent]>();
       const handler = basicEventEmitter.onEvent(
-        { type: 'EVENT_TYPE' },
-        mockCallbackFn
-      );
-
-      expect(mockOffFn.mock.calls).toHaveLength(0);
-
-      handler.disconnect();
-
-      expect(mockOffFn.mock.calls).toHaveLength(1);
-
-      const params = mockOffFn.mock.calls[0];
-      expect(params[0]).toBe('EVENT_TYPE');
-      expect(typeof params[1]).toBe('function');
-
-      expect(mockCallbackFn.mock.calls).toHaveLength(0);
-    });
-  });
-
-  describe('emitError()', () => {
-    it('should emit a PreflightErrorEvent, then an error and return it', () => {
-      const basicEventEmitter = new BasicEventEmitter();
-
-      const mockEmitFn = jest.fn<boolean, [string, BasicEvent | BasicError]>();
-      basicEventEmitter.internalEmitter.emit = mockEmitFn;
-
-      const mockError = {
-        type: 'EXAMPLE_ERROR',
-        message: 'everything is broken',
-      } as BasicError;
-
-      const result = basicEventEmitter.emitError(mockError);
-
-      expect(result).toBe(mockError);
-
-      expect(mockEmitFn).toHaveBeenCalledTimes(2);
-
-      expect(mockEmitFn.mock.calls[0][0]).toBe(PREFLIGHT_ERROR_EVENT_TYPE);
-      const preflightErrorEvent = mockEmitFn.mock
-        .calls[0][1] as PreflightErrorEvent;
-      expect(preflightErrorEvent).toBeInstanceOf(PreflightErrorEvent);
-      expect(preflightErrorEvent.details.error).toBe(mockError);
-
-      expect(mockEmitFn.mock.calls[1][0]).toBe('EXAMPLE_ERROR');
-      expect(mockEmitFn.mock.calls[1][1]).toBe(mockError);
-    });
-  });
-
-  describe('onError()', () => {
-    it('should set up an error listener', () => {
-      const basicEventEmitter = new BasicEventEmitter();
-
-      const mockOnFn = jest.fn<
-        EventEmitter,
-        [string, (error: { type: string }) => void]
-      >();
-      basicEventEmitter.internalEmitter.on = mockOnFn;
-
-      const mockCallbackFn = jest.fn<unknown, [{ type: string }]>();
-      basicEventEmitter.onError({ type: 'ERROR_TYPE' }, mockCallbackFn);
-
-      expect(mockOnFn.mock.calls).toHaveLength(1);
-      const params = mockOnFn.mock.calls[0];
-      expect(params[0]).toBe('ERROR_TYPE');
-      expect(typeof params[1]).toBe('function');
-
-      expect(mockCallbackFn.mock.calls).toHaveLength(0);
-    });
-
-    it('should return a handler which disconnects the listener', () => {
-      const basicEventEmitter = new BasicEventEmitter();
-
-      const mockOffFn = jest.fn<
-        EventEmitter,
-        [string, (basicEvent: BasicEvent) => void]
-      >();
-      basicEventEmitter.internalEmitter.off = mockOffFn;
-
-      const mockCallbackFn = jest.fn<unknown, [BasicError]>();
-      const handler = basicEventEmitter.onError(
         { type: 'EVENT_TYPE' },
         mockCallbackFn
       );

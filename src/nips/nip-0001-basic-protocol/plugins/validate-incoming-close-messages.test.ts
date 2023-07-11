@@ -9,7 +9,7 @@ import { validateIncomingCloseMessages } from './validate-incoming-close-message
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
-import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 describe('validateIncomingCloseMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
@@ -100,8 +100,8 @@ describe('validateIncomingCloseMessages()', () => {
         validateIncomingCloseMessages(hub);
       });
 
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
+      const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
+      memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
         genericMessage: ['CLOSE'], // Omit required subscription id.
@@ -110,13 +110,13 @@ describe('validateIncomingCloseMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockErrorHandler).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       await Promise.resolve();
 
-      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
-      const badMessageError = mockErrorHandler.mock.calls[0][0];
-      expect(badMessageError).toBeInstanceOf(BadMessageError);
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+      const badMessageError = mockHandlerFn.mock.calls[0][0];
+      expect(badMessageError).toBeInstanceOf(BadMessageErrorEvent);
     });
   });
 });

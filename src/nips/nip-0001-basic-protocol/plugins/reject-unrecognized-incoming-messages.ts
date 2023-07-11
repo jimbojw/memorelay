@@ -11,6 +11,7 @@ import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 /**
  * Memorelay plugin which rejects any incoming message by emitting a
@@ -41,8 +42,18 @@ export function rejectUnrecognizedIncomingMessages(
             }
             incomingGenericMessageEvent.preventDefault();
             queueMicrotask(() => {
-              memorelayClient.emitError(
-                new BadMessageError('unrecognized message type')
+              memorelayClient.emitEvent(
+                new BadMessageErrorEvent(
+                  {
+                    badMessageError: new BadMessageError(
+                      'unrecognized message type'
+                    ),
+                  },
+                  {
+                    parentEvent: incomingGenericMessageEvent,
+                    targetEmitter: memorelayClient,
+                  }
+                )
               );
             });
           }

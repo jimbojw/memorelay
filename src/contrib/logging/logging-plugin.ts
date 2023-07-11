@@ -17,11 +17,9 @@ import { MemorelayHub } from '../../core/lib/memorelay-hub';
 import { ConnectableEventEmitter } from '../../core/lib/connectable-event-emitter';
 import { clearHandlers } from '../../core/lib/clear-handlers';
 import { BasicEvent } from '../../core/events/basic-event';
-import { BasicError } from '../../core/errors/basic-error';
 import { PreflightEvent } from '../../core/events/preflight-event';
 import { RelayEvent } from '../../core/events/relay-event';
 import { ClientEvent } from '../../core/events/client-event';
-import { PreflightErrorEvent } from '../../core/events/preflight-error-event';
 
 export interface LoggingPluginOptions {
   /**
@@ -46,7 +44,6 @@ export class LoggingPlugin extends ConnectableEventEmitter {
   readonly memorelay: Memorelay;
   readonly levels: Record<string, string | undefined>;
   readonly hubEventTypes = new Set<string>();
-  readonly hubErrorTypes = new Set<string>();
 
   constructor(options: LoggingPluginOptions) {
     super();
@@ -73,21 +70,9 @@ export class LoggingPlugin extends ConnectableEventEmitter {
       ),
 
       this.memorelay.onEvent(
-        PreflightErrorEvent,
-        (preflightErrorEvent: PreflightErrorEvent) => {
-          const { error } = preflightErrorEvent.details;
-          if (!this.hubErrorTypes.has(error.type)) {
-            this.hubErrorTypes.add(error.type);
-            this.memorelay.onError(error, this.logError('silly'));
-          }
-        }
-      ),
-
-      this.memorelay.onEvent(
         MemorelayClientCreatedEvent,
         ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
           const clientEventTypes = new Set<string>();
-          const clientErrorTypes = new Set<string>();
           const handlers: Disconnectable[] = [];
 
           handlers.push(
@@ -101,21 +86,6 @@ export class LoggingPlugin extends ConnectableEventEmitter {
                     memorelayClient.onEvent(
                       event,
                       this.logClientEvent(memorelayClient, 'silly')
-                    )
-                  );
-                }
-              }
-            ),
-            memorelayClient.onEvent(
-              PreflightErrorEvent,
-              (preflightErrorEvent: PreflightErrorEvent) => {
-                const { error } = preflightErrorEvent.details;
-                if (!clientErrorTypes.has(error.type)) {
-                  clientErrorTypes.add(error.type);
-                  handlers.push(
-                    memorelayClient.onError(
-                      error,
-                      this.logClientError(memorelayClient, 'silly')
                     )
                   );
                 }
@@ -140,15 +110,6 @@ export class LoggingPlugin extends ConnectableEventEmitter {
     };
   }
 
-  logError(defaultLevel?: string) {
-    return (error: BasicError) => {
-      const level = this.levels[error.type] ?? defaultLevel;
-      if (level) {
-        this.logger.log(level, `${error.type}: ${error.message}`);
-      }
-    };
-  }
-
   logClientEvent(memorelayClient: MemorelayClient, defaultLevel?: string) {
     return (event: BasicEvent) => {
       const level = this.levels[event.type] ?? defaultLevel;
@@ -156,16 +117,6 @@ export class LoggingPlugin extends ConnectableEventEmitter {
         const key = getRequestKey(memorelayClient.request);
         const depth = '.'.repeat(countAncestors(event));
         this.logger.log(level, `(${key}): ${depth}${event.type}`);
-      }
-    };
-  }
-
-  logClientError(memorelayClient: MemorelayClient, defaultLevel?: string) {
-    const key = getRequestKey(memorelayClient.request);
-    return (error: BasicError) => {
-      const level = this.levels[error.type] ?? defaultLevel;
-      if (level) {
-        this.logger.log(level, `(${key}): ${error.type}: ${error.message}`);
       }
     };
   }

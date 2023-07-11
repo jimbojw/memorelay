@@ -14,6 +14,7 @@ import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-e
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { bufferToGenericMessage } from '../lib/buffer-to-generic-message';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 /**
  * Memorelay plugin for parsing incoming WebSocket 'message' payload buffers as
@@ -54,19 +55,24 @@ export function parseIncomingJsonMessages(
               ? Buffer.concat(data)
               : (data as Buffer);
 
+            const eventOptions = {
+              parentEvent: webSocketMessageEvent,
+              targetEmitter: memorelayClient,
+            };
+
             try {
               const genericMessage = bufferToGenericMessage(buffer);
               memorelayClient.emitEvent(
                 new IncomingGenericMessageEvent(
                   { genericMessage },
-                  {
-                    parentEvent: webSocketMessageEvent,
-                    targetEmitter: memorelayClient,
-                  }
+                  eventOptions
                 )
               );
             } catch (error) {
-              memorelayClient.emitError(error as BadMessageError);
+              const badMessageError = error as BadMessageError;
+              memorelayClient.emitEvent(
+                new BadMessageErrorEvent({ badMessageError }, eventOptions)
+              );
             }
           });
         }

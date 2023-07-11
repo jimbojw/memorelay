@@ -9,7 +9,7 @@ import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
-import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 describe('validateIncomingReqMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
@@ -89,8 +89,8 @@ describe('validateIncomingReqMessages()', () => {
         validateIncomingReqMessages(hub);
       });
 
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
+      const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
+      memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
         genericMessage: ['REQ'], // Omit required subscription id.
@@ -99,13 +99,13 @@ describe('validateIncomingReqMessages()', () => {
 
       expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-      expect(mockErrorHandler).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       await Promise.resolve();
 
-      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
-      const badMessageError = mockErrorHandler.mock.calls[0][0];
-      expect(badMessageError).toBeInstanceOf(BadMessageError);
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+      const badMessageError = mockHandlerFn.mock.calls[0][0];
+      expect(badMessageError).toBeInstanceOf(BadMessageErrorEvent);
     });
   });
 });

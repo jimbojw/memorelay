@@ -11,8 +11,8 @@ import { WebSocket } from 'ws';
 import { createClients } from './create-clients';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
-import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayHub } from '../lib/memorelay-hub';
+import { DuplicateWebSocketErrorEvent } from '../events/duplicate-web-socket-error-event';
 
 describe('createClients()', () => {
   describe('#WebSocketConnectedEvent', () => {
@@ -95,8 +95,8 @@ describe('createClients()', () => {
         })
       );
 
-      const mockErrorHandlerFn = jest.fn<unknown, [DuplicateWebSocketError]>();
-      hub.onError(DuplicateWebSocketError, mockErrorHandlerFn);
+      const mockHandlerFn = jest.fn<unknown, [DuplicateWebSocketErrorEvent]>();
+      hub.onEvent(DuplicateWebSocketErrorEvent, mockHandlerFn);
 
       // Duplicate WebSocket connected event.
       hub.emitEvent(
@@ -106,13 +106,15 @@ describe('createClients()', () => {
         })
       );
 
-      expect(mockErrorHandlerFn).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       await Promise.resolve();
 
-      expect(mockErrorHandlerFn).toHaveBeenCalledTimes(1);
-      const error = mockErrorHandlerFn.mock.calls[0][0];
-      expect(error.webSocket).toBe(mockWebSocket);
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+      const duplicateWebSocketErrorEvent = mockHandlerFn.mock.calls[0][0];
+      expect(duplicateWebSocketErrorEvent.details.webSocket).toBe(
+        mockWebSocket
+      );
     });
   });
 });

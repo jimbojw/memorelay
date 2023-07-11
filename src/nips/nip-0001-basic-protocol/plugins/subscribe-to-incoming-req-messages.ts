@@ -10,12 +10,12 @@ import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
 import { Filter, matchFilters } from 'nostr-tools';
 import { IncomingCloseMessageEvent } from '../events/incoming-close-message-event';
-import { SubscriptionNotFoundError } from '../errors/subscription-not-found-error';
 import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { MemorelayClientDisconnectEvent } from '../../../core/events/memorelay-client-disconnect-event';
 import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
+import { SubscriptionNotFoundEvent } from '../events/subscription-not-found-event';
 
 /**
  * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
@@ -81,9 +81,17 @@ export function subscribeToIncomingReqMessages(
           incomingCloseMessageEvent.details.closeMessage;
 
         if (!subscriptions.has(subscriptionId)) {
-          memorelayClient.emitError(
-            new SubscriptionNotFoundError(subscriptionId)
-          );
+          queueMicrotask(() => {
+            memorelayClient.emitEvent(
+              new SubscriptionNotFoundEvent(
+                { subscriptionId },
+                {
+                  parentEvent: incomingCloseMessageEvent,
+                  targetEmitter: memorelayClient,
+                }
+              )
+            );
+          });
           return;
         }
 

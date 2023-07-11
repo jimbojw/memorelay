@@ -9,7 +9,6 @@
 import { BasicEventEmitter } from './basic-event-emitter';
 import { Disconnectable } from '../types/disconnectable';
 import { BasicEvent } from '../events/basic-event';
-import { BasicError } from '../errors/basic-error';
 
 /**
  * Symbol for accessing the internal handlers list in tests.
@@ -21,10 +20,9 @@ export const HANDLERS = Symbol('handlers');
  * receives raw message events from the socket, and sends encoded messages back.
  */
 export abstract class ConnectableEventEmitter<
-    EventType extends BasicEvent = BasicEvent,
-    ErrorType extends BasicError = BasicError
+    EventType extends BasicEvent = BasicEvent
   >
-  extends BasicEventEmitter<EventType, ErrorType>
+  extends BasicEventEmitter<EventType>
   implements Disconnectable
 {
   private handlers?: Disconnectable[];

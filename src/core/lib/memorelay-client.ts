@@ -11,7 +11,6 @@ import { IncomingMessage } from 'http';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 import { ClientEvent } from '../events/client-event';
-import { ClientError } from '../errors/client-error';
 import { onWithHandler } from './on-with-handler';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
 import { ConnectableEventEmitter } from './connectable-event-emitter';
@@ -23,12 +22,8 @@ import { BasicEvent } from '../events/basic-event';
  * receives raw message events from the socket, and sends encoded messages back.
  */
 export class MemorelayClient<
-  PluginClientEvent extends ClientEvent = ClientEvent,
-  PluginClientError extends ClientError = ClientError
-> extends ConnectableEventEmitter<
-  PluginClientEvent | ClientEvent,
-  PluginClientError | ClientError
-> {
+  PluginClientEvent extends ClientEvent = ClientEvent
+> extends ConnectableEventEmitter<PluginClientEvent | ClientEvent> {
   /**
    * @param webSocket The associated WebSocket for this client.
    * @param request The HTTP request from which the WebSocket was upgraded.

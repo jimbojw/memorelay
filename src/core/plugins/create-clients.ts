@@ -10,10 +10,10 @@ import { WebSocket } from 'ws';
 
 import { MemorelayClient } from '../lib/memorelay-client';
 import { WebSocketConnectedEvent } from '../events/web-socket-connected-event';
-import { DuplicateWebSocketError } from '../errors/duplicate-web-socket-error';
 import { MemorelayClientCreatedEvent } from '../events/memorelay-client-created-event';
 import { Disconnectable } from '../types/disconnectable';
 import { MemorelayHub } from '../lib/memorelay-hub';
+import { DuplicateWebSocketErrorEvent } from '../events/duplicate-web-socket-error-event';
 
 /**
  * Memorelay core plugin to create MemorelayClient instances out of connected
@@ -37,7 +37,7 @@ export function createClients(
 
       if (webSocketClientMap.has(webSocket)) {
         queueMicrotask(() => {
-          hub.emitError(new DuplicateWebSocketError(webSocket));
+          hub.emitEvent(new DuplicateWebSocketErrorEvent({ webSocket }));
         });
         return;
       }

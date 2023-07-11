@@ -6,12 +6,11 @@
  * a BadMessageError emitted elsewhere.
  */
 
-import { ClientError } from '../../../core/errors/client-error';
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { Disconnectable } from '../../../core/types/disconnectable';
-import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-event';
 
 /**
@@ -25,19 +24,27 @@ export function sendNoticeOnClientError(hub: MemorelayHub): Disconnectable {
   return hub.onEvent(
     MemorelayClientCreatedEvent,
     ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-      function sendNotice(clientError: ClientError) {
-        queueMicrotask(() => {
-          memorelayClient.emitEvent(
-            new OutgoingNoticeMessageEvent({
-              relayNoticeMessage: ['NOTICE', `ERROR: ${clientError.message}`],
-            })
-          );
-        });
-      }
-
       autoDisconnect(
         memorelayClient,
-        memorelayClient.onError(BadMessageError, sendNotice)
+        memorelayClient.onEvent(
+          BadMessageErrorEvent,
+          (badMessageErrorEvent: BadMessageErrorEvent) => {
+            const { message } = badMessageErrorEvent.details.badMessageError;
+            queueMicrotask(() => {
+              memorelayClient.emitEvent(
+                new OutgoingNoticeMessageEvent(
+                  {
+                    relayNoticeMessage: ['NOTICE', `ERROR: ${message}`],
+                  },
+                  {
+                    parentEvent: badMessageErrorEvent,
+                    targetEmitter: memorelayClient,
+                  }
+                )
+              );
+            });
+          }
+        )
       );
     }
   );

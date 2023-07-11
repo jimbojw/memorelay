@@ -14,6 +14,7 @@ import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-clie
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { checkClientReqMessage } from '../lib/check-client-req-message';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 /**
  * Memorelay core plugin for validating incoming, generic Nostr messages of type
@@ -46,20 +47,22 @@ export function validateIncomingReqMessages(
 
             incomingGenericMessageEvent.preventDefault();
 
+            const eventOptions = {
+              parentEvent: incomingGenericMessageEvent,
+              targetEmitter: memorelayClient,
+            };
+
             queueMicrotask(() => {
               try {
                 const reqMessage = checkClientReqMessage(genericMessage);
                 memorelayClient.emitEvent(
-                  new IncomingReqMessageEvent(
-                    { reqMessage },
-                    {
-                      parentEvent: incomingGenericMessageEvent,
-                      targetEmitter: memorelayClient,
-                    }
-                  )
+                  new IncomingReqMessageEvent({ reqMessage }, eventOptions)
                 );
               } catch (error) {
-                memorelayClient.emitError(error as BadMessageError);
+                const badMessageError = error as BadMessageError;
+                memorelayClient.emitEvent(
+                  new BadMessageErrorEvent({ badMessageError }, eventOptions)
+                );
               }
             });
           }

@@ -8,7 +8,7 @@
 import { rejectUnrecognizedIncomingMessages } from './reject-unrecognized-incoming-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
-import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 
 describe('rejectUnrecognizedIncomingMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
@@ -17,8 +17,8 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
         rejectUnrecognizedIncomingMessages(hub);
       });
 
-      const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-      memorelayClient.onError(BadMessageError, mockErrorHandler);
+      const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
+      memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 
       const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
         genericMessage: ['BAD_MESSAGE'],
@@ -28,7 +28,7 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
 
       await Promise.resolve();
 
-      expect(mockErrorHandler).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
     });
 
     it('should emit an error when message type is unrecognized', async () => {
@@ -44,8 +44,8 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
         const { memorelayClient } = setupTestHubAndClient((hub) => {
           rejectUnrecognizedIncomingMessages(hub);
         });
-        const mockErrorHandler = jest.fn<unknown, [BadMessageError]>();
-        memorelayClient.onError(BadMessageError, mockErrorHandler);
+        const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
+        memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 
         const incomingGenericMessageEvent = new IncomingGenericMessageEvent({
           genericMessage: [messageType],
@@ -54,13 +54,13 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
 
         expect(incomingGenericMessageEvent.defaultPrevented).toBe(true);
 
-        expect(mockErrorHandler).not.toHaveBeenCalled();
+        expect(mockHandlerFn).not.toHaveBeenCalled();
 
         await Promise.resolve();
 
-        expect(mockErrorHandler.mock.calls).toHaveLength(1);
-        const badMessageError = mockErrorHandler.mock.calls[0][0];
-        expect(badMessageError).toBeInstanceOf(BadMessageError);
+        expect(mockHandlerFn.mock.calls).toHaveLength(1);
+        const badMessageError = mockHandlerFn.mock.calls[0][0];
+        expect(badMessageError).toBeInstanceOf(BadMessageErrorEvent);
       }
     });
   });
