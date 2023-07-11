@@ -24,6 +24,8 @@ import { validateIncomingCloseMessages } from './validate-incoming-close-message
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
 import { sendNoticeOnClientError } from './send-notice-on-client-error';
+import { EventsDatabase } from '../lib/events-database';
+import { storeIncomingEventsToDatabase } from './store-incoming-events-to-database';
 
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
@@ -32,8 +34,13 @@ import { sendNoticeOnClientError } from './send-notice-on-client-error';
  * @returns Handler for disconnection.
  */
 export function basicProtocol(hub: MemorelayHub): Disconnectable {
+  const eventsDatabase = new EventsDatabase();
+
   const plugins: PluginFn[] = [
-    // Increase max event listeners for clients.
+    // Increase max event listeners for clients. This is a heuristic, as is
+    // Node's built-in limit of 10 listeners per event type on an EventEmitter.
+    // Programmatically increasing the number each time a listener is added
+    // would defeat the purpose of the heuristic-based memory leak detection.
     increaseClientMaxEventListeners(20),
 
     // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
@@ -56,8 +63,11 @@ export function basicProtocol(hub: MemorelayHub): Disconnectable {
     // Broadcast incoming EVENT messages to all other connected clients.
     broadcastIncomingEventMessages,
 
-    // Send stored events to incoming subscriptions.
-    sendStoredEventsToSubscribers,
+    // Store incoming events to the database.
+    storeIncomingEventsToDatabase(eventsDatabase),
+
+    // Send stored events to REQ subscribers.
+    sendStoredEventsToSubscribers(eventsDatabase),
 
     // Subscribe to incoming REQ messages.
     subscribeToIncomingReqMessages,

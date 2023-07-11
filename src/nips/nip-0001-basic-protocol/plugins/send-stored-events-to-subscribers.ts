@@ -8,15 +8,11 @@
 import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingReqMessageEvent } from '../events/incoming-req-message-event';
-import { BroadcastEventMessageEvent } from '../events/broadcast-event-message-event';
-import { Disconnectable } from '../../../core/types/disconnectable';
-import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { EventsDatabase } from '../lib/events-database';
 import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-event';
 import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
-import { WillAddEventToDatabaseEvent } from '../events/will-add-event-to-database-event';
-import { DidAddEventToDatabaseEvent } from '../events/did-add-event-to-database-event';
+import { PluginFn } from '../../../core/types/plugin-types';
 
 /**
  * Memorelay plugin for sending stored events to incoming subscribers. Note that
@@ -26,60 +22,10 @@ import { DidAddEventToDatabaseEvent } from '../events/did-add-event-to-database-
  * @see https://github.com/nostr-protocol/nips/blob/master/01.md
  */
 export function sendStoredEventsToSubscribers(
-  hub: MemorelayHub
-): Disconnectable {
-  const eventsDatabase = new EventsDatabase();
-
-  const hubHandlers: Disconnectable[] = [];
-
-  hubHandlers.push(
-    // Add every broadcasted event to the events database.
-    hub.onEvent(
-      BroadcastEventMessageEvent,
-      (broadcastEventMessageEvent: BroadcastEventMessageEvent) => {
-        if (broadcastEventMessageEvent.defaultPrevented) {
-          return; // Preempted by another listener.
-        }
-
-        const event = broadcastEventMessageEvent.details.clientEventMessage[1];
-
-        queueMicrotask(() => {
-          if (!eventsDatabase.hasEvent(event.id)) {
-            hub.emitEvent(
-              new WillAddEventToDatabaseEvent(
-                { event },
-                { parentEvent: broadcastEventMessageEvent, targetEmitter: hub }
-              )
-            );
-          }
-        });
-      }
-    ),
-
-    hub.onEvent(
-      WillAddEventToDatabaseEvent,
-      (willAddEventToDatabaseEvent: WillAddEventToDatabaseEvent) => {
-        if (willAddEventToDatabaseEvent.defaultPrevented) {
-          return; // Preempted by another listener.
-        }
-        willAddEventToDatabaseEvent.preventDefault();
-        const { event } = willAddEventToDatabaseEvent.details;
-        if (!eventsDatabase.hasEvent(event.id)) {
-          eventsDatabase.addEvent(event);
-          queueMicrotask(() => {
-            hub.emitEvent(
-              new DidAddEventToDatabaseEvent(
-                { event },
-                { parentEvent: willAddEventToDatabaseEvent, targetEmitter: hub }
-              )
-            );
-          });
-        }
-      }
-    ),
-
-    // Listen for connected clients to subscribe.
-    hub.onEvent(
+  eventsDatabase: EventsDatabase
+): PluginFn {
+  return (hub: MemorelayHub) => {
+    return hub.onEvent(
       MemorelayClientCreatedEvent,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
         autoDisconnect(
@@ -153,8 +99,6 @@ export function sendStoredEventsToSubscribers(
           )
         );
       }
-    )
-  );
-
-  return { disconnect: clearHandlers(hubHandlers) };
+    );
+  };
 }

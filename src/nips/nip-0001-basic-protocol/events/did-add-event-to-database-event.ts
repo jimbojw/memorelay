@@ -8,9 +8,9 @@
 
 import { Event as NostrEvent } from 'nostr-tools';
 import {
-  RelayEvent,
-  RelayEventOptions,
-} from '../../../core/events/relay-event';
+  ClientEvent,
+  ClientEventOptions,
+} from '../../../core/events/client-event';
 
 export const DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE = 'did-add-event-to-database';
 
@@ -27,7 +27,7 @@ export interface DidAddEventToDatabaseEventDetails {
 /**
  * Event emitted when an event has just been added to the database.
  */
-export class DidAddEventToDatabaseEvent extends RelayEvent<
+export class DidAddEventToDatabaseEvent extends ClientEvent<
   typeof DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE,
   DidAddEventToDatabaseEventDetails
 > {
@@ -35,7 +35,7 @@ export class DidAddEventToDatabaseEvent extends RelayEvent<
     DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE;
   constructor(
     details: DidAddEventToDatabaseEventDetails,
-    options?: RelayEventOptions
+    options?: ClientEventOptions
   ) {
     super(DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE, details, options);
   }
