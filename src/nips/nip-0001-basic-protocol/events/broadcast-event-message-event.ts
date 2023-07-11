@@ -6,7 +6,7 @@
  * one client to others.
  */
 
-import { ClientEventMessage } from '../types/message-types';
+import { ClientEventMessage } from '../types/client-event-message';
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import {
   RelayEvent,

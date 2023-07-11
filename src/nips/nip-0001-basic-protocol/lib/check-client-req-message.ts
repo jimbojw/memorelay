@@ -6,7 +6,8 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { ClientReqMessage, GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { ClientReqMessage } from '../types/client-req-messsage';
 import { checkSubscriptionId } from './check-subscription-id';
 import { verifyFilter } from './verify-filters';
 

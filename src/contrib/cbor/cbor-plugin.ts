@@ -11,7 +11,7 @@ import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { IncomingGenericMessageEvent } from '../../nips/nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
-import { GenericMessage } from '../../nips/nip-0001-basic-protocol/types/message-types';
+import { GenericMessage } from '../../nips/nip-0001-basic-protocol/types/generic-message';
 import { BadMessageError } from '../../nips/nip-0001-basic-protocol/errors/bad-message-error';
 import { OutgoingGenericMessageEvent } from '../../nips/nip-0001-basic-protocol/events/outgoing-generic-message-event';
 import { OutgoingNoticeMessageEvent } from '../../nips/nip-0001-basic-protocol/events/outgoing-notice-message-event';

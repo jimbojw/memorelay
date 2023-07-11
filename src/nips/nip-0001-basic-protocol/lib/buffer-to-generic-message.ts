@@ -6,7 +6,7 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
 import { checkGenericMessage } from './check-generic-message';
 
 /**

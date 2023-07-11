@@ -7,10 +7,8 @@
 
 import { bufferToGenericMessage } from './nips/nip-0001-basic-protocol/lib/buffer-to-generic-message';
 import { objectToJsonBuffer } from './nips/nip-0001-basic-protocol/lib/object-to-json-buffer';
-import {
-  RelayEOSEMessage,
-  RelayEventMessage,
-} from './nips/nip-0001-basic-protocol/types/message-types';
+import { RelayEOSEMessage } from './nips/nip-0001-basic-protocol/types/relay-eose-message';
+import { RelayEventMessage } from './nips/nip-0001-basic-protocol/types/relay-event-message';
 import { BinTestHarness } from './test/bin-test-harness';
 import { createSignedTestEvent } from './test/signed-test-event';
 

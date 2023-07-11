@@ -13,7 +13,8 @@ import {
 } from 'nostr-tools';
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { GenericMessage, RelayEventMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { RelayEventMessage } from '../types/relay-event-message';
 import { checkSubscriptionId } from './check-subscription-id';
 
 /**

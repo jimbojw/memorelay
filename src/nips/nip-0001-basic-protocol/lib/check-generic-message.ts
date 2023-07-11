@@ -6,7 +6,7 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
 
 /**
  * Check whether an unknown object conforms to the basic Nostr structure of a

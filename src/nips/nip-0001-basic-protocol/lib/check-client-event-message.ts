@@ -13,7 +13,8 @@ import {
 } from 'nostr-tools';
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { ClientEventMessage, GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { ClientEventMessage } from '../types/client-event-message';
 
 /**
  * Given a Nostr message, check whether it conforms to the EVENT message type.

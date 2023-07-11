@@ -7,7 +7,8 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { GenericMessage, RelayEOSEMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { RelayEOSEMessage } from '../types/relay-eose-message';
 import { checkSubscriptionId } from './check-subscription-id';
 
 /**

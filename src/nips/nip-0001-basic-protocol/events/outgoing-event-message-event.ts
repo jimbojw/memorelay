@@ -5,7 +5,7 @@
  * @fileoverview Signifies a relay EVENT message on its way out to the client.
  */
 
-import { RelayEventMessage } from '../types/message-types';
+import { RelayEventMessage } from '../types/relay-event-message';
 import {
   ClientEvent,
   ClientEventOptions,

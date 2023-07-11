@@ -5,7 +5,7 @@
  * @fileoverview Signifies a message on its way out to the client.
  */
 
-import { GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
 import {
   ClientEvent,
   ClientEventOptions,

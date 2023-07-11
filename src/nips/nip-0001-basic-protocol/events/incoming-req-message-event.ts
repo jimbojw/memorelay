@@ -5,7 +5,7 @@
  * @fileoverview Event to signal an incoming generic Nostr event.
  */
 
-import { ClientReqMessage } from '../types/message-types';
+import { ClientReqMessage } from '../types/client-req-messsage';
 import {
   ClientEvent,
   ClientEventOptions,

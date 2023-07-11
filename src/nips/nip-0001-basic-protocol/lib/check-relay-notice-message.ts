@@ -7,7 +7,8 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { GenericMessage, RelayNoticeMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { RelayNoticeMessage } from '../types/relay-notice-message';
 
 /**
  * Given a message, check whether it conforms to the outgoing relay NOTICE

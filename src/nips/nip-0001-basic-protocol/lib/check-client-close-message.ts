@@ -6,7 +6,8 @@
  */
 
 import { BadMessageError } from '../errors/bad-message-error';
-import { ClientCloseMessage, GenericMessage } from '../types/message-types';
+import { GenericMessage } from '../types/generic-message';
+import { ClientCloseMessage } from '../types/client-close-message';
 import { checkSubscriptionId } from './check-subscription-id';
 
 /**
