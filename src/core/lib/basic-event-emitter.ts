@@ -10,6 +10,7 @@ import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
 import { Disconnectable } from '../types/disconnectable';
 import { onWithHandler } from './on-with-handler';
+import { PreflightEvent } from '../events/preflight-event';
 
 export class BasicEventEmitter<
   EventType extends BasicEvent = BasicEvent,
@@ -41,6 +42,10 @@ export class BasicEventEmitter<
    * @returns The same provided BasicEvent for chaining.
    */
   emitEvent(basicEvent: EventType): EventType {
+    if (!(basicEvent instanceof PreflightEvent)) {
+      const preflightEvent = new PreflightEvent({ event: basicEvent });
+      this.internalEmitter.emit(preflightEvent.type, preflightEvent);
+    }
     this.internalEmitter.emit(basicEvent.type, basicEvent);
     return basicEvent;
   }
@@ -51,7 +56,7 @@ export class BasicEventEmitter<
    * @param callbackFn Callback function to invoke when event is emitted.
    * @returns this.
    */
-  onEvent<T extends EventType>(
+  onEvent<T extends EventType | PreflightEvent<EventType>>(
     basicEventType: { type: string },
     callbackFn: (basicEvent: T) => void
   ): Disconnectable {

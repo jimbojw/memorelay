@@ -10,6 +10,10 @@ import { defaultMaxListeners, EventEmitter } from 'events';
 import { BasicEventEmitter } from './basic-event-emitter';
 import { BasicEvent } from '../events/basic-event';
 import { BasicError } from '../errors/basic-error';
+import {
+  PREFLIGHT_EVENT_TYPE,
+  PreflightEvent,
+} from '../events/preflight-event';
 
 describe('BasicEventEmitter', () => {
   describe('get maxEventListeners()', () => {
@@ -28,7 +32,7 @@ describe('BasicEventEmitter', () => {
   });
 
   describe('emitEvent()', () => {
-    it('should emit a BasicEvent and return it', () => {
+    it('should emit a PreflightEvent, then a BasicEvent and return it', () => {
       const basicEventEmitter = new BasicEventEmitter();
 
       const mockEmitFn = jest.fn<boolean, [string, BasicEvent]>();
@@ -40,9 +44,33 @@ describe('BasicEventEmitter', () => {
 
       expect(result).toBe(basicEvent);
 
-      expect(mockEmitFn.mock.calls).toHaveLength(1);
-      expect(mockEmitFn.mock.calls[0][0]).toBe('EXAMPLE');
-      expect(mockEmitFn.mock.calls[0][1]).toBe(basicEvent);
+      expect(mockEmitFn).toHaveBeenCalledTimes(2);
+
+      expect(mockEmitFn.mock.calls[0][0]).toBe(PREFLIGHT_EVENT_TYPE);
+      const preflightEvent = mockEmitFn.mock.calls[0][1] as PreflightEvent;
+      expect(preflightEvent).toBeInstanceOf(PreflightEvent);
+      expect(preflightEvent.details.event).toBe(basicEvent);
+
+      expect(mockEmitFn.mock.calls[1][0]).toBe('EXAMPLE');
+      expect(mockEmitFn.mock.calls[1][1]).toBe(basicEvent);
+    });
+
+    it('should emit a PreflightEvent', () => {
+      const basicEventEmitter = new BasicEventEmitter();
+
+      const mockEmitFn = jest.fn<boolean, [string, BasicEvent]>();
+      basicEventEmitter.internalEmitter.emit = mockEmitFn;
+
+      const mockBasicEvent = {} as BasicEvent;
+      const preflightEvent = new PreflightEvent({ event: mockBasicEvent });
+
+      const result = basicEventEmitter.emitEvent(preflightEvent);
+
+      expect(result).toBe(preflightEvent);
+
+      expect(mockEmitFn).toHaveBeenCalledTimes(1);
+      expect(mockEmitFn.mock.calls[0][0]).toBe(PREFLIGHT_EVENT_TYPE);
+      expect(mockEmitFn.mock.calls[0][1]).toBe(preflightEvent);
     });
   });
 

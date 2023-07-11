@@ -17,7 +17,6 @@ export const HTTP_SERVER_REQUEST = 'http-server-request';
 export interface HttpServerRequestEventDetails {
   /**
    * Incoming HTTP request message.
-   * @see
    */
   readonly request: IncomingMessage;
 
