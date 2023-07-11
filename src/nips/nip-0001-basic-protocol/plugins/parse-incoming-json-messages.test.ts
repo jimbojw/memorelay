@@ -18,7 +18,7 @@ import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 
 describe('parseIncomingJsonMessages()', () => {
   describe('#WebSocketMessageEvent', () => {
-    it('should parse a JSON WebSocket message', () => {
+    it('should parse a JSON WebSocket message', async () => {
       const hub = new MemorelayHub(() => []);
       parseIncomingJsonMessages(hub);
 
@@ -39,7 +39,11 @@ describe('parseIncomingJsonMessages()', () => {
       });
       memorelayClient.emitEvent(webSocketMessageEvent);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      expect(mockMessageHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockMessageHandler).toHaveBeenCalledTimes(1);
       const incomingGenericMessageEvent = mockMessageHandler.mock.calls[0][0];
       expect(incomingGenericMessageEvent).toBeInstanceOf(
         IncomingGenericMessageEvent
@@ -54,7 +58,7 @@ describe('parseIncomingJsonMessages()', () => {
       expect(incomingGenericMessageEvent.targetEmitter).toBe(memorelayClient);
     });
 
-    it('should combine WebSocket message buffers', () => {
+    it('should combine WebSocket message buffers', async () => {
       const hub = new MemorelayHub(() => []);
       parseIncomingJsonMessages(hub);
 
@@ -76,7 +80,11 @@ describe('parseIncomingJsonMessages()', () => {
         })
       );
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(1);
+      expect(mockMessageHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockMessageHandler).toHaveBeenCalledTimes(1);
       const incomingGenericMessageEvent = mockMessageHandler.mock.calls[0][0];
       expect(incomingGenericMessageEvent).toBeInstanceOf(
         IncomingGenericMessageEvent
@@ -87,7 +95,7 @@ describe('parseIncomingJsonMessages()', () => {
       ]);
     });
 
-    it('should ignore a WebSocket message when defaultPrevented', () => {
+    it('should ignore a WebSocket message when defaultPrevented', async () => {
       const hub = new MemorelayHub(() => []);
       parseIncomingJsonMessages(hub);
 
@@ -110,10 +118,12 @@ describe('parseIncomingJsonMessages()', () => {
 
       memorelayClient.emitEvent(webSocketMessageEvent);
 
-      expect(mockMessageHandler.mock.calls).toHaveLength(0);
+      await Promise.resolve();
+
+      expect(mockMessageHandler).not.toHaveBeenCalled();
     });
 
-    it('should emit an error when WebSocket message cannot be parsed', () => {
+    it('should emit an error when WebSocket message cannot be parsed', async () => {
       const hub = new MemorelayHub(() => []);
       parseIncomingJsonMessages(hub);
 
@@ -132,7 +142,11 @@ describe('parseIncomingJsonMessages()', () => {
         })
       );
 
-      expect(mockErrorHandler.mock.calls).toHaveLength(1);
+      expect(mockErrorHandler).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockErrorHandler).toHaveBeenCalledTimes(1);
     });
   });
 });

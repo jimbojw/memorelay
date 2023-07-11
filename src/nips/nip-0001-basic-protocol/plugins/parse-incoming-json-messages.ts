@@ -46,25 +46,29 @@ export function parseIncomingJsonMessages(
             return; // Preempted by another handler.
           }
 
-          const { data } = webSocketMessageEvent.details;
-          const buffer = Array.isArray(data)
-            ? Buffer.concat(data)
-            : (data as Buffer);
+          webSocketMessageEvent.preventDefault();
 
-          try {
-            const genericMessage = bufferToGenericMessage(buffer);
-            memorelayClient.emitEvent(
-              new IncomingGenericMessageEvent(
-                { genericMessage },
-                {
-                  parentEvent: webSocketMessageEvent,
-                  targetEmitter: memorelayClient,
-                }
-              )
-            );
-          } catch (error) {
-            memorelayClient.emitError(error as BadMessageError);
-          }
+          queueMicrotask(() => {
+            const { data } = webSocketMessageEvent.details;
+            const buffer = Array.isArray(data)
+              ? Buffer.concat(data)
+              : (data as Buffer);
+
+            try {
+              const genericMessage = bufferToGenericMessage(buffer);
+              memorelayClient.emitEvent(
+                new IncomingGenericMessageEvent(
+                  { genericMessage },
+                  {
+                    parentEvent: webSocketMessageEvent,
+                    targetEmitter: memorelayClient,
+                  }
+                )
+              );
+            } catch (error) {
+              memorelayClient.emitError(error as BadMessageError);
+            }
+          });
         }
       )
     );
