@@ -79,7 +79,7 @@ describe('createClients()', () => {
       expect(mockCreatedHandlerFn.mock.calls).toHaveLength(0);
     });
 
-    it('should emit an error when duplicate WebSocket is detected', () => {
+    it('should emit an error when duplicate WebSocket is detected', async () => {
       const hub = new MemorelayHub(() => []);
 
       createClients(hub);
@@ -98,8 +98,6 @@ describe('createClients()', () => {
       const mockErrorHandlerFn = jest.fn<unknown, [DuplicateWebSocketError]>();
       hub.onError(DuplicateWebSocketError, mockErrorHandlerFn);
 
-      expect(mockErrorHandlerFn.mock.calls).toHaveLength(0);
-
       // Duplicate WebSocket connected event.
       hub.emitEvent(
         new WebSocketConnectedEvent({
@@ -108,7 +106,11 @@ describe('createClients()', () => {
         })
       );
 
-      expect(mockErrorHandlerFn.mock.calls).toHaveLength(1);
+      expect(mockErrorHandlerFn).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+
+      expect(mockErrorHandlerFn).toHaveBeenCalledTimes(1);
       const error = mockErrorHandlerFn.mock.calls[0][0];
       expect(error.webSocket).toBe(mockWebSocket);
     });

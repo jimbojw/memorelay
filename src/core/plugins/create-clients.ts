@@ -36,8 +36,9 @@ export function createClients(
       const { webSocket, request } = webSocketConnectedEvent.details;
 
       if (webSocketClientMap.has(webSocket)) {
-        const error = new DuplicateWebSocketError(webSocket);
-        hub.emitError(error);
+        queueMicrotask(() => {
+          hub.emitError(new DuplicateWebSocketError(webSocket));
+        });
         return;
       }
 
@@ -57,8 +58,6 @@ export function createClients(
 
       queueMicrotask(() => {
         hub.emitEvent(memorelayClientCreatedEvent);
-
-        // TODO(jimbo): Consider removing.
         if (!memorelayClientCreatedEvent.defaultPrevented) {
           memorelayClient.connect();
         }
