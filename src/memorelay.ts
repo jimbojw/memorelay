@@ -9,6 +9,7 @@ import { MemorelayHub } from './core/lib/memorelay-hub';
 import { createClients } from './core/plugins/create-clients';
 import { PluginFn } from './core/types/plugin-types';
 import { basicProtocol } from './nips/nip-0001-basic-protocol/plugins';
+import { eventDeletion } from './nips/nip-0009-event-deletion/plugins';
 import { relayInformationDocument } from './nips/nip-0011-relay-information-document/plugins/relay-information-document';
 import { commandResults } from './nips/nip-0020-command-results/plugins';
 
@@ -42,16 +43,19 @@ export class Memorelay extends MemorelayHub {
     super(
       ...plugins,
       ...[
-        // Implement NIP-20 command results.
-        commandResults,
+        // NIP-20 command results.
+        commandResults, // NIP-20 Command Results.
 
-        // Implement NIP-11 relay information document requests.
+        // NIP-11 relay information document requests.
         relayInformationDocument,
 
-        // Implement NIP-01 basic Nostr protocol support.
+        // NIP-05 event deletion.
+        eventDeletion,
+
+        // NIP-01 basic Nostr protocol support.
         basicProtocol,
 
-        // Upgrade connected WebSockets to full MemorelayClient instances.
+        // (Core) Create MemorelayClient instances from connected WebSockets.
         createClients(),
       ]
     );
