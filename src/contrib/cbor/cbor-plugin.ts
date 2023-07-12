@@ -254,7 +254,7 @@ function handleMemorelayClientCreatedEvent({
 function attemptEncode(genericMessage: GenericMessage) {
   try {
     const dataArray = encode(genericMessage);
-    return { buffer: dataArray.buffer as Buffer, error: undefined };
+    return { buffer: Buffer.from(dataArray), error: undefined };
   } catch (error) {
     return { buffer: undefined, error: error as Error };
   }
