@@ -56,7 +56,7 @@ export class Memorelay extends MemorelayHub {
         basicProtocol,
 
         // (Core) Create MemorelayClient instances from connected WebSockets.
-        createClients(),
+        createClients,
       ]
     );
   }
