@@ -8,6 +8,7 @@
 import { MemorelayClientCreatedEvent } from '../core/events/memorelay-client-created-event';
 import { MemorelayClient } from '../core/lib/memorelay-client';
 import { MemorelayHub } from '../core/lib/memorelay-hub';
+import { Disconnectable } from '../core/types/disconnectable';
 import {
   setupTestClient,
   setupTestHub,
@@ -22,7 +23,7 @@ describe('setupTestHub()', () => {
   });
 
   it('should invoke plugin functions', () => {
-    const mockPluginFn = jest.fn<unknown, [MemorelayHub]>();
+    const mockPluginFn = jest.fn<Disconnectable, [MemorelayHub]>();
     const hub = setupTestHub(mockPluginFn);
     expect(mockPluginFn).toHaveBeenCalledTimes(1);
     expect(mockPluginFn).toHaveBeenCalledWith(hub);
@@ -36,7 +37,7 @@ describe('setupTestClient()', () => {
   });
 
   it('should emit created test client to hub', () => {
-    const hub = new MemorelayHub(() => []);
+    const hub = new MemorelayHub();
 
     const mockHandlerFn = jest.fn<unknown, [MemorelayClientCreatedEvent]>();
     hub.onEvent(MemorelayClientCreatedEvent, mockHandlerFn);
@@ -58,8 +59,8 @@ describe('setupTestClientAndHub()', () => {
 
   it('should invoke plugin functions', () => {
     const mockPluginFns = [
-      jest.fn<unknown, [MemorelayHub]>(),
-      jest.fn<unknown, [MemorelayHub]>(),
+      jest.fn<Disconnectable, [MemorelayHub]>(),
+      jest.fn<Disconnectable, [MemorelayHub]>(),
     ];
     const hub = setupTestHub(...mockPluginFns);
     expect(mockPluginFns[0]).toHaveBeenCalledTimes(1);

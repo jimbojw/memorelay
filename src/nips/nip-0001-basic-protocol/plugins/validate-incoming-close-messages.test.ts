@@ -14,9 +14,9 @@ import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 describe('validateIncomingCloseMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
     it('should validate and re-emit a CLOSE message', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingCloseMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -51,9 +51,9 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     it('should ignore a CLOSE message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingCloseMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -73,9 +73,9 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     it('should ignore non-CLOSE messages', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingCloseMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -96,9 +96,9 @@ describe('validateIncomingCloseMessages()', () => {
     });
 
     it('should emit an error when CLOSE message is malformed', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingCloseMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingCloseMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
       memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);

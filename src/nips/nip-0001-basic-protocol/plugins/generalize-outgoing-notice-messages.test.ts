@@ -13,9 +13,9 @@ import { OutgoingNoticeMessageEvent } from '../events/outgoing-notice-message-ev
 describe('generalizeOutgoingNoticeMessages()', () => {
   describe('#OutgoingNoticeMessageEvent', () => {
     it('should send an OutgoingNoticeMessageEvent', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingNoticeMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingNoticeMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -50,9 +50,9 @@ describe('generalizeOutgoingNoticeMessages()', () => {
     });
 
     it('should ignore an outgoing EVENT message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingNoticeMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingNoticeMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,

@@ -13,14 +13,13 @@ import { WebSocketMessageEvent } from '../../../core/events/web-socket-message-e
 import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { parseIncomingJsonMessages } from './parse-incoming-json-messages';
 import { IncomingGenericMessageEvent } from '../events/incoming-generic-message-event';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { BadMessageErrorEvent } from '../events/bad-message-error-event';
+import { setupTestHub } from '../../../test/setup-test-hub-and-client';
 
 describe('parseIncomingJsonMessages()', () => {
   describe('#WebSocketMessageEvent', () => {
     it('should parse a JSON WebSocket message', async () => {
-      const hub = new MemorelayHub(() => []);
-      parseIncomingJsonMessages(hub);
+      const hub = setupTestHub(parseIncomingJsonMessages);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;
@@ -59,8 +58,7 @@ describe('parseIncomingJsonMessages()', () => {
     });
 
     it('should combine WebSocket message buffers', async () => {
-      const hub = new MemorelayHub(() => []);
-      parseIncomingJsonMessages(hub);
+      const hub = setupTestHub(parseIncomingJsonMessages);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;
@@ -96,8 +94,7 @@ describe('parseIncomingJsonMessages()', () => {
     });
 
     it('should ignore a WebSocket message when defaultPrevented', async () => {
-      const hub = new MemorelayHub(() => []);
-      parseIncomingJsonMessages(hub);
+      const hub = setupTestHub(parseIncomingJsonMessages);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;
@@ -124,8 +121,7 @@ describe('parseIncomingJsonMessages()', () => {
     });
 
     it('should emit an error when WebSocket message cannot be parsed', async () => {
-      const hub = new MemorelayHub(() => []);
-      parseIncomingJsonMessages(hub);
+      const hub = setupTestHub(parseIncomingJsonMessages);
 
       const mockRequest = {} as IncomingMessage;
       const mockWebSocket = {} as WebSocket;

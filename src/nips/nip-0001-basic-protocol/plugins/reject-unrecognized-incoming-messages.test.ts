@@ -13,9 +13,9 @@ import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 describe('rejectUnrecognizedIncomingMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
     it('should ignore events with defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        rejectUnrecognizedIncomingMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        rejectUnrecognizedIncomingMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
       memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
@@ -41,9 +41,9 @@ describe('rejectUnrecognizedIncomingMessages()', () => {
         'UNKNOWN',
       ];
       for (const messageType of testMessageTypes) {
-        const { memorelayClient } = setupTestHubAndClient((hub) => {
-          rejectUnrecognizedIncomingMessages(hub);
-        });
+        const { memorelayClient } = setupTestHubAndClient(
+          rejectUnrecognizedIncomingMessages
+        );
         const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
         memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);
 

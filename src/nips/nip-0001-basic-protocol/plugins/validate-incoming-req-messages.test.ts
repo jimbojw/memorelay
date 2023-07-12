@@ -14,9 +14,9 @@ import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 describe('validateIncomingReqMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
     it('should validate and re-emit a REQ message', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingReqMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingReqMessages
+      );
 
       const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
       memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
@@ -46,9 +46,9 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     it('should ignore a REQ message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingReqMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingReqMessages
+      );
 
       const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
       memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
@@ -65,9 +65,9 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     it('should ignore non-REQ messages', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingReqMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingReqMessages
+      );
 
       const mockMessageHandler = jest.fn<unknown, [IncomingReqMessageEvent]>();
       memorelayClient.onEvent(IncomingReqMessageEvent, mockMessageHandler);
@@ -85,9 +85,9 @@ describe('validateIncomingReqMessages()', () => {
     });
 
     it('should emit an error when REQ message is malformed', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingReqMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingReqMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
       memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);

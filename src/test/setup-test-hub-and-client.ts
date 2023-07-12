@@ -11,17 +11,15 @@ import { WebSocket } from 'ws';
 import { MemorelayClient } from '../core/lib/memorelay-client';
 import { MemorelayClientCreatedEvent } from '../core/events/memorelay-client-created-event';
 import { MemorelayHub } from '../core/lib/memorelay-hub';
+import { PluginFn } from '../core/types/plugin-types';
 
 /**
  * Test harness to setup a test hub with one or more plugins under test.
  */
 export function setupTestHub(
-  ...pluginFns: ((hub: MemorelayHub) => void)[]
+  ...pluginFns: PluginFn<MemorelayHub>[]
 ): MemorelayHub {
-  const hub = new MemorelayHub(() => []);
-  for (const pluginFn of pluginFns) {
-    pluginFn(hub);
-  }
+  const hub = new MemorelayHub(...pluginFns).connect();
   return hub;
 }
 
@@ -52,9 +50,7 @@ export function setupTestClient(hub?: MemorelayHub): MemorelayClient {
  * where the code under test will generally be ran.
  * @returns An object with both the created hub and memorelayClient.
  */
-export function setupTestHubAndClient(
-  ...pluginFns: ((hub: MemorelayHub) => void)[]
-): {
+export function setupTestHubAndClient(...pluginFns: PluginFn<MemorelayHub>[]): {
   hub: MemorelayHub;
   memorelayClient: MemorelayClient;
 } {

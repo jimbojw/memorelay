@@ -17,9 +17,7 @@ import { DuplicateWebSocketErrorEvent } from '../events/duplicate-web-socket-err
 describe('createClients()', () => {
   describe('#WebSocketConnectedEvent', () => {
     it('should trigger MemorelayClientCreatedEvent', async () => {
-      const hub = new MemorelayHub(() => []);
-
-      createClients(hub);
+      const hub = new MemorelayHub(createClients()).connect();
 
       const mockCreatedHandlerFn = jest.fn<
         unknown,
@@ -54,9 +52,7 @@ describe('createClients()', () => {
     });
 
     it('should do nothing when defaultPrevented', () => {
-      const hub = new MemorelayHub(() => []);
-
-      createClients(hub);
+      const hub = new MemorelayHub(createClients()).connect();
 
       const mockCreatedHandlerFn = jest.fn<
         unknown,
@@ -80,9 +76,7 @@ describe('createClients()', () => {
     });
 
     it('should emit an error when duplicate WebSocket is detected', async () => {
-      const hub = new MemorelayHub(() => []);
-
-      createClients(hub);
+      const hub = new MemorelayHub(createClients()).connect();
 
       const mockOnFn = jest.fn<unknown, [string, () => void]>();
       const mockWebSocket = { on: mockOnFn } as unknown as WebSocket;

@@ -17,7 +17,7 @@ import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disco
  */
 export function increaseClientMaxEventListeners(
   increaseCount: number
-): PluginFn {
+): PluginFn<MemorelayHub> {
   if (!Number.isInteger(increaseCount) || increaseCount < 1) {
     throw new RangeError('increase count must be a positive integer');
   }

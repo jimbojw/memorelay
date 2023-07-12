@@ -8,24 +8,17 @@
 import { Disconnectable } from '../types/disconnectable';
 import { ConnectableEventEmitter, HANDLERS } from './connectable-event-emitter';
 
-class TestConnectableEventEmitter extends ConnectableEventEmitter {
-  constructor(readonly setupHandlers: () => Disconnectable[]) {
-    super();
-  }
-}
-
 describe('ConnectableEventEmitter', () => {
   describe('connect()', () => {
-    it('should call setupHandlers() and store the result', () => {
+    it('should call plugins and store the result', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
-        mockHandler,
-      ]);
-
-      const connectableEventEmitter = new TestConnectableEventEmitter(
-        mockSetupHandlersFn
+      const mockPluginFn = jest.fn<Disconnectable, [ConnectableEventEmitter]>(
+        () => mockHandler
       );
+
+      const connectableEventEmitter = new ConnectableEventEmitter();
+      connectableEventEmitter.plugins = [mockPluginFn];
 
       expect(connectableEventEmitter.isConnected).toBe(false);
       expect(connectableEventEmitter[HANDLERS]).not.toBeDefined();
@@ -40,13 +33,12 @@ describe('ConnectableEventEmitter', () => {
     it('should do nothing if already connected', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
-        mockHandler,
-      ]);
-
-      const connectableEventEmitter = new TestConnectableEventEmitter(
-        mockSetupHandlersFn
+      const mockPluginFn = jest.fn<Disconnectable, [ConnectableEventEmitter]>(
+        () => mockHandler
       );
+
+      const connectableEventEmitter = new ConnectableEventEmitter();
+      connectableEventEmitter.plugins = [mockPluginFn];
 
       connectableEventEmitter[HANDLERS] = [];
 
@@ -54,7 +46,7 @@ describe('ConnectableEventEmitter', () => {
 
       connectableEventEmitter.connect();
 
-      expect(mockSetupHandlersFn).not.toBeCalled();
+      expect(mockPluginFn).not.toBeCalled();
     });
   });
 
@@ -62,13 +54,12 @@ describe('ConnectableEventEmitter', () => {
     it('should call handlers disconnect() callbacks and remove them', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
-        mockHandler,
-      ]);
-
-      const connectableEventEmitter = new TestConnectableEventEmitter(
-        mockSetupHandlersFn
+      const mockPluginFn = jest.fn<Disconnectable, [ConnectableEventEmitter]>(
+        () => mockHandler
       );
+
+      const connectableEventEmitter = new ConnectableEventEmitter();
+      connectableEventEmitter.plugins = [mockPluginFn];
 
       connectableEventEmitter[HANDLERS] = [mockHandler];
 
@@ -85,13 +76,12 @@ describe('ConnectableEventEmitter', () => {
     it('should do nothing if not connected', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
-      const mockSetupHandlersFn = jest.fn<Disconnectable[], []>(() => [
-        mockHandler,
-      ]);
-
-      const connectableEventEmitter = new TestConnectableEventEmitter(
-        mockSetupHandlersFn
+      const mockPluginFn = jest.fn<Disconnectable, [ConnectableEventEmitter]>(
+        () => mockHandler
       );
+
+      const connectableEventEmitter = new ConnectableEventEmitter();
+      connectableEventEmitter.plugins = [mockPluginFn];
 
       connectableEventEmitter.disconnect();
 

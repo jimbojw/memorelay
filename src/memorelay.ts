@@ -7,6 +7,7 @@
 
 import { MemorelayHub } from './core/lib/memorelay-hub';
 import { createClients } from './core/plugins/create-clients';
+import { PluginFn } from './core/types/plugin-types';
 import { basicProtocol } from './nips/nip-0001-basic-protocol/plugins';
 import { relayInformationDocument } from './nips/nip-0011-relay-information-document/plugins/relay-information-document';
 import { commandResults } from './nips/nip-0020-command-results/plugins/command-results';
@@ -37,22 +38,22 @@ import { commandResults } from './nips/nip-0020-command-results/plugins/command-
  *   server.on('upgrade', memorelay.handleUpgrade());
  */
 export class Memorelay extends MemorelayHub {
-  constructor() {
-    // NOTE: EventEmitter listeners are invoked in the order in which they are
-    // added. So here we attach plugins in reverse order so that the core
-    // event handlers are attached last.
-    super(() => [
-      // Implement NIP-20 command results.
-      commandResults(this),
+  constructor(plugins?: PluginFn<MemorelayHub>[]) {
+    super(
+      ...(plugins ?? []),
+      ...[
+        // Implement NIP-20 command results.
+        commandResults,
 
-      // Implement NIP-11 relay information document requests.
-      relayInformationDocument(this),
+        // Implement NIP-11 relay information document requests.
+        relayInformationDocument,
 
-      // Implement NIP-01 basic Nostr protocol support.
-      basicProtocol(this),
+        // Implement NIP-01 basic Nostr protocol support.
+        basicProtocol,
 
-      // Upgrade connected WebSockets to full MemorelayClient instances.
-      createClients(this),
-    ]);
+        // Upgrade connected WebSockets to full MemorelayClient instances.
+        createClients(),
+      ]
+    );
   }
 }

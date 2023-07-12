@@ -36,7 +36,7 @@ import { storeIncomingEventsToDatabase } from './store-incoming-events-to-databa
 export function basicProtocol(hub: MemorelayHub): Disconnectable {
   const eventsDatabase = new EventsDatabase();
 
-  const plugins: PluginFn[] = [
+  const plugins: PluginFn<MemorelayHub>[] = [
     // Increase max event listeners for clients. This is a heuristic, as is
     // Node's built-in limit of 10 listeners per event type on an EventEmitter.
     // Programmatically increasing the number each time a listener is added

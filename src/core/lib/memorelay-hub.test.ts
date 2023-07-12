@@ -13,13 +13,13 @@ import { HttpServerRequestEvent } from '../events/http-server-request-event';
 describe('MemorelayHub', () => {
   it('should be a constructor function', () => {
     expect(typeof MemorelayHub).toBe('function');
-    const memorelayHub = new MemorelayHub(() => []);
+    const memorelayHub = new MemorelayHub();
     expect(memorelayHub instanceof MemorelayHub).toBe(true);
   });
 
   describe('handleUpgrade()', () => {
     it('should return a handler function', () => {
-      const memorelayHub = new MemorelayHub(() => []);
+      const memorelayHub = new MemorelayHub();
       const handlerFunction = memorelayHub.handleUpgrade();
       expect(typeof handlerFunction).toBe('function');
     });
@@ -27,7 +27,7 @@ describe('MemorelayHub', () => {
 
   describe('handleRequest()', () => {
     it('should return a handler function', () => {
-      const memorelayHub = new MemorelayHub(() => []);
+      const memorelayHub = new MemorelayHub();
       const handlerFunction = memorelayHub.handleRequest();
 
       const mockHandlerFn = jest.fn<unknown, [HttpServerRequestEvent]>();
@@ -48,7 +48,7 @@ describe('MemorelayHub', () => {
     });
 
     it('should invoke nextFn if provided', () => {
-      const memorelayHub = new MemorelayHub(() => []);
+      const memorelayHub = new MemorelayHub();
       const handlerFunction = memorelayHub.handleRequest();
 
       const mockHandlerFn = jest.fn<unknown, [HttpServerRequestEvent]>();

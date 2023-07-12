@@ -15,9 +15,9 @@ import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 describe('validateIncomingEventMessages()', () => {
   describe('#IncomingGenericMessageEvent', () => {
     it('should validate an EVENT message', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingEventMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -53,9 +53,9 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     it('should ignore an EVENT message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingEventMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -76,9 +76,9 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     it('should ignore non-EVENT messages', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingEventMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -99,9 +99,9 @@ describe('validateIncomingEventMessages()', () => {
     });
 
     it('should emit an error when EVENT message is malformed', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        validateIncomingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        validateIncomingEventMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [BadMessageErrorEvent]>();
       memorelayClient.onEvent(BadMessageErrorEvent, mockHandlerFn);

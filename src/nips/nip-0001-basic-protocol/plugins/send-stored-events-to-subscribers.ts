@@ -23,7 +23,7 @@ import { PluginFn } from '../../../core/types/plugin-types';
  */
 export function sendStoredEventsToSubscribers(
   eventsDatabase: EventsDatabase
-): PluginFn {
+): PluginFn<MemorelayHub> {
   return (hub: MemorelayHub) => {
     return hub.onEvent(
       MemorelayClientCreatedEvent,

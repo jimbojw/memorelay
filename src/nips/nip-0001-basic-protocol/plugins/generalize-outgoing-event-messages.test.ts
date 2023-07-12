@@ -14,9 +14,9 @@ import { OutgoingEventMessageEvent } from '../events/outgoing-event-message-even
 describe('generalizeOutgoingEventMessages()', () => {
   describe('#OutgoingEventMessageEvent', () => {
     it('should send an OutgoingEventMessageEvent', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingEventMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -51,9 +51,9 @@ describe('generalizeOutgoingEventMessages()', () => {
     });
 
     it('should ignore an outgoing EVENT message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEventMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingEventMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,

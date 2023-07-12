@@ -13,9 +13,9 @@ import { OutgoingEOSEMessageEvent } from '../events/outgoing-eose-message-event'
 describe('generalizeOutgoingEOSEMessages()', () => {
   describe('#OutgoingEOSEMessageEvent', () => {
     it('should send an OutgoingEOSEMessageEvent', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingEOSEMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,
@@ -48,9 +48,9 @@ describe('generalizeOutgoingEOSEMessages()', () => {
     });
 
     it('should ignore an outgoing EVENT message if defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient((hub) => {
-        generalizeOutgoingEOSEMessages(hub);
-      });
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingEOSEMessages
+      );
 
       const mockMessageHandler = jest.fn<
         unknown,

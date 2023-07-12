@@ -111,7 +111,7 @@ describe('handleUpgrade()', () => {
         handleUpgrade: mockHandleUpgradeFn,
       } as unknown as WebSocketServer;
 
-      const hub = new MemorelayHub(() => []);
+      const hub = new MemorelayHub();
       const handlerFunction = handleUpgrade(mockWebSocketServer, hub, '/foo');
 
       handlerFunction(request, socket, head);

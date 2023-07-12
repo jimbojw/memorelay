@@ -20,6 +20,7 @@ import { BasicEvent } from '../../core/events/basic-event';
 import { PreflightEvent } from '../../core/events/preflight-event';
 import { RelayEvent } from '../../core/events/relay-event';
 import { ClientEvent } from '../../core/events/client-event';
+import { MemorelayClientDisconnectEvent } from '../../core/events/memorelay-client-disconnect-event';
 
 export interface LoggingPluginOptions {
   /**
@@ -43,60 +44,63 @@ export class LoggingPlugin extends ConnectableEventEmitter {
   readonly logger: Logger;
   readonly memorelay: Memorelay;
   readonly levels: Record<string, string | undefined>;
-  readonly hubEventTypes = new Set<string>();
 
   constructor(options: LoggingPluginOptions) {
     super();
     this.logger = options.logger;
     this.memorelay = options.memorelay;
     this.levels = Object.assign({}, options.levels);
+    this.plugins = [
+      () => this.setupRelayLogging(),
+      () => this.setupClientLogging(),
+    ];
   }
 
-  /**
-   * Handle preflight events on the hub and clients by listening for the payload
-   * event type.
-   */
-  override setupHandlers() {
-    return [
-      this.memorelay.onEvent(
-        PreflightEvent,
-        (preflightEvent: PreflightEvent<RelayEvent>) => {
-          const { event } = preflightEvent.details;
-          if (!this.hubEventTypes.has(event.type)) {
-            this.hubEventTypes.add(event.type);
-            this.memorelay.onEvent(event, this.logEvent('silly'));
-          }
+  setupRelayLogging(): Disconnectable {
+    const hubEventTypes = new Set<string>();
+    return this.memorelay.onEvent(
+      PreflightEvent,
+      (preflightEvent: PreflightEvent<RelayEvent>) => {
+        const { event } = preflightEvent.details;
+        if (!hubEventTypes.has(event.type)) {
+          hubEventTypes.add(event.type);
+          this.memorelay.onEvent(event, this.logEvent('silly'));
         }
-      ),
+      }
+    );
+  }
 
-      this.memorelay.onEvent(
-        MemorelayClientCreatedEvent,
-        ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-          const clientEventTypes = new Set<string>();
-          const handlers: Disconnectable[] = [];
+  setupClientLogging(): Disconnectable {
+    return this.memorelay.onEvent(
+      MemorelayClientCreatedEvent,
+      ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
+        const clientEventTypes = new Set<string>();
+        const handlers: Disconnectable[] = [];
+        const disconnect = clearHandlers(handlers);
 
-          handlers.push(
-            memorelayClient.onEvent(
-              PreflightEvent,
-              (preflightEvent: PreflightEvent<ClientEvent>) => {
-                const { event } = preflightEvent.details;
-                if (!clientEventTypes.has(event.type)) {
-                  clientEventTypes.add(event.type);
-                  handlers.push(
-                    memorelayClient.onEvent(
-                      event,
-                      this.logClientEvent(memorelayClient, 'silly')
-                    )
-                  );
-                }
+        handlers.push(
+          memorelayClient.onEvent(
+            PreflightEvent,
+            (preflightEvent: PreflightEvent<ClientEvent>) => {
+              const { event } = preflightEvent.details;
+              if (!clientEventTypes.has(event.type)) {
+                clientEventTypes.add(event.type);
+                handlers.push(
+                  memorelayClient.onEvent(
+                    event,
+                    this.logClientEvent(memorelayClient, 'silly')
+                  )
+                );
               }
-            )
-          );
+            }
+          ),
 
-          return { disconnect: clearHandlers(handlers) };
-        }
-      ),
-    ];
+          memorelayClient.onEvent(MemorelayClientDisconnectEvent, disconnect)
+        );
+
+        return { disconnect };
+      }
+    );
   }
 
   logEvent(defaultLevel?: string) {
