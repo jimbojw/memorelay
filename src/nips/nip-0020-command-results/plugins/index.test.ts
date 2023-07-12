@@ -7,9 +7,19 @@
 
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
 import { commandResults } from '.';
+import { RelayInformationDocumentEvent } from '../../nip-0011-relay-information-document/events/relay-information-document-event';
 
 describe('commandResults()', () => {
-  it('should be a plugin', () => {
-    setupTestHubAndClient(commandResults);
+  describe('#RelayInformationDocumentEvent', () => {
+    it('should signal support for NIP-20', () => {
+      const { hub } = setupTestHubAndClient(commandResults);
+      const relayInformationDocumentEvent = new RelayInformationDocumentEvent({
+        relayInformationDocument: {},
+      });
+      hub.emitEvent(relayInformationDocumentEvent);
+      const { supported_nips } =
+        relayInformationDocumentEvent.details.relayInformationDocument;
+      expect(supported_nips).toContain(20);
+    });
   });
 });
