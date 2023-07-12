@@ -10,7 +10,7 @@ import { createClients } from './core/plugins/create-clients';
 import { PluginFn } from './core/types/plugin-types';
 import { basicProtocol } from './nips/nip-0001-basic-protocol/plugins';
 import { relayInformationDocument } from './nips/nip-0011-relay-information-document/plugins/relay-information-document';
-import { commandResults } from './nips/nip-0020-command-results/plugins/command-results';
+import { commandResults } from './nips/nip-0020-command-results/plugins';
 
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
