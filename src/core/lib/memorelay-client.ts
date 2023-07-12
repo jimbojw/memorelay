@@ -16,6 +16,7 @@ import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disco
 import { ConnectableEventEmitter } from './connectable-event-emitter';
 import { Disconnectable } from '../types/disconnectable';
 import { BasicEvent } from '../events/basic-event';
+import { WebSocketSendEvent } from '../events/web-socket-send-event';
 
 /**
  * MemorelayClient plugin which upgrades ws WebSocket 'message' events to
@@ -65,6 +66,27 @@ export function upgradeWebSocketCloseEvent(
       )
     );
   });
+}
+
+/**
+ * MemorelayClient plugin which responds to a WebSocketSendEvent by sending the
+ * buffer.
+ * @param memorelayClient The client on which to listen.
+ * @returns Handler.
+ */
+export function sendWebSocketBufferOnEvent(
+  memorelayClient: MemorelayClient
+): Disconnectable {
+  return memorelayClient.onEvent(
+    WebSocketSendEvent,
+    (webSocketSendEvent: WebSocketSendEvent) => {
+      if (webSocketSendEvent.defaultPrevented) {
+        return; // Preempted by another handler.
+      }
+      const { buffer } = webSocketSendEvent.details;
+      memorelayClient.webSocket.send(buffer);
+    }
+  );
 }
 
 /**
@@ -126,6 +148,9 @@ export class MemorelayClient extends ConnectableEventEmitter<ClientEvent> {
 
     // Upgrade native WebSocket 'close' events to WebSocketCloseEvents.
     upgradeWebSocketCloseEvent,
+
+    // On WebSocketSendEvent, send the attached buffer.
+    sendWebSocketBufferOnEvent,
 
     // On WebSocketCloseEvent, trigger MemorelayClientDisconnectEvent.
     emitDisconnectOnClose,

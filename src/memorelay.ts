@@ -38,9 +38,9 @@ import { commandResults } from './nips/nip-0020-command-results/plugins/command-
  *   server.on('upgrade', memorelay.handleUpgrade());
  */
 export class Memorelay extends MemorelayHub {
-  constructor(plugins?: PluginFn<MemorelayHub>[]) {
+  constructor(...plugins: PluginFn<MemorelayHub>[]) {
     super(
-      ...(plugins ?? []),
+      ...plugins,
       ...[
         // Implement NIP-20 command results.
         commandResults,

@@ -5,13 +5,16 @@
  * @fileoverview Tests for MemorelayClient instances.
  */
 
+import { IncomingMessage } from 'http';
 import { WebSocket } from 'ws';
+
 import { MemorelayClient } from './memorelay-client';
 import { Request } from 'express';
 import { EventEmitter } from 'events';
 import { WebSocketMessageEvent } from '../events/web-socket-message-event';
 import { WebSocketCloseEvent } from '../events/web-socket-close-event';
 import { MemorelayClientDisconnectEvent } from '../events/memorelay-client-disconnect-event';
+import { WebSocketSendEvent } from '../events/web-socket-send-event';
 
 describe('MemorelayClient', () => {
   describe('webSocket#message', () => {
@@ -58,6 +61,40 @@ describe('MemorelayClient', () => {
       expect(webSocketCloseEvent).toBeInstanceOf(WebSocketCloseEvent);
       expect(webSocketCloseEvent.details.code).toBe(NORMAL_CLOSURE_CODE);
       expect(webSocketCloseEvent.targetEmitter).toBe(memorelayClient);
+    });
+  });
+
+  describe('#WebSocketSendEvent', () => {
+    it('should send the attached buffer', () => {
+      const mockSendFn = jest.fn<unknown, [Buffer]>();
+      const mockWebSocket = new EventEmitter() as WebSocket;
+      mockWebSocket.send = mockSendFn;
+      const mockRequest = {} as IncomingMessage;
+      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
+      memorelayClient.connect();
+
+      const buffer = Buffer.from('GREETINGS');
+      const webSocketSendEvent = new WebSocketSendEvent({ buffer });
+      memorelayClient.emitEvent(webSocketSendEvent);
+
+      expect(mockSendFn).toHaveBeenCalledTimes(1);
+      expect(mockSendFn.mock.calls[0][0]).toBe(buffer);
+    });
+
+    it('should not send when defaultPrevented', () => {
+      const mockSendFn = jest.fn<unknown, [Buffer]>();
+      const mockWebSocket = new EventEmitter() as WebSocket;
+      mockWebSocket.send = mockSendFn;
+      const mockRequest = {} as IncomingMessage;
+      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
+      memorelayClient.connect();
+
+      const buffer = Buffer.from('GREETINGS');
+      const webSocketSendEvent = new WebSocketSendEvent({ buffer });
+      webSocketSendEvent.preventDefault();
+      memorelayClient.emitEvent(webSocketSendEvent);
+
+      expect(mockSendFn).not.toHaveBeenCalled();
     });
   });
 

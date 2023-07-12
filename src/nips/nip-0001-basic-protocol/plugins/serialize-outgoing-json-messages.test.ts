@@ -5,28 +5,21 @@
  * @fileoverview Tests for serializeOutgoingJsonMessages().
  */
 
-import { IncomingMessage } from 'http';
-import { WebSocket } from 'ws';
-
-import { BasicEventEmitter } from '../../../core/lib/basic-event-emitter';
-import { MemorelayClientCreatedEvent } from '../../../core/events/memorelay-client-created-event';
-import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { serializeOutgoingJsonMessages } from './serialize-outgoing-json-messages';
-import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
+import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
+import { WebSocketSendEvent } from '../../../core/events/web-socket-send-event';
+import { bufferToGenericMessage } from '../lib/buffer-to-generic-message';
 
 describe('serializeOutgoingJsonMessages()', () => {
   describe('#OutgoingGenericMessageEvent', () => {
-    it('should serialize and send a generic message', () => {
-      const hub = new BasicEventEmitter();
-      serializeOutgoingJsonMessages(hub as MemorelayHub);
+    it('should serialize a generic message', async () => {
+      const { memorelayClient } = setupTestHubAndClient(
+        serializeOutgoingJsonMessages
+      );
 
-      const mockSendFn = jest.fn<unknown, [Buffer]>();
-      const mockWebSocket = {} as WebSocket;
-      mockWebSocket.send = mockSendFn;
-      const mockRequest = {} as IncomingMessage;
-      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-      hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
+      const mockHandlerFn = jest.fn<unknown, [WebSocketSendEvent]>();
+      memorelayClient.onEvent(WebSocketSendEvent, mockHandlerFn);
 
       const outgoingGenericMessage = new OutgoingGenericMessageEvent({
         genericMessage: ['OUTGOING', 'MESSAGE'],
@@ -35,31 +28,39 @@ describe('serializeOutgoingJsonMessages()', () => {
 
       expect(outgoingGenericMessage.defaultPrevented).toBe(true);
 
-      expect(mockSendFn.mock.calls).toHaveLength(1);
-      const [sentBuffer] = mockSendFn.mock.calls[0];
-      expect(sentBuffer.toString('utf-8')).toBe('["OUTGOING","MESSAGE"]');
+      await Promise.resolve();
+
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+
+      const [webSocketSendEvent] = mockHandlerFn.mock.calls[0];
+      expect(webSocketSendEvent).toBeInstanceOf(WebSocketSendEvent);
+      expect(webSocketSendEvent.parentEvent).toBe(outgoingGenericMessage);
+
+      const { buffer } = webSocketSendEvent.details;
+      expect(bufferToGenericMessage(buffer)).toEqual(
+        outgoingGenericMessage.details.genericMessage
+      );
     });
 
-    it('should ignore outgoing message when defaultPrevented', () => {
-      const hub = new BasicEventEmitter();
-      serializeOutgoingJsonMessages(hub as MemorelayHub);
+    it('should not serialize when defaultPrevented', async () => {
+      const { memorelayClient } = setupTestHubAndClient(
+        serializeOutgoingJsonMessages
+      );
 
-      const mockSendFn = jest.fn<unknown, [Buffer]>();
-      const mockWebSocket = {} as WebSocket;
-      mockWebSocket.send = mockSendFn;
-      const mockRequest = {} as IncomingMessage;
-      const memorelayClient = new MemorelayClient(mockWebSocket, mockRequest);
-      hub.emitEvent(new MemorelayClientCreatedEvent({ memorelayClient }));
+      const mockHandlerFn = jest.fn<unknown, [WebSocketSendEvent]>();
+      memorelayClient.onEvent(WebSocketSendEvent, mockHandlerFn);
 
       const outgoingGenericMessage = new OutgoingGenericMessageEvent({
-        genericMessage: ['PREVENT', 'ME'],
+        genericMessage: ['OUTGOING', 'MESSAGE'],
       });
-
-      outgoingGenericMessage.preventDefault(); // Prevent sending.
-
+      outgoingGenericMessage.preventDefault();
       memorelayClient.emitEvent(outgoingGenericMessage);
 
-      expect(mockSendFn.mock.calls).toHaveLength(0);
+      expect(outgoingGenericMessage.defaultPrevented).toBe(true);
+
+      await Promise.resolve();
+
+      expect(mockHandlerFn).not.toHaveBeenCalled();
     });
   });
 });

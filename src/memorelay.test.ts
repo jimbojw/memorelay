@@ -5,12 +5,22 @@
  * @fileoverview Tests for main Memorelay entry point.
  */
 
+import { MemorelayHub } from './core/lib/memorelay-hub';
+import { Disconnectable } from './core/types/disconnectable';
 import { Memorelay } from './memorelay';
 
 describe('Memorelay', () => {
-  it('should be a constructor function', () => {
-    const memorelay = new Memorelay();
-    expect(memorelay instanceof Memorelay).toBe(true);
+  it('should take plugins', () => {
+    const mockPluginFn = jest.fn<Disconnectable, [MemorelayHub]>();
+
+    const memorelay = new Memorelay(mockPluginFn);
+
+    expect(memorelay.plugins).toContain(mockPluginFn);
+    expect(mockPluginFn).not.toHaveBeenCalled();
+
+    memorelay.connect();
+
+    expect(mockPluginFn).toHaveBeenCalledTimes(1);
   });
 
   describe('connect()', () => {

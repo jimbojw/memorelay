@@ -7,7 +7,6 @@
 
 import { decode, encode } from 'cborg';
 
-import { Memorelay } from '../../memorelay';
 import { MemorelayClientCreatedEvent } from '../../core/events/memorelay-client-created-event';
 import { IncomingGenericMessageEvent } from '../../nips/nip-0001-basic-protocol/events/incoming-generic-message-event';
 import { WebSocketMessageEvent } from '../../core/events/web-socket-message-event';
@@ -19,13 +18,15 @@ import { checkGenericMessage } from '../../nips/nip-0001-basic-protocol/lib/chec
 import { CborDecodingErrorEvent } from './events/cbor-decoding-error-event';
 import { BadMessageErrorEvent } from '../../nips/nip-0001-basic-protocol/events/bad-message-error-event';
 import { CborEncodingErrorEvent } from './events/cbor-encoding-error-event';
+import { WebSocketSendEvent } from '../../core/events/web-socket-send-event';
+import { MemorelayHub } from '../../core/lib/memorelay-hub';
 
 /**
  * Plugin setup function. Establishes listeners on a Memorelay instance.
- * @param memorelay The Memorelay instance to connect to.
+ * @param hub The Memorelay instance to connect to.
  */
-export function cborPlugin(memorelay: Memorelay) {
-  memorelay.onEvent(
+export function cborPlugin(hub: MemorelayHub) {
+  return hub.onEvent(
     MemorelayClientCreatedEvent,
     handleMemorelayClientCreatedEvent
   );
@@ -174,21 +175,23 @@ function handleMemorelayClientCreatedEvent({
     // Signal that this message event has been handled.
     incomingGenericMessageEvent.preventDefault();
 
-    // Emit a NOTICE to inform the client.
-    memorelayClient.emitEvent(
-      new OutgoingNoticeMessageEvent(
-        {
-          relayNoticeMessage: ['NOTICE', 'CBOR enabled'],
-        },
-        {
-          parentEvent: incomingGenericMessageEvent,
-          targetEmitter: memorelayClient,
-        }
-      )
-    );
-
     // Client has signaled support for CBOR.
     isCborEnabled = true;
+
+    queueMicrotask(() => {
+      // Emit a NOTICE to inform the client.
+      memorelayClient.emitEvent(
+        new OutgoingNoticeMessageEvent(
+          {
+            relayNoticeMessage: ['NOTICE', 'CBOR enabled'],
+          },
+          {
+            parentEvent: incomingGenericMessageEvent,
+            targetEmitter: memorelayClient,
+          }
+        )
+      );
+    });
   }
 
   /**
@@ -207,20 +210,27 @@ function handleMemorelayClientCreatedEvent({
       return; // Some other plugin must have already handled this.
     }
 
-    // Attempt to serialize the message.
-    const { genericMessage } = outgoingMessageEvent.details;
+    // Attempt to CBOR encode the message.
+    const { buffer, error } = attemptEncode(
+      outgoingMessageEvent.details.genericMessage
+    );
 
-    try {
-      // Attempt to encode the outgoing message as CBOR.
-      const dataArray = encode(genericMessage);
-
+    if (buffer) {
       // Signal that this event has been handled.
       outgoingMessageEvent.preventDefault();
 
-      // Send the encoded buffer.
-      memorelayClient.webSocket.send(dataArray.buffer);
-    } catch (error) {
-      // Failed to encode CBOR payload.
+      queueMicrotask(() => {
+        memorelayClient.emitEvent(
+          new WebSocketSendEvent(
+            { buffer },
+            {
+              parentEvent: outgoingMessageEvent,
+              targetEmitter: memorelayClient,
+            }
+          )
+        );
+      });
+    } else {
       queueMicrotask(() => {
         memorelayClient.emitEvent(
           new CborEncodingErrorEvent(
@@ -233,5 +243,19 @@ function handleMemorelayClientCreatedEvent({
         );
       });
     }
+  }
+}
+
+/**
+ * Attempt to CBOR-encode a specified generic message.
+ * @param genericMessage The message to encode.
+ * @returns Object containing either the buffer or error thrown.
+ */
+function attemptEncode(genericMessage: GenericMessage) {
+  try {
+    const dataArray = encode(genericMessage);
+    return { buffer: dataArray.buffer as Buffer, error: undefined };
+  } catch (error) {
+    return { buffer: undefined, error: error as Error };
   }
 }

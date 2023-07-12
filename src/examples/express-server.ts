@@ -16,9 +16,7 @@ import { cborPlugin } from '../contrib/cbor/cbor-plugin';
 const PORT = 3000;
 const LOG_LEVEL = process.env.LOG_LEVEL ?? 'silly';
 
-const memorelay = new Memorelay();
-
-cborPlugin(memorelay);
+const memorelay = new Memorelay(cborPlugin);
 
 const logger = createLogger({
   transports: [new transports.Console({ level: LOG_LEVEL })],

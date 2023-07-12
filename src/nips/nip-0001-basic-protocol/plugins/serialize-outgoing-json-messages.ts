@@ -12,6 +12,7 @@ import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { objectToJsonBuffer } from '../lib/object-to-json-buffer';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { WebSocketSendEvent } from '../../../core/events/web-socket-send-event';
 
 /**
  * Memorelay core plugin for serializing generic, outgoing Nostr messages as
@@ -37,7 +38,17 @@ export function serializeOutgoingJsonMessages(
             outgoingGenericMessage.preventDefault();
             const { genericMessage } = outgoingGenericMessage.details;
             const buffer = objectToJsonBuffer(genericMessage);
-            memorelayClient.webSocket.send(buffer);
+            queueMicrotask(() => {
+              memorelayClient.emitEvent(
+                new WebSocketSendEvent(
+                  { buffer },
+                  {
+                    parentEvent: outgoingGenericMessage,
+                    targetEmitter: memorelayClient,
+                  }
+                )
+              );
+            });
           }
         )
       );

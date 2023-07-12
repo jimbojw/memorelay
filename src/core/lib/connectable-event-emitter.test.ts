@@ -10,6 +10,19 @@ import { ConnectableEventEmitter, HANDLERS } from './connectable-event-emitter';
 
 describe('ConnectableEventEmitter', () => {
   describe('connect()', () => {
+    it('should store an empty handlers array when there are no plugins', () => {
+      const connectableEventEmitter = new ConnectableEventEmitter();
+
+      expect(connectableEventEmitter.isConnected).toBe(false);
+      expect(connectableEventEmitter[HANDLERS]).not.toBeDefined();
+
+      const returnValue = connectableEventEmitter.connect();
+
+      expect(returnValue).toBe(connectableEventEmitter);
+      expect(connectableEventEmitter[HANDLERS]).toHaveLength(0);
+      expect(connectableEventEmitter.isConnected).toBe(true);
+    });
+
     it('should call plugins and store the result', () => {
       const mockDisconnectFn = jest.fn<unknown, []>();
       const mockHandler = { disconnect: mockDisconnectFn };
