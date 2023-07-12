@@ -140,7 +140,7 @@ function handleMemorelayClientCreatedEvent({
       queueMicrotask(() => {
         memorelayClient.emitEvent(
           new BadMessageErrorEvent(
-            { badMessageError },
+            { badMessageError, badMessage: payloadObject },
             {
               parentEvent: webSocketMessageEvent,
               targetEmitter: memorelayClient,

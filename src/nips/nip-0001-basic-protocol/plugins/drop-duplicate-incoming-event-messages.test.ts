@@ -9,84 +9,79 @@ import { dropDuplicateIncomingEventMessages } from './drop-duplicate-incoming-ev
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { createSignedTestEvent } from '../../../test/signed-test-event';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
+import { DuplicateEventMessageEvent } from '../events/duplicate-event-message-event';
 
 describe('dropDuplicateIncomingEventMessages()', () => {
   describe('#IncomingEventMessageEvent', () => {
-    it('should drop duplicate incoming EVENT messages', () => {
+    it('should drop duplicate incoming EVENT messages', async () => {
       const { memorelayClient } = setupTestHubAndClient(
         dropDuplicateIncomingEventMessages
       );
 
-      const mockCallbackFn = jest.fn<unknown, [boolean]>();
-      memorelayClient.onEvent(
-        IncomingEventMessageEvent,
-        (incomingEventMessageEvent: IncomingEventMessageEvent) => {
-          mockCallbackFn(incomingEventMessageEvent.defaultPrevented);
-        }
-      );
+      const mockHandlerFn = jest.fn<unknown, [DuplicateEventMessageEvent]>();
+      memorelayClient.onEvent(DuplicateEventMessageEvent, mockHandlerFn);
 
       const testEvent = createSignedTestEvent({ content: 'DUPLICATE ME' });
-      const incomingEventMessageEvent = new IncomingEventMessageEvent({
+      const firstIncomingEventMessageEvent = new IncomingEventMessageEvent({
         clientEventMessage: ['EVENT', testEvent],
       });
-      memorelayClient.emitEvent(incomingEventMessageEvent);
+      memorelayClient.emitEvent(firstIncomingEventMessageEvent);
+
+      expect(firstIncomingEventMessageEvent.defaultPrevented).toBe(false);
+
+      await Promise.resolve();
 
       // The first time the testEvent is seen by the plugin, it should allow the
       // message to pass through untouched.
-      expect(mockCallbackFn).toHaveBeenCalledTimes(1);
-      expect(mockCallbackFn).toHaveBeenCalledWith(false);
-      expect(incomingEventMessageEvent.defaultPrevented).toBe(false);
-
-      mockCallbackFn.mockReset();
-      expect(mockCallbackFn).not.toHaveBeenCalled();
+      expect(mockHandlerFn).not.toHaveBeenCalled();
 
       // Duplicate event message.
-      const duplicateIncomingEventMessageEvent = new IncomingEventMessageEvent({
+      const secondIncomingEventMessageEvent = new IncomingEventMessageEvent({
         clientEventMessage: ['EVENT', testEvent],
       });
-      memorelayClient.emitEvent(duplicateIncomingEventMessageEvent);
+      memorelayClient.emitEvent(secondIncomingEventMessageEvent);
 
-      // But subsequent times that the same testEvent is seen by the plugin, it
-      // should invoke preventDefault() to signal that the event should be
-      // dropped.
-      expect(mockCallbackFn).toHaveBeenCalledTimes(1);
-      expect(mockCallbackFn).toHaveBeenCalledWith(true);
-      expect(duplicateIncomingEventMessageEvent.defaultPrevented).toBe(true);
+      expect(secondIncomingEventMessageEvent.defaultPrevented).toBe(true);
+
+      await Promise.resolve();
+
+      expect(mockHandlerFn).toHaveBeenCalledTimes(1);
+
+      const duplicateEventMessageEvent = mockHandlerFn.mock.calls[0][0];
+      expect(duplicateEventMessageEvent).toBeInstanceOf(
+        DuplicateEventMessageEvent
+      );
+      expect(duplicateEventMessageEvent.details.event).toBe(testEvent);
+      expect(duplicateEventMessageEvent.parentEvent).toBe(
+        secondIncomingEventMessageEvent
+      );
     });
 
-    it('should incoming EVENT message when defaultPrevented', () => {
+    it('should ignore incoming EVENT message when defaultPrevented', async () => {
       const { memorelayClient } = setupTestHubAndClient(
         dropDuplicateIncomingEventMessages
       );
 
-      const mockCallbackFn = jest.fn<unknown, [boolean]>();
-      memorelayClient.onEvent(
-        IncomingEventMessageEvent,
-        (incomingEventMessageEvent: IncomingEventMessageEvent) => {
-          mockCallbackFn(incomingEventMessageEvent.defaultPrevented);
-        }
-      );
+      const mockHandlerFn = jest.fn<unknown, [DuplicateEventMessageEvent]>();
+      memorelayClient.onEvent(DuplicateEventMessageEvent, mockHandlerFn);
 
       const testEvent = createSignedTestEvent({ content: 'DUPLICATE ME' });
-
-      // Initial event has preventDefault() called initially.
-      const incomingEventMessageEvent = new IncomingEventMessageEvent({
+      const firstIncomingEventMessageEvent = new IncomingEventMessageEvent({
         clientEventMessage: ['EVENT', testEvent],
       });
-      incomingEventMessageEvent.preventDefault();
-      memorelayClient.emitEvent(incomingEventMessageEvent);
+      firstIncomingEventMessageEvent.preventDefault();
+      memorelayClient.emitEvent(firstIncomingEventMessageEvent);
 
-      // Duplicate event message, without preventDefault().
-      const duplicateIncomingEventMessageEvent = new IncomingEventMessageEvent({
+      const secondIncomingEventMessageEvent = new IncomingEventMessageEvent({
         clientEventMessage: ['EVENT', testEvent],
       });
-      memorelayClient.emitEvent(duplicateIncomingEventMessageEvent);
+      memorelayClient.emitEvent(secondIncomingEventMessageEvent);
 
-      // Since the initial event had defaultPrevented, the duplicate event
-      // passed through unchanged.
-      expect(mockCallbackFn).toHaveBeenCalledTimes(2);
-      expect(mockCallbackFn).toHaveBeenLastCalledWith(false);
-      expect(duplicateIncomingEventMessageEvent.defaultPrevented).toBe(false);
+      expect(secondIncomingEventMessageEvent.defaultPrevented).toBe(false);
+
+      await Promise.resolve();
+
+      expect(mockHandlerFn).not.toHaveBeenCalled();
     });
   });
 });

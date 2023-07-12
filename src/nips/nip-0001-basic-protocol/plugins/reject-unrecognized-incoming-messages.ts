@@ -48,6 +48,8 @@ export function rejectUnrecognizedIncomingMessages(
                     badMessageError: new BadMessageError(
                       'unrecognized message type'
                     ),
+                    badMessage:
+                      incomingGenericMessageEvent.details.genericMessage,
                   },
                   {
                     parentEvent: incomingGenericMessageEvent,

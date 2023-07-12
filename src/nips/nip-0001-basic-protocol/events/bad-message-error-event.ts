@@ -21,6 +21,11 @@ export interface BadMessageErrorEventDetails {
    * The payload BadMessageError.
    */
   readonly badMessageError: BadEventError;
+
+  /**
+   * The object which caused the error.
+   */
+  readonly badMessage: unknown;
 }
 
 /**

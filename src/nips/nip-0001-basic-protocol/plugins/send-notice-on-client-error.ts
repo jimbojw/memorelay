@@ -29,6 +29,9 @@ export function sendNoticeOnClientError(hub: MemorelayHub): Disconnectable {
         memorelayClient.onEvent(
           BadMessageErrorEvent,
           (badMessageErrorEvent: BadMessageErrorEvent) => {
+            if (badMessageErrorEvent.defaultPrevented) {
+              return; // Preempted by another listener.
+            }
             const { message } = badMessageErrorEvent.details.badMessageError;
             queueMicrotask(() => {
               memorelayClient.emitEvent(

@@ -24,6 +24,7 @@ describe('sendNoticeOnClientError()', () => {
       memorelayClient.emitEvent(
         new BadMessageErrorEvent({
           badMessageError: new BadMessageError('EXAMPLE'),
+          badMessage: 'EXAMPLE',
         })
       );
 
@@ -31,11 +32,31 @@ describe('sendNoticeOnClientError()', () => {
 
       expect(mockHandlerFn).toHaveBeenCalledTimes(1);
 
-      const {
-        details: { relayNoticeMessage },
-      } = mockHandlerFn.mock.calls[0][0];
+      const outgoingNoticeMessageEvent = mockHandlerFn.mock.calls[0][0];
+      expect(outgoingNoticeMessageEvent.details.relayNoticeMessage).toEqual([
+        'NOTICE',
+        'ERROR: bad msg: EXAMPLE',
+      ]);
+    });
 
-      expect(relayNoticeMessage).toEqual(['NOTICE', 'ERROR: bad msg: EXAMPLE']);
+    it('should not emit when defaultPrevented', async () => {
+      const { memorelayClient } = setupTestHubAndClient(
+        sendNoticeOnClientError
+      );
+
+      const mockHandlerFn = jest.fn<unknown, [OutgoingNoticeMessageEvent]>();
+      memorelayClient.onEvent(OutgoingNoticeMessageEvent, mockHandlerFn);
+
+      const badMessageErrorEvent = new BadMessageErrorEvent({
+        badMessageError: new BadMessageError('EXAMPLE'),
+        badMessage: 'EXAMPLE',
+      });
+      badMessageErrorEvent.preventDefault();
+      memorelayClient.emitEvent(badMessageErrorEvent);
+
+      await Promise.resolve();
+
+      expect(mockHandlerFn).not.toHaveBeenCalled();
     });
   });
 });

@@ -71,7 +71,10 @@ export function parseIncomingJsonMessages(
             } catch (error) {
               const badMessageError = error as BadMessageError;
               memorelayClient.emitEvent(
-                new BadMessageErrorEvent({ badMessageError }, eventOptions)
+                new BadMessageErrorEvent(
+                  { badMessageError, badMessage: buffer },
+                  eventOptions
+                )
               );
             }
           });

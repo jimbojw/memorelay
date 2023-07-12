@@ -61,7 +61,10 @@ export function validateIncomingCloseMessages(
               } catch (error) {
                 const badMessageError = error as BadMessageError;
                 memorelayClient.emitEvent(
-                  new BadMessageErrorEvent({ badMessageError }, eventOptions)
+                  new BadMessageErrorEvent(
+                    { badMessageError, badMessage: genericMessage },
+                    eventOptions
+                  )
                 );
               }
             });

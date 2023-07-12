@@ -10,6 +10,7 @@ import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { IncomingEventMessageEvent } from '../events/incoming-event-message-event';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { autoDisconnect } from '../../../core/lib/auto-disconnect';
+import { DuplicateEventMessageEvent } from '../events/duplicate-event-message-event';
 
 /**
  * Memorelay plugin to drop incoming EVENT messages if it has been seen before.
@@ -36,8 +37,22 @@ export function dropDuplicateIncomingEventMessages(
               incomingEventMessageEvent.details.clientEventMessage;
 
             if (incomingEventId in seenEventIds) {
-              // TODO(jimbo): Should this also emit an error/event?
               incomingEventMessageEvent.preventDefault();
+
+              queueMicrotask(() => {
+                memorelayClient.emitEvent(
+                  new DuplicateEventMessageEvent(
+                    {
+                      event:
+                        incomingEventMessageEvent.details.clientEventMessage[1],
+                    },
+                    {
+                      parentEvent: incomingEventMessageEvent,
+                      targetEmitter: memorelayClient,
+                    }
+                  )
+                );
+              });
               return;
             }
 

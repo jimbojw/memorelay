@@ -5,8 +5,6 @@
  * @fileoverview Event signaling intent to send data to a ws WebSocket.
  */
 
-import { RawData } from 'ws';
-
 import { ClientEvent, ClientEventOptions } from './client-event';
 
 export const WEB_SOCKET_SEND_EVENT_TYPE = 'web-socket-send';
