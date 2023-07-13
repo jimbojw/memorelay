@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/jimbojw/memorelay/compare/v2.0.0...v2.0.1) (2023-07-13)
+
+
+### Bug Fixes
+
+* Add dist/** to npm tarball to fix [#7](https://github.com/jimbojw/memorelay/issues/7) and [#37](https://github.com/jimbojw/memorelay/issues/37). ([a85c754](https://github.com/jimbojw/memorelay/commit/a85c75475cd13d15dc9d44e78b3a8497a3064d46))
+
 # [2.0.0](https://github.com/jimbojw/memorelay/compare/v1.9.0...v2.0.0) (2023-07-13)
 
 
