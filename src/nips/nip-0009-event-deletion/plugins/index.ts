@@ -11,6 +11,10 @@ import { clearHandlers } from '../../../core/lib/clear-handlers';
 import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 import { Disconnectable } from '../../../core/types/disconnectable';
 import { RelayInformationDocumentEvent } from '../../nip-0011-relay-information-document/events/relay-information-document-event';
+import { EventDeletionDatabase } from '../lib/event-deletion-database';
+import { addIncomingEventsToDatabase } from './add-incoming-events-to-database';
+import { filterIncomingEvents } from './filter-incoming-events';
+import { filterOutgoingEvents } from './filter-outgoing-events';
 
 /**
  * Attach handlers to implement NIP-09 Event Deletion.
@@ -18,6 +22,8 @@ import { RelayInformationDocumentEvent } from '../../nip-0011-relay-information-
  * @returns Handler for disconnection.
  */
 export function eventDeletion(hub: MemorelayHub): Disconnectable {
+  const eventDeletionDatabase = new EventDeletionDatabase();
+
   const handlers: Disconnectable[] = [];
   const disconnect = clearHandlers(handlers);
 
@@ -39,7 +45,12 @@ export function eventDeletion(hub: MemorelayHub): Disconnectable {
     hub.onEvent(
       MemorelayClientCreatedEvent,
       ({ details: { memorelayClient } }: MemorelayClientCreatedEvent) => {
-        autoDisconnect(memorelayClient);
+        autoDisconnect(
+          memorelayClient,
+          addIncomingEventsToDatabase(eventDeletionDatabase, memorelayClient),
+          filterIncomingEvents(eventDeletionDatabase, memorelayClient),
+          filterOutgoingEvents(eventDeletionDatabase, memorelayClient)
+        );
       }
     )
   );
