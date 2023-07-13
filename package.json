@@ -4,6 +4,7 @@
   "description": "In-memory Nostr relay.",
   "bin": "dist/bin/index.js",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "check-licenses": "check-license-header check --config .github/license-check/license-config.json --strict",
     "checks": "npm run lint; npm run prettier:check; npm run check-licenses; npm run build:dry-run",
@@ -26,9 +27,9 @@
     "url": "https://github.com/jimbojw/memorelay.git"
   },
   "files": [
-    "./src/**/*"
+    "./dist/**",
+    "./src/**"
   ],
-  "types": "./dist/index.d.ts",
   "keywords": [
     "nostr",
     "relay"
