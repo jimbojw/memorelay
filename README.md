@@ -61,6 +61,76 @@ Options:
   -h, --help               display help for command
 ```
 
+## Using with Node.js HTTP Server
+
+To use memorelay in your TypeScript project with Node's built-in HTTP server:
+
+```ts
+import { Memorelay } from 'memorelay';
+
+const memorelay = new Memorelay().connect();
+const httpServer = createServer(memorelay.handleRequest());
+httpServer.on('upgrade', memorelay.handleUpgrade());
+httpServer.listen({ port: 3000 });
+```
+
+Note: the `.connect()` call is mandatory. Without that, your memorelay instance
+won't listen for any events. This is to give your plugins a chance to attach
+listeners first.
+
+## Using with Express
+
+To use memorelay in your TypeScript project with an Express server:
+
+```ts
+import { Memorelay } from 'memorelay';
+
+const memorelay = new Memorelay().connect();
+const app = express();
+app.use('/', memorelay.handleRequest());
+const server = app.listen(3000);
+server.on('upgrade', memorelay.handleUpgrade());
+```
+
+Note: the `.connect()` call is mandatory. Without that, your memorelay instance
+won't listen for any events. This is to give your plugins a chance to attach
+listeners first.
+
+## Using plugins
+
+Behaviors in memorelay are implemented through an event-based, plugin API. A
+memorelay plugin is a function which attaches event listeners.
+
+Plugin should be generally be added to the constructor, or at least attach their
+listeners _before_ you call `.connect()`. This way, plugins' event listeners are
+earlier in the stack and will have a chance to call events' `.preventDefault()`
+methods to stop other functionality if desired.
+
+Example that adds the plugin to the constructor:
+
+```ts
+import { examplePluginFn } from './example-plugin.ts';
+
+const memorelay = new Memorelay(examplePluginFn).connect();
+```
+
+Example that adds listeners before calling `.connect()`:
+
+```ts
+import { examplePluginFn } from './example-plugin.ts';
+
+const memorelay = new Memorelay();
+
+examplePluginFn(memorelay);
+
+memorelay.connect();
+```
+
+The advantage to providing the plugin functions to the constructor is that
+they'll be automatically removed if you call the memorelay's `.disconnect()`
+method. Using the later example above, the example plugin's listeners would
+still be attached, even after disconnect.
+
 ## Developing
 
 To develop, start by forking the repo, then check out your fork locally. From
