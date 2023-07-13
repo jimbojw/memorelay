@@ -35,6 +35,8 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm run test:ci
+      - name: Clean dist/
+        run: npm run clean
       - name: Build
         run: npm run build
       - name: Check license headers
