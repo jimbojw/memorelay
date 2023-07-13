@@ -4,4 +4,4 @@
 /**
  * @fileoverview Main entry point for Memorelay library.
  */
-export * from './lib/memorelay-coordinator';
+export * from './memorelay';

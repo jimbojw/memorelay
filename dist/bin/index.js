@@ -13497,6 +13497,423 @@ module.exports = function one(fn) {
 
 /***/ }),
 
+/***/ 4694:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pathToRegexp = exports.tokensToRegexp = exports.regexpToFunction = exports.match = exports.tokensToFunction = exports.compile = exports.parse = void 0;
+/**
+ * Tokenize input string.
+ */
+function lexer(str) {
+    var tokens = [];
+    var i = 0;
+    while (i < str.length) {
+        var char = str[i];
+        if (char === "*" || char === "+" || char === "?") {
+            tokens.push({ type: "MODIFIER", index: i, value: str[i++] });
+            continue;
+        }
+        if (char === "\\") {
+            tokens.push({ type: "ESCAPED_CHAR", index: i++, value: str[i++] });
+            continue;
+        }
+        if (char === "{") {
+            tokens.push({ type: "OPEN", index: i, value: str[i++] });
+            continue;
+        }
+        if (char === "}") {
+            tokens.push({ type: "CLOSE", index: i, value: str[i++] });
+            continue;
+        }
+        if (char === ":") {
+            var name = "";
+            var j = i + 1;
+            while (j < str.length) {
+                var code = str.charCodeAt(j);
+                if (
+                // `0-9`
+                (code >= 48 && code <= 57) ||
+                    // `A-Z`
+                    (code >= 65 && code <= 90) ||
+                    // `a-z`
+                    (code >= 97 && code <= 122) ||
+                    // `_`
+                    code === 95) {
+                    name += str[j++];
+                    continue;
+                }
+                break;
+            }
+            if (!name)
+                throw new TypeError("Missing parameter name at ".concat(i));
+            tokens.push({ type: "NAME", index: i, value: name });
+            i = j;
+            continue;
+        }
+        if (char === "(") {
+            var count = 1;
+            var pattern = "";
+            var j = i + 1;
+            if (str[j] === "?") {
+                throw new TypeError("Pattern cannot start with \"?\" at ".concat(j));
+            }
+            while (j < str.length) {
+                if (str[j] === "\\") {
+                    pattern += str[j++] + str[j++];
+                    continue;
+                }
+                if (str[j] === ")") {
+                    count--;
+                    if (count === 0) {
+                        j++;
+                        break;
+                    }
+                }
+                else if (str[j] === "(") {
+                    count++;
+                    if (str[j + 1] !== "?") {
+                        throw new TypeError("Capturing groups are not allowed at ".concat(j));
+                    }
+                }
+                pattern += str[j++];
+            }
+            if (count)
+                throw new TypeError("Unbalanced pattern at ".concat(i));
+            if (!pattern)
+                throw new TypeError("Missing pattern at ".concat(i));
+            tokens.push({ type: "PATTERN", index: i, value: pattern });
+            i = j;
+            continue;
+        }
+        tokens.push({ type: "CHAR", index: i, value: str[i++] });
+    }
+    tokens.push({ type: "END", index: i, value: "" });
+    return tokens;
+}
+/**
+ * Parse a string for the raw tokens.
+ */
+function parse(str, options) {
+    if (options === void 0) { options = {}; }
+    var tokens = lexer(str);
+    var _a = options.prefixes, prefixes = _a === void 0 ? "./" : _a;
+    var defaultPattern = "[^".concat(escapeString(options.delimiter || "/#?"), "]+?");
+    var result = [];
+    var key = 0;
+    var i = 0;
+    var path = "";
+    var tryConsume = function (type) {
+        if (i < tokens.length && tokens[i].type === type)
+            return tokens[i++].value;
+    };
+    var mustConsume = function (type) {
+        var value = tryConsume(type);
+        if (value !== undefined)
+            return value;
+        var _a = tokens[i], nextType = _a.type, index = _a.index;
+        throw new TypeError("Unexpected ".concat(nextType, " at ").concat(index, ", expected ").concat(type));
+    };
+    var consumeText = function () {
+        var result = "";
+        var value;
+        while ((value = tryConsume("CHAR") || tryConsume("ESCAPED_CHAR"))) {
+            result += value;
+        }
+        return result;
+    };
+    while (i < tokens.length) {
+        var char = tryConsume("CHAR");
+        var name = tryConsume("NAME");
+        var pattern = tryConsume("PATTERN");
+        if (name || pattern) {
+            var prefix = char || "";
+            if (prefixes.indexOf(prefix) === -1) {
+                path += prefix;
+                prefix = "";
+            }
+            if (path) {
+                result.push(path);
+                path = "";
+            }
+            result.push({
+                name: name || key++,
+                prefix: prefix,
+                suffix: "",
+                pattern: pattern || defaultPattern,
+                modifier: tryConsume("MODIFIER") || "",
+            });
+            continue;
+        }
+        var value = char || tryConsume("ESCAPED_CHAR");
+        if (value) {
+            path += value;
+            continue;
+        }
+        if (path) {
+            result.push(path);
+            path = "";
+        }
+        var open = tryConsume("OPEN");
+        if (open) {
+            var prefix = consumeText();
+            var name_1 = tryConsume("NAME") || "";
+            var pattern_1 = tryConsume("PATTERN") || "";
+            var suffix = consumeText();
+            mustConsume("CLOSE");
+            result.push({
+                name: name_1 || (pattern_1 ? key++ : ""),
+                pattern: name_1 && !pattern_1 ? defaultPattern : pattern_1,
+                prefix: prefix,
+                suffix: suffix,
+                modifier: tryConsume("MODIFIER") || "",
+            });
+            continue;
+        }
+        mustConsume("END");
+    }
+    return result;
+}
+exports.parse = parse;
+/**
+ * Compile a string to a template function for the path.
+ */
+function compile(str, options) {
+    return tokensToFunction(parse(str, options), options);
+}
+exports.compile = compile;
+/**
+ * Expose a method for transforming tokens into the path function.
+ */
+function tokensToFunction(tokens, options) {
+    if (options === void 0) { options = {}; }
+    var reFlags = flags(options);
+    var _a = options.encode, encode = _a === void 0 ? function (x) { return x; } : _a, _b = options.validate, validate = _b === void 0 ? true : _b;
+    // Compile all the tokens into regexps.
+    var matches = tokens.map(function (token) {
+        if (typeof token === "object") {
+            return new RegExp("^(?:".concat(token.pattern, ")$"), reFlags);
+        }
+    });
+    return function (data) {
+        var path = "";
+        for (var i = 0; i < tokens.length; i++) {
+            var token = tokens[i];
+            if (typeof token === "string") {
+                path += token;
+                continue;
+            }
+            var value = data ? data[token.name] : undefined;
+            var optional = token.modifier === "?" || token.modifier === "*";
+            var repeat = token.modifier === "*" || token.modifier === "+";
+            if (Array.isArray(value)) {
+                if (!repeat) {
+                    throw new TypeError("Expected \"".concat(token.name, "\" to not repeat, but got an array"));
+                }
+                if (value.length === 0) {
+                    if (optional)
+                        continue;
+                    throw new TypeError("Expected \"".concat(token.name, "\" to not be empty"));
+                }
+                for (var j = 0; j < value.length; j++) {
+                    var segment = encode(value[j], token);
+                    if (validate && !matches[i].test(segment)) {
+                        throw new TypeError("Expected all \"".concat(token.name, "\" to match \"").concat(token.pattern, "\", but got \"").concat(segment, "\""));
+                    }
+                    path += token.prefix + segment + token.suffix;
+                }
+                continue;
+            }
+            if (typeof value === "string" || typeof value === "number") {
+                var segment = encode(String(value), token);
+                if (validate && !matches[i].test(segment)) {
+                    throw new TypeError("Expected \"".concat(token.name, "\" to match \"").concat(token.pattern, "\", but got \"").concat(segment, "\""));
+                }
+                path += token.prefix + segment + token.suffix;
+                continue;
+            }
+            if (optional)
+                continue;
+            var typeOfMessage = repeat ? "an array" : "a string";
+            throw new TypeError("Expected \"".concat(token.name, "\" to be ").concat(typeOfMessage));
+        }
+        return path;
+    };
+}
+exports.tokensToFunction = tokensToFunction;
+/**
+ * Create path match function from `path-to-regexp` spec.
+ */
+function match(str, options) {
+    var keys = [];
+    var re = pathToRegexp(str, keys, options);
+    return regexpToFunction(re, keys, options);
+}
+exports.match = match;
+/**
+ * Create a path match function from `path-to-regexp` output.
+ */
+function regexpToFunction(re, keys, options) {
+    if (options === void 0) { options = {}; }
+    var _a = options.decode, decode = _a === void 0 ? function (x) { return x; } : _a;
+    return function (pathname) {
+        var m = re.exec(pathname);
+        if (!m)
+            return false;
+        var path = m[0], index = m.index;
+        var params = Object.create(null);
+        var _loop_1 = function (i) {
+            if (m[i] === undefined)
+                return "continue";
+            var key = keys[i - 1];
+            if (key.modifier === "*" || key.modifier === "+") {
+                params[key.name] = m[i].split(key.prefix + key.suffix).map(function (value) {
+                    return decode(value, key);
+                });
+            }
+            else {
+                params[key.name] = decode(m[i], key);
+            }
+        };
+        for (var i = 1; i < m.length; i++) {
+            _loop_1(i);
+        }
+        return { path: path, index: index, params: params };
+    };
+}
+exports.regexpToFunction = regexpToFunction;
+/**
+ * Escape a regular expression string.
+ */
+function escapeString(str) {
+    return str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
+}
+/**
+ * Get the flags for a regexp from the options.
+ */
+function flags(options) {
+    return options && options.sensitive ? "" : "i";
+}
+/**
+ * Pull out keys from a regexp.
+ */
+function regexpToRegexp(path, keys) {
+    if (!keys)
+        return path;
+    var groupsRegex = /\((?:\?<(.*?)>)?(?!\?)/g;
+    var index = 0;
+    var execResult = groupsRegex.exec(path.source);
+    while (execResult) {
+        keys.push({
+            // Use parenthesized substring match if available, index otherwise
+            name: execResult[1] || index++,
+            prefix: "",
+            suffix: "",
+            modifier: "",
+            pattern: "",
+        });
+        execResult = groupsRegex.exec(path.source);
+    }
+    return path;
+}
+/**
+ * Transform an array into a regexp.
+ */
+function arrayToRegexp(paths, keys, options) {
+    var parts = paths.map(function (path) { return pathToRegexp(path, keys, options).source; });
+    return new RegExp("(?:".concat(parts.join("|"), ")"), flags(options));
+}
+/**
+ * Create a path regexp from string input.
+ */
+function stringToRegexp(path, keys, options) {
+    return tokensToRegexp(parse(path, options), keys, options);
+}
+/**
+ * Expose a function for taking tokens and returning a RegExp.
+ */
+function tokensToRegexp(tokens, keys, options) {
+    if (options === void 0) { options = {}; }
+    var _a = options.strict, strict = _a === void 0 ? false : _a, _b = options.start, start = _b === void 0 ? true : _b, _c = options.end, end = _c === void 0 ? true : _c, _d = options.encode, encode = _d === void 0 ? function (x) { return x; } : _d, _e = options.delimiter, delimiter = _e === void 0 ? "/#?" : _e, _f = options.endsWith, endsWith = _f === void 0 ? "" : _f;
+    var endsWithRe = "[".concat(escapeString(endsWith), "]|$");
+    var delimiterRe = "[".concat(escapeString(delimiter), "]");
+    var route = start ? "^" : "";
+    // Iterate over the tokens and create our regexp string.
+    for (var _i = 0, tokens_1 = tokens; _i < tokens_1.length; _i++) {
+        var token = tokens_1[_i];
+        if (typeof token === "string") {
+            route += escapeString(encode(token));
+        }
+        else {
+            var prefix = escapeString(encode(token.prefix));
+            var suffix = escapeString(encode(token.suffix));
+            if (token.pattern) {
+                if (keys)
+                    keys.push(token);
+                if (prefix || suffix) {
+                    if (token.modifier === "+" || token.modifier === "*") {
+                        var mod = token.modifier === "*" ? "?" : "";
+                        route += "(?:".concat(prefix, "((?:").concat(token.pattern, ")(?:").concat(suffix).concat(prefix, "(?:").concat(token.pattern, "))*)").concat(suffix, ")").concat(mod);
+                    }
+                    else {
+                        route += "(?:".concat(prefix, "(").concat(token.pattern, ")").concat(suffix, ")").concat(token.modifier);
+                    }
+                }
+                else {
+                    if (token.modifier === "+" || token.modifier === "*") {
+                        route += "((?:".concat(token.pattern, ")").concat(token.modifier, ")");
+                    }
+                    else {
+                        route += "(".concat(token.pattern, ")").concat(token.modifier);
+                    }
+                }
+            }
+            else {
+                route += "(?:".concat(prefix).concat(suffix, ")").concat(token.modifier);
+            }
+        }
+    }
+    if (end) {
+        if (!strict)
+            route += "".concat(delimiterRe, "?");
+        route += !options.endsWith ? "$" : "(?=".concat(endsWithRe, ")");
+    }
+    else {
+        var endToken = tokens[tokens.length - 1];
+        var isEndDelimited = typeof endToken === "string"
+            ? delimiterRe.indexOf(endToken[endToken.length - 1]) > -1
+            : endToken === undefined;
+        if (!strict) {
+            route += "(?:".concat(delimiterRe, "(?=").concat(endsWithRe, "))?");
+        }
+        if (!isEndDelimited) {
+            route += "(?=".concat(delimiterRe, "|").concat(endsWithRe, ")");
+        }
+    }
+    return new RegExp(route, flags(options));
+}
+exports.tokensToRegexp = tokensToRegexp;
+/**
+ * Normalize the given path string, returning a regular expression.
+ *
+ * An empty array can be passed in for the keys, which will hold the
+ * placeholder key descriptions. For example, using `/user/:id`, `keys` will
+ * contain `[{ name: 'id', delimiter: '/', optional: false, repeat: false }]`.
+ */
+function pathToRegexp(path, keys, options) {
+    if (path instanceof RegExp)
+        return regexpToRegexp(path, keys);
+    if (Array.isArray(path))
+        return arrayToRegexp(path, keys, options);
+    return stringToRegexp(path, keys, options);
+}
+exports.pathToRegexp = pathToRegexp;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 1867:
 /***/ ((module, exports, __nccwpck_require__) => {
 
@@ -28776,34 +29193,7 @@ function socketOnError() {
 
 /***/ }),
 
-/***/ 194:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Error type for bad messages.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BadMessageError = void 0;
-class BadMessageError extends Error {
-    constructor(reason) {
-        super();
-        this.reason = reason;
-    }
-    get message() {
-        return `bad msg: ${this.reason}`;
-    }
-}
-exports.BadMessageError = BadMessageError;
-
-
-/***/ }),
-
-/***/ 809:
+/***/ 5772:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -28812,16 +29202,1933 @@ exports.BadMessageError = BadMessageError;
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Parse an incoming Buffer as a Nostr message.
+ * @fileoverview Memorelay plugin for basic logging.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bufferToRelayMessage = exports.bufferToClientMessage = exports.bufferToGenericMessage = exports.checkSubscriptionId = void 0;
+exports.LoggingPlugin = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const connectable_event_emitter_1 = __nccwpck_require__(2132);
+const clear_handlers_1 = __nccwpck_require__(2209);
+const preflight_event_1 = __nccwpck_require__(7946);
+const memorelay_client_disconnect_event_1 = __nccwpck_require__(9463);
+class LoggingPlugin extends connectable_event_emitter_1.ConnectableEventEmitter {
+    constructor(options) {
+        super();
+        this.logger = options.logger;
+        this.memorelay = options.memorelay;
+        this.levels = Object.assign({}, options.levels);
+        this.plugins = [
+            () => this.setupRelayLogging(),
+            () => this.setupClientLogging(),
+        ];
+    }
+    setupRelayLogging() {
+        const hubEventTypes = new Set();
+        return this.memorelay.onEvent(preflight_event_1.PreflightEvent, (preflightEvent) => {
+            const { event } = preflightEvent.details;
+            if (!hubEventTypes.has(event.type)) {
+                hubEventTypes.add(event.type);
+                this.memorelay.onEvent(event, this.logEvent('silly'));
+            }
+        });
+    }
+    setupClientLogging() {
+        return this.memorelay.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+            const clientEventTypes = new Set();
+            const handlers = [];
+            const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
+            handlers.push(memorelayClient.onEvent(preflight_event_1.PreflightEvent, (preflightEvent) => {
+                const { event } = preflightEvent.details;
+                if (!clientEventTypes.has(event.type)) {
+                    clientEventTypes.add(event.type);
+                    handlers.push(memorelayClient.onEvent(event, this.logClientEvent(memorelayClient, 'silly')));
+                }
+            }), memorelayClient.onEvent(memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent, disconnect));
+            return { disconnect };
+        });
+    }
+    logEvent(defaultLevel) {
+        return (event) => {
+            var _a;
+            const level = (_a = this.levels[event.type]) !== null && _a !== void 0 ? _a : defaultLevel;
+            if (level) {
+                const key = getRequestKey(getEventRequest(event));
+                const depth = '.'.repeat(countAncestors(event));
+                this.logger.log(level, `(${key}): ${depth}${event.type}`);
+            }
+        };
+    }
+    logClientEvent(memorelayClient, defaultLevel) {
+        return (event) => {
+            var _a;
+            const level = (_a = this.levels[event.type]) !== null && _a !== void 0 ? _a : defaultLevel;
+            if (level) {
+                const key = getRequestKey(memorelayClient.request);
+                const depth = '.'.repeat(countAncestors(event));
+                this.logger.log(level, `(${key}): ${depth}${event.type}`);
+            }
+        };
+    }
+}
+exports.LoggingPlugin = LoggingPlugin;
+/**
+ * Given an event, search through itself and its parents for the original
+ * request that spawned it.
+ * @param event The event to search.
+ * @returns Found request, or undefined if one couldn't be found.
+ */
+function getEventRequest(event) {
+    var _a, _b, _c;
+    const details = event.details;
+    return ((_c = (_a = details === null || details === void 0 ? void 0 : details.request) !== null && _a !== void 0 ? _a : (_b = details === null || details === void 0 ? void 0 : details.memorelayClient) === null || _b === void 0 ? void 0 : _b.request) !== null && _c !== void 0 ? _c : (event.parentEvent && getEventRequest(event.parentEvent)));
+}
+/**
+ * Given a request, return the hex-encoded first few bytes of the
+ * sec-websocket-key header value, or the defaultValue if the header is
+ * undefined.
+ * @param request The request to investigate.
+ * @param defaultValue Optional default value to use if header is undefined.
+ * @returns The sec-websocket-key header or defaultValue.
+ */
+function getRequestKey(request, defaultValue = 'undefined') {
+    const secWebSocketKey = request === null || request === void 0 ? void 0 : request.headers['sec-websocket-key'];
+    if (!secWebSocketKey) {
+        return defaultValue;
+    }
+    return Buffer.from(secWebSocketKey, 'base64').subarray(0, 4).toString('hex');
+}
+/**
+ * Determine the number of ancestor events a given event has. An event with an
+ * undefined parentEvent has an ancestor count of 0. An event with a parentEvent
+ * has its parentEvent's ancestor count plus 1.
+ * @param basicEvent
+ */
+function countAncestors(basicEvent) {
+    let ancestorCount = 0;
+    let parentEvent = basicEvent.parentEvent;
+    while (parentEvent) {
+        ancestorCount++;
+        parentEvent = parentEvent.parentEvent;
+    }
+    return ancestorCount;
+}
+
+
+/***/ }),
+
+/***/ 6399:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Basic Event to be extended for different purposes.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BasicEvent = void 0;
+/**
+ * A Memorelay BasicEvent takes its design from the DOM native CustomEvent. It
+ * supports basic DOM Event functionality such as preventDefault(), and carries
+ * an arbitrary, optional payload object.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent
+ */
+class BasicEvent {
+    /**
+     * @param type The name of the event, case-sensitive.
+     * @param details Object containing payload information about this event.
+     * @param options Optional event settings.
+     */
+    constructor(type, details, options) {
+        this.type = type;
+        this.details = details;
+        /**
+         * Whether any recipient has called preventDefault();
+         */
+        this.isDefaultPrevented = false;
+        this.originatorTag = options === null || options === void 0 ? void 0 : options.originatorTag;
+        this.parentEvent = options === null || options === void 0 ? void 0 : options.parentEvent;
+        this.targetEmitter = options === null || options === void 0 ? void 0 : options.targetEmitter;
+    }
+    /**
+     * Same concept as the DOM standard Event's defaultPrevented getter.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/Event/defaultPrevented
+     */
+    get defaultPrevented() {
+        return this.isDefaultPrevented;
+    }
+    /**
+     * Same concept as the DOM standard Event's preventDefault(). Recipient
+     * handlers for this kind of event can call preventDefault() to stop the
+     * natural subsequent behavior.
+     *
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
+     */
+    preventDefault() {
+        this.isDefaultPrevented = true;
+    }
+}
+exports.BasicEvent = BasicEvent;
+
+
+/***/ }),
+
+/***/ 6368:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Union type of events emitted at the client level.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ClientEvent = void 0;
+const basic_event_1 = __nccwpck_require__(6399);
+class ClientEvent extends basic_event_1.BasicEvent {
+}
+exports.ClientEvent = ClientEvent;
+
+
+/***/ }),
+
+/***/ 7474:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event emitted when a duplicate WebSocket is detected.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DuplicateWebSocketErrorEvent = exports.DUPLICATE_WEB_SOCKET_ERROR_EVENT_TYPE = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.DUPLICATE_WEB_SOCKET_ERROR_EVENT_TYPE = 'duplicate-web-socket-error';
+/**
+ * Event emitted by MemorelayCore when it handles an HTTP upgrade request by
+ * having its ws.WebSocketServer upgrade the connection to a ws.WebSocket.
+ */
+class DuplicateWebSocketErrorEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.DUPLICATE_WEB_SOCKET_ERROR_EVENT_TYPE, details, options);
+    }
+}
+DuplicateWebSocketErrorEvent.type = exports.DUPLICATE_WEB_SOCKET_ERROR_EVENT_TYPE;
+exports.DuplicateWebSocketErrorEvent = DuplicateWebSocketErrorEvent;
+
+
+/***/ }),
+
+/***/ 2146:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event used to respond to an http server request.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HttpServerRequestEvent = exports.HTTP_SERVER_REQUEST = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.HTTP_SERVER_REQUEST = 'http-server-request';
+/**
+ * Event emitted by Memorelay when the request handler returned by its
+ * handleRequest() method is called. A listener for this event type should call
+ * preventDefault() to stop any later listeners from attempting to also respond.
+ */
+class HttpServerRequestEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.HTTP_SERVER_REQUEST, details, options);
+    }
+}
+HttpServerRequestEvent.type = exports.HTTP_SERVER_REQUEST;
+exports.HttpServerRequestEvent = HttpServerRequestEvent;
+
+
+/***/ }),
+
+/***/ 3965:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event emitted by Memorelay when it creates a MemorelayClient.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemorelayClientCreatedEvent = exports.MEMORELAY_CLIENT_CREATED_EVENT_TYPE = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.MEMORELAY_CLIENT_CREATED_EVENT_TYPE = 'memorelay-client-created';
+/**
+ * Event emitted by Memorelay when it creates a MemorelayClient to wrap a
+ * connected WebSocket. This would typically be in response to a previously
+ * emitted 'connection' event on the Memorelay instance's WebSocketServer.
+ */
+class MemorelayClientCreatedEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.MEMORELAY_CLIENT_CREATED_EVENT_TYPE, details, options);
+    }
+}
+MemorelayClientCreatedEvent.type = exports.MEMORELAY_CLIENT_CREATED_EVENT_TYPE;
+exports.MemorelayClientCreatedEvent = MemorelayClientCreatedEvent;
+
+
+/***/ }),
+
+/***/ 9463:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event signaling immanent disconnect of remaining listeners.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemorelayClientDisconnectEvent = exports.MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE = 'memorelay-client-disconnect';
+/**
+ * Event signaling the immanent disconnect of a MemorelayClient. The default
+ * behavior will be to remove all listeners on itself and its assigned
+ * WebSocket.
+ */
+class MemorelayClientDisconnectEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE, details, options);
+    }
+}
+MemorelayClientDisconnectEvent.type = exports.MEMORELAY_CLIENT_DISCONNECT_EVENT_TYPE;
+exports.MemorelayClientDisconnectEvent = MemorelayClientDisconnectEvent;
+
+
+/***/ }),
+
+/***/ 7946:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Preflight event emitted before another (non-preflight) event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PreflightEvent = exports.PREFLIGHT_EVENT_TYPE = void 0;
+const basic_event_1 = __nccwpck_require__(6399);
+exports.PREFLIGHT_EVENT_TYPE = 'preflight-event';
+/**
+ * Just before a non-preflight event will be emitted, a BasicEventEmitter will
+ * emit a preflight event containing that event in its details. This allows for
+ * meta-event programming, such as logging, to become aware of previously
+ * unknown event types.
+ */
+class PreflightEvent extends basic_event_1.BasicEvent {
+    constructor(details, options) {
+        super(exports.PREFLIGHT_EVENT_TYPE, details, options);
+    }
+}
+PreflightEvent.type = exports.PREFLIGHT_EVENT_TYPE;
+exports.PreflightEvent = PreflightEvent;
+
+
+/***/ }),
+
+/***/ 9440:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Union type of events emitted at the relay level.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RelayEvent = void 0;
+const basic_event_1 = __nccwpck_require__(6399);
+class RelayEvent extends basic_event_1.BasicEvent {
+}
+exports.RelayEvent = RelayEvent;
+
+
+/***/ }),
+
+/***/ 1111:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Wrapper for WebSocket 'close' event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WebSocketCloseEvent = exports.WEB_SOCKET_CLOSE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.WEB_SOCKET_CLOSE_EVENT_TYPE = 'web-socket-close';
+/**
+ * Event emitted by a MemorelayClient when its connected WebSocket emits a
+ * 'message' event.
+ */
+class WebSocketCloseEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.WEB_SOCKET_CLOSE_EVENT_TYPE, details, options);
+    }
+}
+WebSocketCloseEvent.type = exports.WEB_SOCKET_CLOSE_EVENT_TYPE;
+exports.WebSocketCloseEvent = WebSocketCloseEvent;
+
+
+/***/ }),
+
+/***/ 3276:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Wrapper for WebSocketServer 'connection' event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WebSocketConnectedEvent = exports.WEB_SOCKET_CONNECTED_EVENT_TYPE = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.WEB_SOCKET_CONNECTED_EVENT_TYPE = 'web-socket-connected';
+/**
+ * Event emitted by MemorelayCore when it handles an HTTP upgrade request by
+ * having its ws.WebSocketServer upgrade the connection to a ws.WebSocket.
+ */
+class WebSocketConnectedEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.WEB_SOCKET_CONNECTED_EVENT_TYPE, details, options);
+    }
+}
+WebSocketConnectedEvent.type = exports.WEB_SOCKET_CONNECTED_EVENT_TYPE;
+exports.WebSocketConnectedEvent = WebSocketConnectedEvent;
+
+
+/***/ }),
+
+/***/ 7614:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Wrapper for WebSocket 'message' event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WebSocketMessageEvent = exports.WEB_SOCKET_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.WEB_SOCKET_MESSAGE_EVENT_TYPE = 'web-socket-message';
+/**
+ * Event emitted by a MemorelayClient when its connected WebSocket emits a
+ * 'message' event.
+ */
+class WebSocketMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.WEB_SOCKET_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+WebSocketMessageEvent.type = exports.WEB_SOCKET_MESSAGE_EVENT_TYPE;
+exports.WebSocketMessageEvent = WebSocketMessageEvent;
+
+
+/***/ }),
+
+/***/ 655:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event signaling intent to send data to a ws WebSocket.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WebSocketSendEvent = exports.WEB_SOCKET_SEND_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.WEB_SOCKET_SEND_EVENT_TYPE = 'web-socket-send';
+/**
+ * Event emitted on a MemorelayClient when there's a buffer to be sent out.
+ */
+class WebSocketSendEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.WEB_SOCKET_SEND_EVENT_TYPE, details, options);
+    }
+}
+WebSocketSendEvent.type = exports.WEB_SOCKET_SEND_EVENT_TYPE;
+exports.WebSocketSendEvent = WebSocketSendEvent;
+
+
+/***/ }),
+
+/***/ 7649:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Convenience method for automatically clearing handlers when the
+ * client disconnects.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.autoDisconnect = void 0;
+const memorelay_client_disconnect_event_1 = __nccwpck_require__(9463);
+const clear_handlers_1 = __nccwpck_require__(2209);
+/**
+ * Automatically invoke the disconnect() method of an array of disconnectable
+ * handlers when the provided client emits a MemorelayClientDisconnectEvent.
+ * @param memorelayClient The client to watch for disconnect.
+ * @param handlers The array of disconnectable handlers.
+ */
+function autoDisconnect(memorelayClient, ...handlers) {
+    const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
+    handlers.push(memorelayClient.onEvent(memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent, disconnect));
+    return { disconnect };
+}
+exports.autoDisconnect = autoDisconnect;
+
+
+/***/ }),
+
+/***/ 4380:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview EventEmitter with an extra capacity for emitting BasicEvents.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BasicEventEmitter = void 0;
+const events_1 = __nccwpck_require__(2361);
+const on_with_handler_1 = __nccwpck_require__(361);
+const preflight_event_1 = __nccwpck_require__(7946);
+class BasicEventEmitter {
+    constructor() {
+        /**
+         * Maximum number of event listeners known to be permitted without warning.
+         *
+         * NOTE: Node v19 introduced the getMaxListeners() module function to support
+         * determining the maxListeners of an emitter. In the future, using that would
+         * be better than keeping a copy, as it would be impervious to circumvention.
+         */
+        this.maxEventListenersValue = events_1.defaultMaxListeners;
+        this.internalEmitter = new events_1.EventEmitter();
+    }
+    get maxEventListeners() {
+        return this.maxEventListenersValue;
+    }
+    set maxEventListeners(maxEventListeners) {
+        this.maxEventListenersValue = maxEventListeners;
+        this.internalEmitter.setMaxListeners(this.maxEventListeners);
+    }
+    /**
+     * Emits the provided BasicEvent then returns it.
+     * @param basicEvent The event to emit using its type as eventName.
+     * @returns The same provided BasicEvent for chaining.
+     */
+    emitEvent(basicEvent) {
+        if (!(basicEvent instanceof preflight_event_1.PreflightEvent)) {
+            const preflightEvent = new preflight_event_1.PreflightEvent({ event: basicEvent });
+            this.internalEmitter.emit(preflightEvent.type, preflightEvent);
+        }
+        this.internalEmitter.emit(basicEvent.type, basicEvent);
+        return basicEvent;
+    }
+    /**
+     * Listen for a BasicEvent.
+     * @param basicEventType Type of event to listen for.
+     * @param callbackFn Callback function to invoke when event is emitted.
+     * @returns this.
+     */
+    onEvent(basicEventType, callbackFn) {
+        return (0, on_with_handler_1.onWithHandler)(this.internalEmitter, basicEventType.type, callbackFn);
+    }
+}
+exports.BasicEventEmitter = BasicEventEmitter;
+
+
+/***/ }),
+
+/***/ 2209:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Utility function to disconnect and clear an array of Handlers.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.clearHandlers = void 0;
+const disconnect_all_1 = __nccwpck_require__(5763);
+/**
+ * Returns a function which when called will remove all elements from the
+ * provided array of handlers and call .disconnect() for each one.
+ * @param handlers List of handlers to clear.
+ * @returns Function which will clear all handlers.
+ */
+function clearHandlers(handlers) {
+    return () => {
+        (0, disconnect_all_1.disconnectAll)(handlers);
+    };
+}
+exports.clearHandlers = clearHandlers;
+
+
+/***/ }),
+
+/***/ 2132:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview A wrapper around BasicEventEmitter for performing complete
+ * connect() and disconnect().
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ConnectableEventEmitter = exports.HANDLERS = void 0;
+const basic_event_emitter_1 = __nccwpck_require__(4380);
+/**
+ * Symbol for accessing the internal handlers list in tests.
+ */
+exports.HANDLERS = Symbol('handlers');
+/**
+ * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
+ * receives raw message events from the socket, and sends encoded messages back.
+ */
+class ConnectableEventEmitter extends basic_event_emitter_1.BasicEventEmitter {
+    get [exports.HANDLERS]() {
+        return this.handlers;
+    }
+    set [exports.HANDLERS](handlers) {
+        this.handlers = handlers;
+    }
+    get isConnected() {
+        return this.handlers !== undefined;
+    }
+    /**
+     * Connect event handlers. This is delayed until connect() is called in order
+     * to give others a chance to listen first.
+     * @returns this
+     */
+    connect() {
+        var _a;
+        if (!this.handlers) {
+            this.handlers = [];
+            for (const pluginFn of (_a = this.plugins) !== null && _a !== void 0 ? _a : []) {
+                this.handlers.push(pluginFn(this));
+            }
+        }
+        return this;
+    }
+    /**
+     * Disconnect all event handlers.
+     * @returns this.
+     */
+    disconnect() {
+        if (this.handlers) {
+            this.handlers.forEach((handler) => {
+                handler.disconnect();
+            });
+            this.handlers = undefined;
+        }
+        return this;
+    }
+}
+exports.ConnectableEventEmitter = ConnectableEventEmitter;
+
+
+/***/ }),
+
+/***/ 5763:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Utility function to disconnect and clear an array of Handlers.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.disconnectAll = void 0;
+/**
+ * Disconnect all handlers and empty the array..
+ * @param handlers List of handlers to clear.
+ */
+function disconnectAll(handlers) {
+    handlers.splice(0).forEach((handler) => {
+        handler.disconnect();
+    });
+}
+exports.disconnectAll = disconnectAll;
+
+
+/***/ }),
+
+/***/ 1446:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Handle HTTP-to-WebSocket upgrade requests.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.handleUpgrade = void 0;
+const path_to_regexp_1 = __nccwpck_require__(4694);
+const web_socket_connected_event_1 = __nccwpck_require__(3276);
+/**
+ * Return a handler for upgrading HTTP client connections to WebSockets.
+ * @param hub Event emitter through which to broadcast upgrades.
+ * @param path Optional Express path to match. Defaults to '/'.
+ * @param webSocketServer WebSocket server for handling upgrades.
+ * @returns Upgrade handler function.
+ */
+function handleUpgrade(webSocketServer, hub, path = '/') {
+    // Upgrade path string to regex for testing.
+    const regex = (0, path_to_regexp_1.pathToRegexp)(path);
+    return (request, socket, head) => {
+        if (!request.url) {
+            throw new Error('url missing');
+        }
+        // NOTE: The WHATWG URL standard requires a base, but its value doesn't
+        // matter to us since we only need the path.
+        const { pathname } = new URL(request.url, 'http://dummy');
+        if (!regex.test(pathname)) {
+            // Nothing to do here. The incoming message URL does not match.
+            return;
+        }
+        webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+            hub.emitEvent(new web_socket_connected_event_1.WebSocketConnectedEvent({ webSocket, request }, { targetEmitter: hub }));
+        });
+    };
+}
+exports.handleUpgrade = handleUpgrade;
+
+
+/***/ }),
+
+/***/ 270:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview A client connected to a Memorelay.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemorelayClient = exports.invokeDisconnectOnEvent = exports.emitDisconnectOnClose = exports.sendWebSocketBufferOnEvent = exports.upgradeWebSocketCloseEvent = exports.upgradeWebSocketMessageEvent = void 0;
+const web_socket_message_event_1 = __nccwpck_require__(7614);
+const web_socket_close_event_1 = __nccwpck_require__(1111);
+const on_with_handler_1 = __nccwpck_require__(361);
+const memorelay_client_disconnect_event_1 = __nccwpck_require__(9463);
+const connectable_event_emitter_1 = __nccwpck_require__(2132);
+const web_socket_send_event_1 = __nccwpck_require__(655);
+/**
+ * MemorelayClient plugin which upgrades ws WebSocket 'message' events to
+ * WebSocketMessageEvent instances.
+ * @param memorelayClient The client on which to upgrade events.
+ * @returns Plugin function for MemorelayClient.
+ * @emits WebSocketMessageEvent
+ */
+function upgradeWebSocketMessageEvent(memorelayClient) {
+    return (0, on_with_handler_1.onWithHandler)(memorelayClient.webSocket, 'message', (data, isBinary) => {
+        memorelayClient.emitEvent(new web_socket_message_event_1.WebSocketMessageEvent({ data, isBinary }, {
+            targetEmitter: memorelayClient,
+            parentEvent: memorelayClient.parentEvent,
+        }));
+    });
+}
+exports.upgradeWebSocketMessageEvent = upgradeWebSocketMessageEvent;
+/**
+ * MemorelayClient plugin which upgrades ws WebSocket 'close' events to
+ * WebSocketCloseEvent instances.
+ * @param memorelayClient The client on which to upgrade events.
+ * @returns Plugin function for MemorelayClient.
+ * @emits WebSocketCloseEvent
+ */
+function upgradeWebSocketCloseEvent(memorelayClient) {
+    return (0, on_with_handler_1.onWithHandler)(memorelayClient.webSocket, 'close', (code) => {
+        memorelayClient.emitEvent(new web_socket_close_event_1.WebSocketCloseEvent({ code }, {
+            targetEmitter: memorelayClient,
+            parentEvent: memorelayClient.parentEvent,
+        }));
+    });
+}
+exports.upgradeWebSocketCloseEvent = upgradeWebSocketCloseEvent;
+/**
+ * MemorelayClient plugin which responds to a WebSocketSendEvent by sending the
+ * buffer.
+ * @param memorelayClient The client on which to listen.
+ * @returns Handler.
+ */
+function sendWebSocketBufferOnEvent(memorelayClient) {
+    return memorelayClient.onEvent(web_socket_send_event_1.WebSocketSendEvent, (webSocketSendEvent) => {
+        if (webSocketSendEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+        }
+        const { buffer } = webSocketSendEvent.details;
+        memorelayClient.webSocket.send(buffer);
+    });
+}
+exports.sendWebSocketBufferOnEvent = sendWebSocketBufferOnEvent;
+/**
+ * MemorelayClient plugin which responds to a WebSocketCloseEvent by emitting
+ * MemoRelayClientDisconnectEvent.
+ * @param memorelayClient The client on which to listen.
+ * @returns Handler.
+ * @emits MemoRelayClientDisconnectEvent
+ */
+function emitDisconnectOnClose(memorelayClient) {
+    return memorelayClient.onEvent(web_socket_close_event_1.WebSocketCloseEvent, (webSocketCloseEvent) => {
+        if (webSocketCloseEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+        }
+        queueMicrotask(() => {
+            memorelayClient.emitEvent(new memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent({ memorelayClient }, { parentEvent: webSocketCloseEvent, targetEmitter: memorelayClient }));
+        });
+    });
+}
+exports.emitDisconnectOnClose = emitDisconnectOnClose;
+/**
+ * MemorelayClient plugin which responds to a MemoRelayClientDisconnectEvent by
+ * calling the instance's disconnect() method.
+ * @param memorelayClient The client on which to listen.
+ * @returns Handler.
+ */
+function invokeDisconnectOnEvent(memorelayClient) {
+    return memorelayClient.onEvent(memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent, (memorelayClientDisconnectedEvent) => {
+        if (memorelayClientDisconnectedEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+        }
+        memorelayClient.disconnect();
+    });
+}
+exports.invokeDisconnectOnEvent = invokeDisconnectOnEvent;
+/**
+ * Created by a Memorelay instance, a MemorelayClient sits atop a WebSocket. It
+ * receives raw message events from the socket, and sends encoded messages back.
+ */
+class MemorelayClient extends connectable_event_emitter_1.ConnectableEventEmitter {
+    /**
+     * @param webSocket The associated WebSocket for this client.
+     * @param request The HTTP request from which the WebSocket was upgraded.
+     * @param parentEvent Optional parent event that spawned the client.
+     */
+    constructor(webSocket, request, parentEvent) {
+        super();
+        this.webSocket = webSocket;
+        this.request = request;
+        this.parentEvent = parentEvent;
+        this.plugins = [
+            // Upgrade native WebSocket 'message' events to WebSocketMessageEvents.
+            upgradeWebSocketMessageEvent,
+            // Upgrade native WebSocket 'close' events to WebSocketCloseEvents.
+            upgradeWebSocketCloseEvent,
+            // On WebSocketSendEvent, send the attached buffer.
+            sendWebSocketBufferOnEvent,
+            // On WebSocketCloseEvent, trigger MemorelayClientDisconnectEvent.
+            emitDisconnectOnClose,
+            // On MemorelayClientDisconnectEvent, disconnect.
+            invokeDisconnectOnEvent,
+        ];
+    }
+}
+exports.MemorelayClient = MemorelayClient;
+
+
+/***/ }),
+
+/***/ 7402:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay event hub.
+ */
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemorelayHub = exports.WEBSOCKET_SERVER = void 0;
+const ws_1 = __nccwpck_require__(8867);
+const handle_upgrade_1 = __nccwpck_require__(1446);
+const connectable_event_emitter_1 = __nccwpck_require__(2132);
+const http_server_request_event_1 = __nccwpck_require__(2146);
+/**
+ * Symbol for accessing the internal WebSocket server instance.
+ */
+exports.WEBSOCKET_SERVER = Symbol('webSocketServer');
+/**
+ * Hub that underlies the Memorelay main class. Provides handler methods for
+ * responding to HTTP requests and upgrading WebSocket connections.
+ * @see Memorelay
+ */
+class MemorelayHub extends connectable_event_emitter_1.ConnectableEventEmitter {
+    constructor(...plugins) {
+        super();
+        /**
+         * WebSocket server for handling requests.
+         */
+        this.webSocketServer = new ws_1.WebSocketServer({ noServer: true });
+        /**
+         * Expose webSocketServer for testing.
+         * @see WEBSOCKET_SERVER
+         */
+        this[_a] = this.webSocketServer;
+        this.plugins = plugins;
+    }
+    /**
+     * Return a handler for responding to regular HTTP requests.
+     *
+     * Usage:
+     *
+     *   const memorelay = new Memorelay();
+     *   const httpServer = createServer(memorelay.handleRequest());
+     *   httpServer.on('upgrade', memorelay.handleUpgrade());
+     *   httpServer.listen({ port: 3000 });
+     */
+    handleRequest() {
+        return (request, response, nextFn) => {
+            const httpServerRequestEvent = new http_server_request_event_1.HttpServerRequestEvent({ request, response }, { targetEmitter: this });
+            this.emitEvent(httpServerRequestEvent);
+            if (nextFn && !httpServerRequestEvent.defaultPrevented) {
+                nextFn();
+            }
+        };
+    }
+    /**
+     * Return a handler for upgrading HTTP client connections to WebSockets.
+     *
+     * Usage:
+     *
+     *   const memorelay = new Memorelay();
+     *   const httpServer = createServer(memorelay.handleRequest());
+     *   httpServer.on('upgrade', memorelay.handleUpgrade());
+     *   httpServer.listen({ port: 3000 });
+     *
+     * @param path Optional Express path to match. Defaults to '/'.
+     * @returns Upgrade handler function.
+     */
+    handleUpgrade(path = '/') {
+        return (0, handle_upgrade_1.handleUpgrade)(this.webSocketServer, this, path);
+    }
+}
+exports.MemorelayHub = MemorelayHub;
+_a = exports.WEBSOCKET_SERVER;
+
+
+/***/ }),
+
+/***/ 361:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Convenience method to set up a listener and return a Handler.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.onWithHandler = void 0;
+/**
+ * Utility function for establishing an event listener on an emitter via its
+ * on() method. The returned Handler object's disconnect() method can be used to
+ * remove the handler.
+ *
+ * NOTE: According to the Node.js EventEmitter documentation for
+ * removeListener(), "When a single function has been added as a handler
+ * multiple times for a single event..., removeListener() will remove the most
+ * recently added instance."
+ * @param emitter The emitter on which to listen.
+ * @param eventType Name of the event to listen for.
+ * @param callbackFn Function to invoke when event occurs.
+ * @returns Handler with disconnect() method.
+ * @see https://nodejs.org/api/events.html#emitterremovelistenereventname-listener
+ */
+function onWithHandler(emitter, eventType, callbackFn) {
+    const wrapperFn = (...args) => {
+        return callbackFn(...args);
+    };
+    emitter.on(eventType, wrapperFn);
+    let removed = false;
+    return {
+        disconnect: () => {
+            !removed && emitter.off(eventType, wrapperFn);
+            removed = true;
+        },
+    };
+}
+exports.onWithHandler = onWithHandler;
+
+
+/***/ }),
+
+/***/ 3995:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin for upgrading connected WebSockets to
+ * MemorelayClient instances.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createClients = void 0;
+const memorelay_client_1 = __nccwpck_require__(270);
+const web_socket_connected_event_1 = __nccwpck_require__(3276);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const duplicate_web_socket_error_event_1 = __nccwpck_require__(7474);
+/**
+ * Core plugin to create MemorelayClient instances out of connected WebSockets.
+ * @param hub Event hub for inter-plugin communication.
+ * @return Plugin function.
+ */
+function createClients(hub) {
+    const webSocketClientMap = new Map();
+    return hub.onEvent(web_socket_connected_event_1.WebSocketConnectedEvent, (webSocketConnectedEvent) => {
+        if (webSocketConnectedEvent.defaultPrevented) {
+            return; // Client creation preempted by another listener.
+        }
+        const { webSocket, request } = webSocketConnectedEvent.details;
+        if (webSocketClientMap.has(webSocket)) {
+            queueMicrotask(() => {
+                hub.emitEvent(new duplicate_web_socket_error_event_1.DuplicateWebSocketErrorEvent({ webSocket }));
+            });
+            return;
+        }
+        const memorelayClient = new memorelay_client_1.MemorelayClient(webSocket, request, webSocketConnectedEvent);
+        webSocketClientMap.set(webSocket, memorelayClient);
+        const memorelayClientCreatedEvent = new memorelay_client_created_event_1.MemorelayClientCreatedEvent({ memorelayClient }, { parentEvent: webSocketConnectedEvent, targetEmitter: hub });
+        webSocketConnectedEvent.preventDefault();
+        queueMicrotask(() => {
+            hub.emitEvent(memorelayClientCreatedEvent);
+            if (!memorelayClientCreatedEvent.defaultPrevented) {
+                memorelayClient.connect();
+            }
+        });
+    });
+}
+exports.createClients = createClients;
+
+
+/***/ }),
+
+/***/ 521:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for increasing the maximum allowable
+ * number of listeners on clients.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.increaseClientMaxEventListeners = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const memorelay_client_disconnect_event_1 = __nccwpck_require__(9463);
+/**
+ * Memorelay core plugin for increasing the maximum number of allowed listeners
+ * on connected clients.
+ */
+function increaseClientMaxEventListeners(increaseCount) {
+    if (!Number.isInteger(increaseCount) || increaseCount < 1) {
+        throw new RangeError('increase count must be a positive integer');
+    }
+    return (hub) => {
+        return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+            if (memorelayClientCreatedEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const { memorelayClient } = memorelayClientCreatedEvent.details;
+            memorelayClient.maxEventListeners += increaseCount;
+            const handler = memorelayClient.onEvent(memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent, (memorelayClientDisconnectEvent) => {
+                if (memorelayClientDisconnectEvent.defaultPrevented) {
+                    return; // Preempted by another listener.
+                }
+                handler.disconnect();
+                memorelayClient.maxEventListeners -= increaseCount;
+            });
+        });
+    };
+}
+exports.increaseClientMaxEventListeners = increaseClientMaxEventListeners;
+
+
+/***/ }),
+
+/***/ 3788:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Find, read and return the contents of the project's shipped
+ * package.json file.
+ */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.readPackageJson = exports.PACKAGE_JSON_PATH = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+/**
+ * The path to the package.json file is the same in both dev mode and packaged
+ * mode because the files exist at the same depth relative to the project root.
+ *
+ * - Dev mode (this file): ./src/lib/package-json.ts
+ * - Prod mode (packaged): ./dist/bin/index.js
+ *
+ * If this code is ever moved to a different directory depth, then the logic
+ * will need to be updated to reflect the potentially different relative path to
+ * package.json.
+ */
+exports.PACKAGE_JSON_PATH = path_1.default.join(__dirname, '..', '..', 'package.json');
+/**
+ * Find the project's package.json file, read it, and return the contents. This
+ * function uses synchronous file system access because it is intended to run
+ * once at the outset of the service.
+ * @returns The package.json file contents.
+ */
+function readPackageJson() {
+    const packageJsonText = fs_1.default.readFileSync(exports.PACKAGE_JSON_PATH, 'utf-8');
+    return JSON.parse(packageJsonText);
+}
+exports.readPackageJson = readPackageJson;
+
+
+/***/ }),
+
+/***/ 3409:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay entry point.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Memorelay = void 0;
+const memorelay_hub_1 = __nccwpck_require__(7402);
+const create_clients_1 = __nccwpck_require__(3995);
+const plugins_1 = __nccwpck_require__(3581);
+const plugins_2 = __nccwpck_require__(3177);
+const relay_information_document_1 = __nccwpck_require__(1916);
+const plugins_3 = __nccwpck_require__(939);
+/**
+ * Memorelay main class. Extends MemorelayHub and attaches default behavior.
+ *
+ * Note: You MUST call connect() to attach Memorelay's event handlers. Handlers
+ * are delayed until connect() to give plugins a chance to listen and be earlier
+ * in the event handling stack.
+ *
+ * Example usage with native Node http module:
+ *
+ *   const memorelay = new Memorelay().connect();
+ *   const httpServer = createServer(memorelay.handleRequest());
+ *   httpServer.on('upgrade', memorelay.handleUpgrade());
+ *   httpServer.listen({ port: 3000 });
+ *
+ * Example usage with Express:
+ *
+ *   const memorelay = new Memorelay().connect();
+ *   const app = express();
+ *   app.use('/', memorelay.handleRequest());
+ *   app.get('/', (req, res) => {
+ *     res.send('HELLO WORLD');
+ *   });
+ *   const server = app.listen(3000);
+ *   server.on('upgrade', memorelay.handleUpgrade());
+ */
+class Memorelay extends memorelay_hub_1.MemorelayHub {
+    constructor(...plugins) {
+        super(...plugins, ...[
+            // NIP-20 command results.
+            plugins_3.commandResults,
+            // NIP-11 relay information document requests.
+            relay_information_document_1.relayInformationDocument,
+            // NIP-05 event deletion.
+            plugins_2.eventDeletion,
+            // NIP-01 basic Nostr protocol support.
+            plugins_1.basicProtocol,
+            // (Core) Create MemorelayClient instances from connected WebSockets.
+            create_clients_1.createClients,
+        ]);
+    }
+}
+exports.Memorelay = Memorelay;
+
+
+/***/ }),
+
+/***/ 7031:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Error type for malformed Nostr EVENTs.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BadEventError = void 0;
+/**
+ * Error thrown when a Nostr event is determined to be invalid or failed
+ * verification.
+ */
+class BadEventError extends Error {
+}
+exports.BadEventError = BadEventError;
+
+
+/***/ }),
+
+/***/ 1328:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Error type for bad messages incoming from a client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BadMessageError = void 0;
+class BadMessageError extends Error {
+    constructor(reason) {
+        super(`bad msg: ${reason}`);
+    }
+}
+exports.BadMessageError = BadMessageError;
+
+
+/***/ }),
+
+/***/ 1705:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to encapsulate a BadMessageError.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BadMessageErrorEvent = exports.BAD_MESSAGE_ERROR_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.BAD_MESSAGE_ERROR_EVENT_TYPE = 'bad-message-error';
+/**
+ * Event to encapsulate a BadMessageError thrown by some check function.
+ */
+class BadMessageErrorEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.BAD_MESSAGE_ERROR_EVENT_TYPE, details, options);
+    }
+}
+BadMessageErrorEvent.type = exports.BAD_MESSAGE_ERROR_EVENT_TYPE;
+exports.BadMessageErrorEvent = BadMessageErrorEvent;
+
+
+/***/ }),
+
+/***/ 5547:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal a Nostr EVENT message being broadcasted from
+ * one client to others.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BroadcastEventMessageEvent = exports.BROADCAST_EVENT_MESSAGE_EVENT_TYPE = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.BROADCAST_EVENT_MESSAGE_EVENT_TYPE = 'broadcast-event-message';
+/**
+ * Event emitted to communicate an EVENT message between connected clients.
+ * Generally, the client named in the event details will be different from the
+ * emitter of the event.
+ */
+class BroadcastEventMessageEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.BROADCAST_EVENT_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+BroadcastEventMessageEvent.type = exports.BROADCAST_EVENT_MESSAGE_EVENT_TYPE;
+exports.BroadcastEventMessageEvent = BroadcastEventMessageEvent;
+
+
+/***/ }),
+
+/***/ 210:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal that an EVENT was successfully added to the
+ * stored events database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DidAddEventToDatabaseEvent = exports.DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE = 'did-add-event-to-database';
+/**
+ * Event emitted when an event has just been added to the database.
+ */
+class DidAddEventToDatabaseEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE, details, options);
+    }
+}
+DidAddEventToDatabaseEvent.type = exports.DID_ADD_EVENT_TO_DATABASE_EVENT_TYPE;
+exports.DidAddEventToDatabaseEvent = DidAddEventToDatabaseEvent;
+
+
+/***/ }),
+
+/***/ 9991:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal an incoming EVENT was detected as a duplicate.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DuplicateEventMessageEvent = exports.DUPLICATE_EVENT_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.DUPLICATE_EVENT_MESSAGE_EVENT_TYPE = 'duplicate-event-message';
+/**
+ * Event emitted when an incoming EVENT payload was determined to be a duplicate
+ * event.
+ */
+class DuplicateEventMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.DUPLICATE_EVENT_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+DuplicateEventMessageEvent.type = exports.DUPLICATE_EVENT_MESSAGE_EVENT_TYPE;
+exports.DuplicateEventMessageEvent = DuplicateEventMessageEvent;
+
+
+/***/ }),
+
+/***/ 7338:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal an incoming CLOSE Nostr event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IncomingCloseMessageEvent = exports.INCOMING_CLOSE_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.INCOMING_CLOSE_MESSAGE_EVENT_TYPE = 'incoming-close-message';
+/**
+ * Event emitted when a MemorelayClient has received a properly formed,
+ * incoming, REQ Nostr message.
+ */
+class IncomingCloseMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.INCOMING_CLOSE_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+IncomingCloseMessageEvent.type = exports.INCOMING_CLOSE_MESSAGE_EVENT_TYPE;
+exports.IncomingCloseMessageEvent = IncomingCloseMessageEvent;
+
+
+/***/ }),
+
+/***/ 3602:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal an incoming generic Nostr event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IncomingEventMessageEvent = exports.INCOMING_EVENT_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.INCOMING_EVENT_MESSAGE_EVENT_TYPE = 'incoming-event-message';
+/**
+ * Event emitted when a MemorelayClient has received a properly formed,
+ * incoming, EVENT Nostr message.
+ */
+class IncomingEventMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.INCOMING_EVENT_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+IncomingEventMessageEvent.type = exports.INCOMING_EVENT_MESSAGE_EVENT_TYPE;
+exports.IncomingEventMessageEvent = IncomingEventMessageEvent;
+
+
+/***/ }),
+
+/***/ 9312:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal an incoming generic Nostr event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IncomingGenericMessageEvent = exports.INCOMING_GENERIC_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.INCOMING_GENERIC_MESSAGE_EVENT_TYPE = 'incoming-generic-message';
+/**
+ * Event emitted when a MemorelayClient has received a properly formed,
+ * incoming, gerenic Nostr message. Generally this will be in response to a
+ * previously received WebSocket 'message' event.
+ */
+class IncomingGenericMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.INCOMING_GENERIC_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+IncomingGenericMessageEvent.type = exports.INCOMING_GENERIC_MESSAGE_EVENT_TYPE;
+exports.IncomingGenericMessageEvent = IncomingGenericMessageEvent;
+
+
+/***/ }),
+
+/***/ 38:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal an incoming generic Nostr event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.IncomingReqMessageEvent = exports.INCOMING_REQ_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.INCOMING_REQ_MESSAGE_EVENT_TYPE = 'incoming-req-message';
+/**
+ * Event emitted when a MemorelayClient has received a properly formed,
+ * incoming, REQ Nostr message.
+ */
+class IncomingReqMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.INCOMING_REQ_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+IncomingReqMessageEvent.type = exports.INCOMING_REQ_MESSAGE_EVENT_TYPE;
+exports.IncomingReqMessageEvent = IncomingReqMessageEvent;
+
+
+/***/ }),
+
+/***/ 8574:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies a relay EOSE message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingEOSEMessageEvent = exports.OUTGOING_EOSE_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_EOSE_MESSAGE_EVENT_TYPE = 'outgoing-eose-message';
+/**
+ * Event emitted when an EOSE message is on its way out to the connected
+ * client. The default handler for this event will create an
+ * OutgoingGenericMessageEvent linked to it.
+ */
+class OutgoingEOSEMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_EOSE_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingEOSEMessageEvent.type = exports.OUTGOING_EOSE_MESSAGE_EVENT_TYPE;
+exports.OutgoingEOSEMessageEvent = OutgoingEOSEMessageEvent;
+
+
+/***/ }),
+
+/***/ 1241:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies a relay EVENT message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingEventMessageEvent = exports.OUTGOING_EVENT_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_EVENT_MESSAGE_EVENT_TYPE = 'outgoing-event-message';
+/**
+ * Event emitted when a NOTICE message is on its way out to the connected
+ * client. The default handler for this event will create an
+ * OutgoingGenericMessageEvent linked to it.
+ */
+class OutgoingEventMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_EVENT_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingEventMessageEvent.type = exports.OUTGOING_EVENT_MESSAGE_EVENT_TYPE;
+exports.OutgoingEventMessageEvent = OutgoingEventMessageEvent;
+
+
+/***/ }),
+
+/***/ 8779:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies a message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingGenericMessageEvent = exports.OUTGOING_GENERIC_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_GENERIC_MESSAGE_EVENT_TYPE = 'outgoing-generic-message';
+/**
+ * Event emitted when a message is on its way out to the connected WebSocket.
+ * The default handler for this event will serialize the message as JSON, then
+ * push it down the wire.
+ */
+class OutgoingGenericMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_GENERIC_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingGenericMessageEvent.type = exports.OUTGOING_GENERIC_MESSAGE_EVENT_TYPE;
+exports.OutgoingGenericMessageEvent = OutgoingGenericMessageEvent;
+
+
+/***/ }),
+
+/***/ 8137:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies a relay NOTICE message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingNoticeMessageEvent = exports.OUTGOING_NOTICE_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_NOTICE_MESSAGE_EVENT_TYPE = 'outgoing-notice-message';
+/**
+ * Event emitted when a NOTICE message is on its way out to the connected
+ * client. The default handler for this event will create an
+ * OutgoingGenericMessageEvent linked to it.
+ */
+class OutgoingNoticeMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_NOTICE_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingNoticeMessageEvent.type = exports.OUTGOING_NOTICE_MESSAGE_EVENT_TYPE;
+exports.OutgoingNoticeMessageEvent = OutgoingNoticeMessageEvent;
+
+
+/***/ }),
+
+/***/ 3930:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event signaling that the indicated subscription could not be
+ * found.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SubscriptionNotFoundEvent = exports.SUBSCRIPTION_NOT_FOUND_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.SUBSCRIPTION_NOT_FOUND_EVENT_TYPE = 'subscription-not-found';
+/**
+ * Event emitted when an indicated subscription id could not be found. This
+ * would happen if the relay received a CLOSE message with an unrecognized
+ * subscription id.
+ */
+class SubscriptionNotFoundEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.SUBSCRIPTION_NOT_FOUND_EVENT_TYPE, details, options);
+    }
+}
+SubscriptionNotFoundEvent.type = exports.SUBSCRIPTION_NOT_FOUND_EVENT_TYPE;
+exports.SubscriptionNotFoundEvent = SubscriptionNotFoundEvent;
+
+
+/***/ }),
+
+/***/ 5662:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event to signal that an EVENT will be added to the stored
+ * events database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WillAddEventToDatabaseEvent = exports.WILL_ADD_EVENT_TO_DATABASE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.WILL_ADD_EVENT_TO_DATABASE_EVENT_TYPE = 'will-add-event-to-database';
+/**
+ * Event emitted when an event is about to be added to the database.
+ */
+class WillAddEventToDatabaseEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.WILL_ADD_EVENT_TO_DATABASE_EVENT_TYPE, details, options);
+    }
+}
+WillAddEventToDatabaseEvent.type = exports.WILL_ADD_EVENT_TO_DATABASE_EVENT_TYPE;
+exports.WillAddEventToDatabaseEvent = WillAddEventToDatabaseEvent;
+
+
+/***/ }),
+
+/***/ 1962:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Parse an incoming Buffer as a generic Nostr message.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.bufferToGenericMessage = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
+const check_generic_message_1 = __nccwpck_require__(7345);
+/**
+ * Parse a payload data buffer as a generic message.
+ * @param payloadRawData Buffer of raw data, typically from a WebSocket.
+ * @returns Parsed generic message.
+ * @throws BadMessageError if the payload is unparseable or fails to conform to
+ * the structure of a Nostr message.
+ */
+function bufferToGenericMessage(payloadRawData) {
+    const payloadString = payloadRawData.toString('utf-8');
+    let payloadJson;
+    try {
+        payloadJson = JSON.parse(payloadString);
+    }
+    catch (err) {
+        throw new bad_message_error_1.BadMessageError('unparseable message');
+    }
+    return (0, check_generic_message_1.checkGenericMessage)(payloadJson);
+}
+exports.bufferToGenericMessage = bufferToGenericMessage;
+
+
+/***/ }),
+
+/***/ 406:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Check whether a message conforms to Nostr CLOSE message syntax.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkClientCloseMessage = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
+const check_subscription_id_1 = __nccwpck_require__(4584);
+/**
+ * Given an incoming message, check whether it conforms to the Nostr CLOSE
+ * message type.
+ * @param maybeCloseMessage Potential ClientCloseMessage to check.
+ * @returns The same incoming message, but cast as ClientCloseMessage.
+ * @throws BadMessageError if the incoming message is malformed.
+ */
+function checkClientCloseMessage(maybeCloseMessage) {
+    if (maybeCloseMessage[0] !== 'CLOSE') {
+        throw new bad_message_error_1.BadMessageError('wrong message type');
+    }
+    (0, check_subscription_id_1.checkSubscriptionId)(maybeCloseMessage[1]);
+    if (maybeCloseMessage.length > 2) {
+        throw new bad_message_error_1.BadMessageError('extra elements detected');
+    }
+    return maybeCloseMessage;
+}
+exports.checkClientCloseMessage = checkClientCloseMessage;
+
+
+/***/ }),
+
+/***/ 9824:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Check whether a Nostr message conforms to the incoming client
+ * EVENT message type.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkClientEventMessage = void 0;
 const nostr_tools_1 = __nccwpck_require__(259);
-const bad_message_error_1 = __nccwpck_require__(194);
-const verify_filters_1 = __nccwpck_require__(8562);
+const bad_message_error_1 = __nccwpck_require__(1328);
+/**
+ * Given a Nostr message, check whether it conforms to the EVENT message type.
+ * @param maybeEventMessage Potential EventMessage to check.
+ * @returns The same incoming message, but cast as ClientEventMessage.
+ * @throws BadMessageError if the incoming message is malformed.
+ */
+function checkClientEventMessage(maybeEventMessage) {
+    if (maybeEventMessage[0] !== 'EVENT') {
+        throw new bad_message_error_1.BadMessageError('wrong message type');
+    }
+    if (maybeEventMessage.length < 2) {
+        throw new bad_message_error_1.BadMessageError('event missing');
+    }
+    if (maybeEventMessage.length > 2) {
+        throw new bad_message_error_1.BadMessageError('extra elements detected');
+    }
+    const payloadEvent = maybeEventMessage[1];
+    if (!(0, nostr_tools_1.validateEvent)(payloadEvent)) {
+        throw new bad_message_error_1.BadMessageError('event invalid');
+    }
+    if (!payloadEvent.sig) {
+        throw new bad_message_error_1.BadMessageError('event signature missing');
+    }
+    if (!(0, nostr_tools_1.verifySignature)(payloadEvent)) {
+        throw new bad_message_error_1.BadMessageError('bad signature');
+    }
+    return maybeEventMessage;
+}
+exports.checkClientEventMessage = checkClientEventMessage;
+
+
+/***/ }),
+
+/***/ 1929:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Check whether an incoming client REQ message is valid.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkClientReqMessage = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
+const check_subscription_id_1 = __nccwpck_require__(4584);
+const verify_filters_1 = __nccwpck_require__(6776);
+/**
+ * Given a GenericMessage, check whether it conforms to the REQ message type.
+ * @param maybeClientReqMessage Potential ClientReqMessage to check.
+ * @returns The same message, but cast as ClientReqMessage.
+ * @throws BadMessageError if the incoming message is malformed.
+ */
+function checkClientReqMessage(maybeClientReqMessage) {
+    if (maybeClientReqMessage[0] !== 'REQ') {
+        throw new bad_message_error_1.BadMessageError('wrong message type');
+    }
+    (0, check_subscription_id_1.checkSubscriptionId)(maybeClientReqMessage[1]);
+    try {
+        for (let i = 2; i < maybeClientReqMessage.length; i++) {
+            (0, verify_filters_1.verifyFilter)(maybeClientReqMessage[i]);
+        }
+    }
+    catch (err) {
+        throw new bad_message_error_1.BadMessageError(err.message);
+    }
+    return maybeClientReqMessage;
+}
+exports.checkClientReqMessage = checkClientReqMessage;
+
+
+/***/ }),
+
+/***/ 7345:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Check whether an object conforms to Nostr message structure.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkGenericMessage = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
+/**
+ * Check whether an unknown object conforms to the basic Nostr structure of a
+ * message. If the object does not conform, this function throws a
+ * BatMessageError to indicate in what way it failed.
+ * @param object The object to check.
+ * @returns The tested object, cast as a GenericMessage.
+ * @throws BadMessageError if the object is not a message.
+ */
+function checkGenericMessage(maybeMessage) {
+    if (!Array.isArray(maybeMessage)) {
+        throw new bad_message_error_1.BadMessageError('message was not an array');
+    }
+    if (!maybeMessage.length) {
+        throw new bad_message_error_1.BadMessageError('message type missing');
+    }
+    const eventType = maybeMessage[0];
+    if (typeof eventType !== 'string') {
+        throw new bad_message_error_1.BadMessageError('message type was not a string');
+    }
+    return maybeMessage;
+}
+exports.checkGenericMessage = checkGenericMessage;
+
+
+/***/ }),
+
+/***/ 4584:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Check whether a subscription id is valid.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkSubscriptionId = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
 /**
  * Check whether the subscription id is valid.
  * @param subscriptionId Possibly valid subscription id.
+ * @throws BadMessageError if the id is invalid.
  */
 function checkSubscriptionId(subscriptionId) {
     if (subscriptionId === undefined) {
@@ -28838,178 +31145,12 @@ function checkSubscriptionId(subscriptionId) {
     }
 }
 exports.checkSubscriptionId = checkSubscriptionId;
-/**
- * Parse a payload data buffer as a generic message.
- */
-function bufferToGenericMessage(payloadRawData) {
-    const payloadString = payloadRawData.toString('utf-8');
-    let payloadJson;
-    try {
-        payloadJson = JSON.parse(payloadString);
-    }
-    catch (err) {
-        throw new bad_message_error_1.BadMessageError('unparseable message');
-    }
-    if (!Array.isArray(payloadJson)) {
-        throw new bad_message_error_1.BadMessageError('message was not an array');
-    }
-    if (!payloadJson.length) {
-        throw new bad_message_error_1.BadMessageError('message type missing');
-    }
-    const eventType = payloadJson[0];
-    if (typeof eventType !== 'string') {
-        throw new bad_message_error_1.BadMessageError('message type was not a string');
-    }
-    return payloadJson;
-}
-exports.bufferToGenericMessage = bufferToGenericMessage;
-/**
- * Parse a payload data buffer as a ClientMessage.
- * @param payloadRawData The incoming Buffer data.
- * @returns A parsed, valid ClientMessage.
- */
-function bufferToClientMessage(payloadRawData) {
-    const genericMessage = bufferToGenericMessage(payloadRawData);
-    const eventType = genericMessage[0];
-    if (eventType === 'EVENT') {
-        if (genericMessage.length < 2) {
-            throw new bad_message_error_1.BadMessageError('event missing');
-        }
-        if (genericMessage.length > 2) {
-            throw new bad_message_error_1.BadMessageError('extra elements detected');
-        }
-        const payloadEvent = genericMessage[1];
-        if (!(0, nostr_tools_1.validateEvent)(payloadEvent)) {
-            throw new bad_message_error_1.BadMessageError('event invalid');
-        }
-        if (!payloadEvent.sig) {
-            throw new bad_message_error_1.BadMessageError('event signature missing');
-        }
-        if (!(0, nostr_tools_1.verifySignature)(payloadEvent)) {
-            throw new bad_message_error_1.BadMessageError('bad signature');
-        }
-        return genericMessage;
-    }
-    if (eventType === 'REQ') {
-        checkSubscriptionId(genericMessage[1]);
-        try {
-            for (let i = 2; i < genericMessage.length; i++) {
-                (0, verify_filters_1.verifyFilter)(genericMessage[i]);
-            }
-        }
-        catch (err) {
-            throw new bad_message_error_1.BadMessageError(err.message);
-        }
-        return genericMessage;
-    }
-    if (eventType === 'CLOSE') {
-        checkSubscriptionId(genericMessage[1]);
-        if (genericMessage.length > 2) {
-            throw new bad_message_error_1.BadMessageError('extra elements detected');
-        }
-        return genericMessage;
-    }
-    throw new bad_message_error_1.BadMessageError('unrecognized event type');
-}
-exports.bufferToClientMessage = bufferToClientMessage;
-/**
- * Parse a payload data buffer as a RelayMessage.
- * @param payloadRawData The incoming Buffer data.
- * @returns A parsed, valid RelayMessage.
- */
-function bufferToRelayMessage(payloadRawData) {
-    const genericMessage = bufferToGenericMessage(payloadRawData);
-    const eventType = genericMessage[0];
-    if (typeof eventType !== 'string') {
-        throw new bad_message_error_1.BadMessageError('message type was not a string');
-    }
-    if (eventType === 'EVENT') {
-        if (genericMessage.length < 2) {
-            throw new bad_message_error_1.BadMessageError('event missing');
-        }
-        if (genericMessage.length > 2) {
-            throw new bad_message_error_1.BadMessageError('extra elements detected');
-        }
-        const payloadEvent = genericMessage[1];
-        if (!(0, nostr_tools_1.validateEvent)(payloadEvent)) {
-            throw new bad_message_error_1.BadMessageError('event invalid');
-        }
-        if (!payloadEvent.sig) {
-            throw new bad_message_error_1.BadMessageError('event signature missing');
-        }
-        if (!(0, nostr_tools_1.verifySignature)(payloadEvent)) {
-            throw new bad_message_error_1.BadMessageError('bad signature');
-        }
-        return genericMessage;
-    }
-    if (eventType === 'EOSE') {
-        checkSubscriptionId(genericMessage[1]);
-        return genericMessage;
-    }
-    if (eventType === 'NOTICE') {
-        if (genericMessage.length < 2) {
-            throw new bad_message_error_1.BadMessageError('notice message missing');
-        }
-        if (typeof genericMessage[1] !== 'string') {
-            throw new bad_message_error_1.BadMessageError('notice message type mismatch');
-        }
-        if (genericMessage.length > 2) {
-            throw new bad_message_error_1.BadMessageError('extra elements detected');
-        }
-        return genericMessage;
-    }
-    if (eventType === 'OK') {
-        if (genericMessage.length < 2) {
-            throw new bad_message_error_1.BadMessageError('event id missing');
-        }
-        const eventId = genericMessage[1];
-        if (typeof eventId !== 'string') {
-            throw new bad_message_error_1.BadMessageError('event id type mismatch');
-        }
-        if (eventId.length !== 64) {
-            throw new bad_message_error_1.BadMessageError('event id malformed');
-        }
-        if (genericMessage.length < 3) {
-            throw new bad_message_error_1.BadMessageError('status missing');
-        }
-        const status = genericMessage[2];
-        if (typeof status !== 'boolean') {
-            throw new bad_message_error_1.BadMessageError('status type mismatch');
-        }
-        if (genericMessage.length < 4) {
-            throw new bad_message_error_1.BadMessageError('description missing');
-        }
-        const description = genericMessage[3];
-        if (typeof description !== 'string') {
-            throw new bad_message_error_1.BadMessageError('description type mismatch');
-        }
-        if (description.length) {
-            const colonIndex = description.indexOf(':');
-            if (colonIndex < 1) {
-                throw new bad_message_error_1.BadMessageError('reason missing');
-            }
-            const reason = description.substring(0, colonIndex).trim();
-            if (!reason.length) {
-                throw new bad_message_error_1.BadMessageError('reason missing');
-            }
-            if (reason !== 'duplicate' && reason !== 'deleted') {
-                throw new bad_message_error_1.BadMessageError(`unrecognized reason: ${reason}`);
-            }
-        }
-        if (genericMessage.length > 4) {
-            throw new bad_message_error_1.BadMessageError('extra elements detected');
-        }
-        return genericMessage;
-    }
-    throw new bad_message_error_1.BadMessageError('unrecognized event type');
-}
-exports.bufferToRelayMessage = bufferToRelayMessage;
 
 
 /***/ }),
 
-/***/ 6331:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 9543:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -29017,36 +31158,148 @@ exports.bufferToRelayMessage = bufferToRelayMessage;
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Utility function for creating a Promise and returning it and
- * both its resolve and reject functions.
+ * @fileoverview Rudimentary database for managing events.
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createPromise = void 0;
+exports.EventsDatabase = void 0;
+const verify_event_1 = __nccwpck_require__(3103);
+const verify_filters_1 = __nccwpck_require__(6776);
+const binary_search_1 = __importDefault(__nccwpck_require__(9326));
+const nostr_tools_1 = __nccwpck_require__(259);
 /**
- * Create a new Promise and return it along with functions that can be used to
- * either resolve or reject the promise.
- * @returns The Promise and its resolve and reject functions.
+ * Comparator function for binary searching an array of events sorted by their
+ * created_at values.
+ * @param event The event in the sorted array being evaluated.
+ * @param createdAt The needle created_at value being searched for.
+ * @returns A number indicating the direction of the comparison.
  */
-function createPromise() {
-    // Must assign a value to combat TS 2454 'used before being assigned'.
-    let resolveOrUndefined = undefined;
-    let rejectOrUndefined = undefined;
-    const promise = new Promise((promiseResolve, promiseReject) => {
-        resolveOrUndefined = promiseResolve;
-        rejectOrUndefined = promiseReject;
-    });
-    // Laborious re-casting to combat TS 2322 'not assignable' and TS 2352
-    // 'Conversion of type' errors.
-    const resolve = resolveOrUndefined;
-    const reject = rejectOrUndefined;
-    return { promise, resolve, reject };
+function compareCreatedAt(event, createdAt) {
+    return event.createdAt - createdAt;
 }
-exports.createPromise = createPromise;
+/**
+ * Database of Nostr events, indexed by id and by created_at timestamp.
+ */
+class EventsDatabase {
+    constructor() {
+        /**
+         * Map of events keyed by id known to this memorelay instance.
+         */
+        this.eventsMap = new Map();
+        /**
+         * Array of EventsMaps sorted by the `created_at` field. Used for performing
+         * ordered queries.
+         */
+        this.eventsByCreatedAt = [];
+    }
+    /**
+     * Returns whether the provided event is in memory.
+     * @param eventId The id of the event to check.
+     */
+    hasEvent(eventId) {
+        return this.eventsMap.has(eventId);
+    }
+    /**
+     * Add the given event to the events map and return whether successful.
+     * @param event The event to add.
+     * @returns Whether the event was added.
+     * @throws BadEventError if the incoming object is not a valid, signed event.
+     */
+    addEvent(event) {
+        (0, verify_event_1.verifyEvent)(event);
+        if (this.hasEvent(event.id)) {
+            return false;
+        }
+        this.eventsMap.set(event.id, event);
+        // If found, the result will be the matching index. Otherwise, it will be a
+        // negative number indicating the index at which the missing element should
+        // be inserted.
+        const result = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, (a, b) => a.createdAt - b);
+        if (result < 0) {
+            // Since an index could not be found, the insertion index is the two's
+            // compliment inverse (~) of the result value.
+            const insertionIndex = ~result;
+            // Insert a new events map for the missing created_at value.
+            const eventsMap = new Map();
+            eventsMap.set(event.id, event);
+            this.eventsByCreatedAt.splice(insertionIndex, 0, {
+                createdAt: event.created_at,
+                eventsMap,
+            });
+            // Insert the event into the new events map.
+            this.eventsByCreatedAt[insertionIndex].eventsMap.set(event.id, event);
+        }
+        else {
+            // Search was successful, so the found index is equal to the result.
+            const foundIndex = result;
+            // Insert the event into the found events map.
+            this.eventsByCreatedAt[foundIndex].eventsMap.set(event.id, event);
+        }
+        return true;
+    }
+    /**
+     * Delete the event from the events map and return whether successful.
+     * @param eventId The id of the event to delete.
+     * @returns Whether the event was deleted.
+     */
+    deleteEvent(eventId) {
+        const event = this.eventsMap.get(eventId);
+        if (!event) {
+            return false;
+        }
+        this.eventsMap.delete(event.id);
+        const index = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, compareCreatedAt);
+        const { eventsMap } = this.eventsByCreatedAt[index];
+        eventsMap.delete(event.id);
+        if (!eventsMap.size) {
+            // Remove record if there are no events at this created_at left.
+            this.eventsByCreatedAt.splice(index, 1);
+        }
+        return true;
+    }
+    /**
+     * Find and return all events which match the provided array of filters. If
+     * the filters array is not provided, or if it is an empty array, then no
+     * criteria are enforced and all events will match.
+     * @param filters Optional array of Filter objects to test.
+     * @returns An array of matching events.
+     */
+    matchFilters(filters) {
+        filters && (0, verify_filters_1.verifyFilters)(filters);
+        let limit = Infinity;
+        for (const filter of filters !== null && filters !== void 0 ? filters : []) {
+            if (filter.limit !== undefined && filter.limit < limit) {
+                limit = filter.limit;
+            }
+        }
+        const matchingEvents = [];
+        // Walk backwards through the eventsByCreatedAt array so that we find the
+        // latest events first on our way to satisfying the limit.
+        for (let index = this.eventsByCreatedAt.length - 1; index >= 0 && matchingEvents.length < limit; index--) {
+            const { eventsMap } = this.eventsByCreatedAt[index];
+            for (const [, event] of eventsMap) {
+                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
+                    matchingEvents.push(event);
+                    if (matchingEvents.length >= limit) {
+                        break;
+                    }
+                }
+            }
+        }
+        // Because we walked backwards through the eventsByCreatedAt array, the
+        // collection will be in reverse order by created_at stamp.
+        matchingEvents.reverse();
+        return matchingEvents;
+    }
+}
+exports.EventsDatabase = EventsDatabase;
 
 
 /***/ }),
 
-/***/ 5375:
+/***/ 3416:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -29109,7 +31362,7 @@ exports.FILTER_FIELDS_MAP = exports.FILTER_FIELDS.reduce((map, key) => (Object.a
 
 /***/ }),
 
-/***/ 3280:
+/***/ 5925:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -29118,677 +31371,22 @@ exports.FILTER_FIELDS_MAP = exports.FILTER_FIELDS.reduce((map, key) => (Object.a
  * @license SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @fileoverview Errors which indicate internal state issues.
+ * @fileoverview Serialize an object as a Buffer containing JSON.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.InternalError = void 0;
-class InternalError extends Error {
+exports.objectToJsonBuffer = void 0;
+/**
+ * Utility function to turn an object into a buffer.
+ */
+function objectToJsonBuffer(payloadJson) {
+    return Buffer.from(JSON.stringify(payloadJson), 'utf-8');
 }
-exports.InternalError = InternalError;
+exports.objectToJsonBuffer = objectToJsonBuffer;
 
 
 /***/ }),
 
-/***/ 1689:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Coordinator object for tracking events and subscriptions.
- */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MemorelayCoordinator = void 0;
-const internal_error_1 = __nccwpck_require__(3280);
-const verify_event_1 = __nccwpck_require__(1560);
-const verify_filters_1 = __nccwpck_require__(8562);
-const binary_search_1 = __importDefault(__nccwpck_require__(9326));
-const nostr_tools_1 = __nccwpck_require__(259);
-/**
- * Comparator function for binary searching an array of events sorted by their
- * created_at values.
- * @param event The event in the sorted array being evaluated.
- * @param createdAt The needle created_at value being searched for.
- * @returns A number indicating the direction of the comparison.
- */
-function compareCreatedAt(event, createdAt) {
-    return event.createdAt - createdAt;
-}
-class MemorelayCoordinator {
-    constructor() {
-        /**
-         * Map of events keyed by id known to this memorelay instance.
-         */
-        this.eventsMap = new Map();
-        /**
-         * Array of EventsMaps sorted by the `created_at` field. Used for performing
-         * ordered queries.
-         */
-        this.eventsByCreatedAt = [];
-        /**
-         * Set containing the ids of previously deleted events.
-         */
-        this.deletedEventIds = new Set();
-        /**
-         * Counter to keep track of the next subscription number to use.
-         */
-        this.nextSubscriptionNumber = 0;
-        /**
-         * Map of subscriptions.
-         */
-        this.subscriptionsMap = new Map();
-    }
-    /**
-     * Returns whether the provided event is in memory.
-     * @param eventId The id of the event to check.
-     */
-    hasEvent(eventId) {
-        return this.eventsMap.has(eventId);
-    }
-    /**
-     * Add the given event to the events map and return whether successful.
-     * @param event The event to add.
-     * @returns Whether the event was added.
-     * @throws BadEventError if the incoming object is not a valid, signed event.
-     */
-    addEvent(event) {
-        (0, verify_event_1.verifyEvent)(event);
-        if (this.hasEvent(event.id)) {
-            return false;
-        }
-        if (this.deletedEventIds.has(event.id)) {
-            if (event.kind === nostr_tools_1.Kind.EventDeletion) {
-                // An earlier deletion event named this event as one to delete. At that
-                // time, we had yet to see this event, and so could not have known that
-                // it was an illegal delete-a-deletion event. Now we do know, and so we
-                // can remove it from the set of known deleted event ids.
-                this.deletedEventIds.delete(event.id);
-            }
-            else {
-                // This non-delete event was previously marked for deletion, so we
-                // reject the addition here.
-                return false;
-            }
-        }
-        this.eventsMap.set(event.id, event);
-        const result = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, (a, b) => a.createdAt - b);
-        if (result < 0) {
-            const eventsMap = new Map();
-            eventsMap.set(event.id, event);
-            this.eventsByCreatedAt.splice(~result, 0, {
-                createdAt: event.created_at,
-                eventsMap,
-            });
-        }
-        const index = result < 0 ? ~result : result;
-        this.eventsByCreatedAt[index].eventsMap.set(event.id, event);
-        for (const [, { callbackFn, filters, subscriptionNumber }] of this
-            .subscriptionsMap) {
-            queueMicrotask(() => {
-                if (!this.subscriptionsMap.has(subscriptionNumber)) {
-                    // Short-circuit if this subscription has been removed.
-                    return;
-                }
-                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
-                    callbackFn(event);
-                }
-            });
-        }
-        // Implement NIP-09 event deletion.
-        if (event.kind === nostr_tools_1.Kind.EventDeletion) {
-            for (const tag of event.tags) {
-                const [tagType, eventId] = tag;
-                if (tagType !== 'e' ||
-                    typeof eventId !== 'string' ||
-                    eventId.length !== 64) {
-                    // Tag was the wrong kind, or malformed.
-                    continue;
-                }
-                const storedEvent = this.eventsMap.get(eventId);
-                if (storedEvent && storedEvent.kind === nostr_tools_1.Kind.EventDeletion) {
-                    // NIP-09 does not allow deleting a deletion event.
-                    continue;
-                }
-                this.deletedEventIds.add(eventId);
-                this.deleteEvent(eventId);
-            }
-        }
-        return true;
-    }
-    /**
-     * Delete the event from the events map and return whether successful.
-     * @param eventId The id of the event to delete.
-     * @returns Whether the event was deleted.
-     */
-    deleteEvent(eventId) {
-        const event = this.eventsMap.get(eventId);
-        if (!event) {
-            return false;
-        }
-        this.eventsMap.delete(event.id);
-        const index = (0, binary_search_1.default)(this.eventsByCreatedAt, event.created_at, compareCreatedAt);
-        if (index < 0) {
-            throw new internal_error_1.InternalError('created_at events map missing');
-        }
-        const { eventsMap } = this.eventsByCreatedAt[index];
-        if (!eventsMap.has(event.id)) {
-            throw new internal_error_1.InternalError('could not find event to delete');
-        }
-        eventsMap.delete(event.id);
-        if (!eventsMap.size) {
-            // Remove record if there are no events at this created_at left.
-            this.eventsByCreatedAt.splice(index, 1);
-        }
-        return true;
-    }
-    /**
-     * Find and return all events which match the provided array of filters. If
-     * the filters array is not provided, or if it is an empty array, then no
-     * criteria are enforced and all events will match.
-     * @param filters Optional array of Filter objects to test.
-     * @returns An array of matching events.
-     */
-    matchFilters(filters) {
-        filters && (0, verify_filters_1.verifyFilters)(filters);
-        let limit = Infinity;
-        for (const filter of filters !== null && filters !== void 0 ? filters : []) {
-            if (filter.limit !== undefined && filter.limit < limit) {
-                limit = filter.limit;
-            }
-        }
-        const matchingEvents = [];
-        // Walk backwards through the eventsByCreatedAt array so that we find the
-        // latest events first on our way to satisfying the limit.
-        for (let index = this.eventsByCreatedAt.length - 1; index >= 0 && matchingEvents.length < limit; index--) {
-            const { eventsMap } = this.eventsByCreatedAt[index];
-            for (const [, event] of eventsMap) {
-                if (!filters || filters.length < 1 || (0, nostr_tools_1.matchFilters)(filters, event)) {
-                    matchingEvents.push(event);
-                    if (matchingEvents.length >= limit) {
-                        break;
-                    }
-                }
-            }
-        }
-        // Because we walked backwards through the eventsByCreatedAt array, the
-        // collection will be in reverse order by created_at stamp.
-        matchingEvents.reverse();
-        return matchingEvents;
-    }
-    /**
-     * Subscribe to events matching the optional filters list. Only newly added
-     * events AFTER the subscription is made will trigger the callback function.
-     * @param callbackFn Function to invoke when events are added that match
-     * the filter(s).
-     * @param filters Optional list of filters to match. If omitted or empty, then
-     * all added events will trigger the callback.
-     * @returns Unique subscription index number to be used with unsubscribe.
-     */
-    subscribe(callbackFn, filters) {
-        filters && (0, verify_filters_1.verifyFilters)(filters);
-        const subscriptionId = this.nextSubscriptionNumber++;
-        if (this.subscriptionsMap.has(subscriptionId)) {
-            throw new internal_error_1.InternalError('subscription id conflict');
-        }
-        this.subscriptionsMap.set(subscriptionId, {
-            callbackFn,
-            filters,
-            subscriptionNumber: subscriptionId,
-        });
-        return subscriptionId;
-    }
-    /**
-     * Unsubscribe from the previously established subscription. If there was no
-     * such subscription with the provided id, then false is returned.
-     * @param subscriptionId Unique subscription id number previously returned by
-     * a call to subscribe().
-     * @returns Whether the subscription was removed.
-     * @throws RangeError if the provided subscription id is invalid.
-     */
-    unsubscribe(subscriptionId) {
-        if (!Number.isInteger(subscriptionId)) {
-            throw new RangeError('invalid subscription id');
-        }
-        if (!this.subscriptionsMap.has(subscriptionId)) {
-            return false;
-        }
-        this.subscriptionsMap.delete(subscriptionId);
-        return true;
-    }
-    /**
-     * Determine whether an event is known to have been deleted.
-     */
-    wasDeleted(eventId) {
-        return this.deletedEventIds.has(eventId);
-    }
-}
-exports.MemorelayCoordinator = MemorelayCoordinator;
-
-
-/***/ }),
-
-/***/ 4997:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Memorelay WebSocket server.
- */
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MemorelayServer = void 0;
-const internal_error_1 = __nccwpck_require__(3280);
-const memorelay_coordinator_1 = __nccwpck_require__(1689);
-const subscriber_1 = __nccwpck_require__(4593);
-const http_1 = __nccwpck_require__(3685);
-const ws_1 = __nccwpck_require__(8867);
-const create_promise_1 = __nccwpck_require__(6331);
-class MemorelayServer {
-    /**
-     * @param port TCP port on which to listen.
-     * @param logger Logger to use for reporting.
-     */
-    constructor(port, logger) {
-        this.port = port;
-        this.logger = logger;
-        /**
-         * HTTP server to listen for connections.
-         */
-        this.httpServer = (0, http_1.createServer)((request, response) => {
-            this.handleRequest(request, response);
-        });
-        /**
-         * WebSocketServer to listen for connections.
-         */
-        this.webSocketServer = new ws_1.WebSocketServer({ noServer: true });
-        /**
-         * Backing coordinator instance for managing received events.
-         */
-        this.coordinator = new memorelay_coordinator_1.MemorelayCoordinator();
-        /**
-         * Mapping from WebSockets to the connected Subscriber objects.
-         */
-        this.subscribers = new Map();
-        this.httpServer.on('upgrade', (request, socket, head) => {
-            if (request.url === undefined) {
-                this.logger.log('warning', 'Request url is undefined');
-                socket.destroy();
-                return;
-            }
-            if (request.url !== '/') {
-                this.logger.log('verbose', `Rejecting WebSocket upgrade on non-root path: ${request.url}`);
-                socket.destroy();
-                return;
-            }
-            this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-                this.webSocketServer.emit('connection', webSocket, request);
-            });
-        });
-        this.httpServer.on('error', (error) => {
-            this.logger.log('error', error);
-            if (this.listeningPromise) {
-                this.listeningPromise.reject(error);
-            }
-        });
-        this.webSocketServer.on('connection', (webSocket, request) => {
-            this.connect(webSocket, request);
-        });
-    }
-    /**
-     * Begin listening for HTTP connections.
-     * @returns A promise which resolves to whether the listening was successful.
-     */
-    listen() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.listeningPromise || this.httpServer.listening) {
-                return Promise.resolve(false);
-            }
-            this.listeningPromise = (0, create_promise_1.createPromise)();
-            const { promise, resolve } = this.listeningPromise;
-            this.httpServer.listen({ port: this.port }, () => {
-                this.logger.log('info', `Memorelay listening on port ${this.port}`);
-                resolve(true);
-                this.listeningPromise = undefined;
-            });
-            return promise;
-        });
-    }
-    /**
-     * Stop listening for WebSocket connections.
-     * @returns A promise that resolves to whether the stopping was successful.
-     */
-    stop() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.stoppingPromise || !this.httpServer.listening) {
-                return Promise.resolve(false);
-            }
-            this.stoppingPromise = (0, create_promise_1.createPromise)();
-            const { promise, resolve, reject } = this.stoppingPromise;
-            this.httpServer.close((error) => {
-                this.stoppingPromise = undefined;
-                if (error) {
-                    reject(error);
-                    return;
-                }
-                this.logger.log('info', 'Memorelay closed');
-                resolve(true);
-            });
-            return promise;
-        });
-    }
-    /**
-     * Accept an incoming WebSocket connection. Should generally only be called by
-     * the WebSocketServer's 'connection' event handler.
-     * @param webSocket The WebSocket client that has connected.
-     * @param incomingMessage The incoming http request.
-     * @returns The connected Subscriber object.
-     * @throws If the webSocket is already connected.
-     */
-    connect(webSocket, incomingMessage) {
-        if (this.subscribers.has(webSocket)) {
-            throw new Error('websocket is already connected');
-        }
-        const subscriber = new subscriber_1.Subscriber(webSocket, incomingMessage, this.logger, this.coordinator);
-        this.subscribers.set(webSocket, subscriber);
-        webSocket.on('close', () => {
-            if (!this.subscribers.has(webSocket)) {
-                throw new internal_error_1.InternalError('close event received for missing websocket');
-            }
-            this.subscribers.delete(webSocket);
-        });
-        return subscriber;
-    }
-    /**
-     * Handle an incoming http request.
-     */
-    handleRequest(request, response) {
-        var _a;
-        if (request.method !== 'HEAD' && request.method !== 'GET') {
-            response.writeHead(501, { 'Content-Type': 'text/plain' });
-            response.write(`Method not implemented: ${(_a = request.method) !== null && _a !== void 0 ? _a : 'undefined'}`);
-            response.end();
-            return;
-        }
-        if (request.headers.accept === 'application/nostr+json') {
-            this.sendRelayDocument(request, response);
-            return;
-        }
-        response.writeHead(200, { 'Content-Type': 'text/plain' });
-        response.write('memorelay');
-        response.end();
-    }
-    /**
-     * Send the NIP-11 relay information document.
-     */
-    sendRelayDocument(request, response) {
-        response.writeHead(200, { 'Content-Type': 'application/json' });
-        if (request.method === 'GET') {
-            response.write(JSON.stringify(this.getRelayDocument()));
-        }
-        response.end();
-    }
-    /**
-     * Return the NIP-11 relay information document.
-     */
-    getRelayDocument() {
-        return {
-            supported_nips: [1, 9, 11, 20],
-        };
-    }
-}
-exports.MemorelayServer = MemorelayServer;
-
-
-/***/ }),
-
-/***/ 8060:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Serialize a Nostr message to send as a Buffer.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.messageToBuffer = void 0;
-function messageToBuffer(message) {
-    return Buffer.from(JSON.stringify(message), 'utf8');
-}
-exports.messageToBuffer = messageToBuffer;
-
-
-/***/ }),
-
-/***/ 3788:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Find, read and return the contents of the project's shipped
- * package.json file.
- */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readPackageJson = exports.PACKAGE_JSON_PATH = void 0;
-const fs_1 = __importDefault(__nccwpck_require__(7147));
-const path_1 = __importDefault(__nccwpck_require__(1017));
-/**
- * The path to the package.json file is the same in both dev mode and packaged
- * mode because the files exist at the same depth relative to the project root.
- *
- * - Dev mode (this file): ./src/lib/package-json.ts
- * - Prod mode (packaged): ./dist/bin/index.js
- *
- * If this code is ever moved to a different directory depth, then the logic
- * will need to be updated to reflect the potentially different relative path to
- * package.json.
- */
-exports.PACKAGE_JSON_PATH = path_1.default.join(__dirname, '..', '..', 'package.json');
-/**
- * Find the project's package.json file, read it, and return the contents. This
- * function uses synchronous file system access because it is intended to run
- * once at the outset of the service.
- * @returns The package.json file contents.
- */
-function readPackageJson() {
-    const packageJsonText = fs_1.default.readFileSync(exports.PACKAGE_JSON_PATH, 'utf-8');
-    return JSON.parse(packageJsonText);
-}
-exports.readPackageJson = readPackageJson;
-
-
-/***/ }),
-
-/***/ 4593:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview A connected Subscriber to a MemorelayServer.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Subscriber = void 0;
-const buffer_to_message_1 = __nccwpck_require__(809);
-const message_to_buffer_1 = __nccwpck_require__(8060);
-const nostr_tools_1 = __nccwpck_require__(259);
-class Subscriber {
-    /**
-     * @param webSocket The connected socket that spawned this Subscriber.
-     * @param incomingMessage Incoming HTTP message details.
-     * @param logger
-     * @param memorelay Backing Memorelay for handling events.
-     */
-    constructor(webSocket, incomingMessage, logger, memorelay) {
-        var _a;
-        this.webSocket = webSocket;
-        this.incomingMessage = incomingMessage;
-        this.logger = logger;
-        this.memorelay = memorelay;
-        /**
-         * Mapping from Nostr REQ subscription id string to the Memorelay coordinator
-         * subscription number. These subscriptions are only created AFTER the sweep
-         * of historical events has completed.
-         */
-        this.subscriptionIdMap = new Map();
-        const { headers, url: path } = incomingMessage;
-        const secWebsocketKey = headers['sec-websocket-key'];
-        const url = `${(_a = headers.host) !== null && _a !== void 0 ? _a : ''}${path !== null && path !== void 0 ? path : '/'}`;
-        this.logger.log('http', 'OPEN (%s) %s', secWebsocketKey, url);
-        this.webSocket.on('close', (code) => {
-            for (const [, existingSubscriptionNumber] of this.subscriptionIdMap) {
-                this.memorelay.unsubscribe(existingSubscriptionNumber);
-            }
-            this.subscriptionIdMap.clear();
-            this.logger.log('http', 'CLOSE (%s) %s', secWebsocketKey, code);
-        });
-        this.webSocket.on('error', (error) => {
-            this.logger.log('error', error);
-        });
-        this.webSocket.on('message', (data) => {
-            this.handleMessage(data);
-        });
-    }
-    /**
-     * Handle an incoming WebSocket message.
-     * @param payloadDataBuffer Buffer of incoming message data.
-     */
-    handleMessage(payloadDataBuffer) {
-        if (!(payloadDataBuffer instanceof Buffer)) {
-            throw new Error('unexpected message data type');
-        }
-        let clientMessage;
-        try {
-            clientMessage = (0, buffer_to_message_1.bufferToClientMessage)(payloadDataBuffer);
-        }
-        catch (err) {
-            const errorMessage = err.message;
-            this.logger.log('verbose', `${errorMessage}`);
-            this.webSocket.send(JSON.stringify(['NOTICE', `ERROR: ${errorMessage}`]));
-            return;
-        }
-        const messageType = clientMessage[0];
-        this.logger.log('silly', `MESSAGE (${messageType})`);
-        if (messageType === 'EVENT') {
-            this.handleEventMessage(clientMessage);
-            return;
-        }
-        if (messageType === 'REQ') {
-            this.handleReqMessage(clientMessage);
-            return;
-        }
-        this.handleCloseMessage(clientMessage);
-    }
-    /**
-     * Handle an incoming EVENT message.
-     * @param eventMessage Incoming EVENT message to handle.
-     */
-    handleEventMessage(eventMessage) {
-        const event = eventMessage[1];
-        if (this.memorelay.hasEvent(event.id)) {
-            this.logger.log('debug', 'EVENT %s (duplicate)', event.id);
-            this.sendMessage(['OK', event.id, true, 'duplicate:']);
-            return;
-        }
-        if (event.kind !== nostr_tools_1.Kind.EventDeletion &&
-            this.memorelay.wasDeleted(event.id)) {
-            this.logger.log('debug', 'EVENT %s (deleted)', event.id);
-            this.sendMessage(['OK', event.id, false, 'deleted:']);
-            return;
-        }
-        this.logger.log('verbose', 'EVENT %s', event.id);
-        const status = this.memorelay.addEvent(eventMessage[1]);
-        if (!status) {
-            this.logger.log('error', 'FAILED TO ADD EVENT %s', event.id);
-        }
-        this.sendMessage(['OK', event.id, status, '']);
-    }
-    /**
-     * Handle an incoming REQ message.
-     * @param reqMessage Incoming REQ message to handle.
-     */
-    handleReqMessage(reqMessage) {
-        const [, subscriptionId, ...filters] = reqMessage;
-        this.logger.log('verbose', 'REQ %s', subscriptionId);
-        const existingSubscriptionNumber = this.subscriptionIdMap.get(subscriptionId);
-        if (existingSubscriptionNumber !== undefined) {
-            this.memorelay.unsubscribe(existingSubscriptionNumber);
-            this.subscriptionIdMap.delete(subscriptionId);
-        }
-        // Per NIP-01, first the stored events are searched, and THEN the
-        // subscription for future events is saved.
-        const matchingEvents = this.memorelay.matchFilters(filters);
-        for (const event of matchingEvents) {
-            this.sendMessage(['EVENT', event]);
-        }
-        this.sendMessage(['EOSE', subscriptionId]);
-        const newSubscriptionNumber = this.memorelay.subscribe((event) => {
-            // TODO(jimbo): What if the WebSocket is disconnected?
-            this.sendMessage(['EVENT', event]);
-        }, filters);
-        this.subscriptionIdMap.set(subscriptionId, newSubscriptionNumber);
-    }
-    /**
-     * Handle an incoming CLOSE message.
-     * @param closeMessage Incoming CLOSE message to handle.
-     */
-    handleCloseMessage(closeMessage) {
-        const [, subscriptionId] = closeMessage;
-        this.logger.log('verbose', 'CLOSE %s', subscriptionId);
-        const existingSubscriptionNumber = this.subscriptionIdMap.get(subscriptionId);
-        if (existingSubscriptionNumber === undefined) {
-            this.webSocket.send(Buffer.from(JSON.stringify([
-                'NOTICE',
-                `ERROR: subscription not found: '${subscriptionId}'`,
-            ]), 'utf-8'));
-            return;
-        }
-        this.memorelay.unsubscribe(existingSubscriptionNumber);
-        this.subscriptionIdMap.delete(subscriptionId);
-    }
-    /**
-     * Send a message to the connected WebSocket.
-     */
-    sendMessage(message) {
-        this.webSocket.send((0, message_to_buffer_1.messageToBuffer)(message));
-    }
-}
-exports.Subscriber = Subscriber;
-
-
-/***/ }),
-
-/***/ 1560:
+/***/ 3103:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -29800,28 +31398,22 @@ exports.Subscriber = Subscriber;
  * @fileoverview Utility function to verify a Nostr event.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.verifyEvent = exports.BadEventError = void 0;
+exports.verifyEvent = void 0;
 const nostr_tools_1 = __nccwpck_require__(259);
-/**
- * Error thrown when a Nostr event is determined to be invalid or failed
- * verification.
- */
-class BadEventError extends Error {
-}
-exports.BadEventError = BadEventError;
+const bad_event_error_1 = __nccwpck_require__(7031);
 /**
  * Verify that an object is a valid Nostr event and has a verified signature.
  * @throws BadEventError if any checks fail.
  */
 function verifyEvent(event) {
     if (!(0, nostr_tools_1.validateEvent)(event)) {
-        throw new BadEventError('event invalid');
+        throw new bad_event_error_1.BadEventError('event invalid');
     }
     if (!event.sig) {
-        throw new BadEventError('event signature missing');
+        throw new bad_event_error_1.BadEventError('event signature missing');
     }
     if (!(0, nostr_tools_1.verifySignature)(event)) {
-        throw new BadEventError('bad signature');
+        throw new bad_event_error_1.BadEventError('bad signature');
     }
 }
 exports.verifyEvent = verifyEvent;
@@ -29829,7 +31421,82 @@ exports.verifyEvent = verifyEvent;
 
 /***/ }),
 
-/***/ 8562:
+/***/ 5733:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview For a filter field which should contain an array of ids, verify
+ * that it is valid.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.verifyFilterIdArrayField = void 0;
+/**
+ * Maximum length of a filter value when checking id-based fields.
+ */
+const MAX_ID_LENGTH = 64;
+/**
+ * Verify that the values object is an array of ID strings.
+ * @param field Name of the field being checked.
+ * @param values Possibly an array of strings.
+ */
+function verifyFilterIdArrayField(field, values) {
+    if (!Array.isArray(values)) {
+        throw new Error(`${field} value is not an array`);
+    }
+    for (const value of values) {
+        if (typeof value !== 'string') {
+            throw new Error(`non-string value in ${field} array`);
+        }
+        if (value.length > MAX_ID_LENGTH) {
+            throw new Error(`${field} element value too long`);
+        }
+    }
+}
+exports.verifyFilterIdArrayField = verifyFilterIdArrayField;
+
+
+/***/ }),
+
+/***/ 2583:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview For a filter field that is supposed to contain an array of
+ * integers, verify that it is valid.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.verifyFilterIntegerArrayField = void 0;
+/**
+ * Verify that the values object is an array of numbers.
+ * @param field Name of the field being checked.
+ * @param values Possibly an array of numbers.
+ */
+function verifyFilterIntegerArrayField(field, values) {
+    if (!Array.isArray(values)) {
+        throw new Error(`${field} value is not an array`);
+    }
+    for (const value of values) {
+        if (!Number.isInteger(value)) {
+            throw new Error(`${field} contains a non-integer value`);
+        }
+    }
+}
+exports.verifyFilterIntegerArrayField = verifyFilterIntegerArrayField;
+
+
+/***/ }),
+
+/***/ 6776:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -29841,46 +31508,10 @@ exports.verifyEvent = verifyEvent;
  * @fileoverview Verify whether a filter object is valid.
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.verifyFilters = exports.verifyFilter = exports.verifyIntegerArrayField = exports.verifyStringArrayField = void 0;
-const filters_1 = __nccwpck_require__(5375);
-// Maximum length of a filter value when checking id-based fields.
-const MAX_FILTER_LENGTH = 64;
-/**
- * Verify that the values object is an array of strings.
- * @param field Name of the field being checked.
- * @param values Possibly an array of strings.
- * @param maxLength Maximum allowed length of a string value.
- */
-function verifyStringArrayField(field, values, maxLength = Infinity) {
-    if (!Array.isArray(values)) {
-        throw new Error(`${field} value is not an array`);
-    }
-    for (const value of values) {
-        if (typeof value !== 'string') {
-            throw new Error(`non-string value in ${field} array`);
-        }
-        if (value.length > maxLength) {
-            throw new Error(`${field} element value too long`);
-        }
-    }
-}
-exports.verifyStringArrayField = verifyStringArrayField;
-/**
- * Verify that the values object is an array of numbers.
- * @param field Name of the field being checked.
- * @param values Possibly an array of numbers.
- */
-function verifyIntegerArrayField(field, values) {
-    if (!Array.isArray(values)) {
-        throw new Error(`${field} value is not an array`);
-    }
-    for (const value of values) {
-        if (!Number.isInteger(value)) {
-            throw new Error(`${field} contains a non-integer value`);
-        }
-    }
-}
-exports.verifyIntegerArrayField = verifyIntegerArrayField;
+exports.verifyFilters = exports.verifyFilter = void 0;
+const filters_1 = __nccwpck_require__(3416);
+const verify_filter_id_array_field_1 = __nccwpck_require__(5733);
+const verify_filter_integer_array_field_1 = __nccwpck_require__(2583);
 /**
  * Verify that the provided filter object is valid.
  * @param filter Possibly a valid filter object.
@@ -29898,13 +31529,13 @@ function verifyFilter(filter) {
         if (!(field in filter)) {
             continue;
         }
-        verifyStringArrayField(field, filter[field], MAX_FILTER_LENGTH);
+        (0, verify_filter_id_array_field_1.verifyFilterIdArrayField)(field, filter[field]);
     }
     for (const field of filters_1.FILTER_INTEGER_ARRAY_FIELDS) {
         if (!(field in filter)) {
             continue;
         }
-        verifyIntegerArrayField(field, filter[field]);
+        (0, verify_filter_integer_array_field_1.verifyFilterIntegerArrayField)(field, filter[field]);
     }
     for (const field of filters_1.FILTER_INTEGER_FIELDS) {
         if (!(field in filter)) {
@@ -29934,6 +31565,1758 @@ function verifyFilters(filters) {
     }
 }
 exports.verifyFilters = verifyFilters;
+
+
+/***/ }),
+
+/***/ 3336:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for broadcasting an incoming EVENT
+ * message from one client to others.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.broadcastIncomingEventMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+const broadcast_event_message_event_1 = __nccwpck_require__(5547);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for broadcasting incoming EVENT messages from one client to
+ * all other connected clients.
+ * @param hub Event hub for inter-component communication.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function broadcastIncomingEventMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_event_message_event_1.IncomingEventMessageEvent, (incomingEventMessageEvent) => {
+            if (incomingEventMessageEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            queueMicrotask(() => {
+                hub.emitEvent(new broadcast_event_message_event_1.BroadcastEventMessageEvent({
+                    clientEventMessage: incomingEventMessageEvent.details.clientEventMessage,
+                    memorelayClient,
+                }, { parentEvent: incomingEventMessageEvent, targetEmitter: hub }));
+            });
+        }));
+    });
+}
+exports.broadcastIncomingEventMessages = broadcastIncomingEventMessages;
+
+
+/***/ }),
+
+/***/ 863:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin to drop duplicate incoming EVENT messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dropDuplicateIncomingEventMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const duplicate_event_message_event_1 = __nccwpck_require__(9991);
+/**
+ * Memorelay plugin to drop incoming EVENT messages if it has been seen before.
+ * @param hub Event hub for inter-component communication.
+ */
+function dropDuplicateIncomingEventMessages(hub) {
+    const seenEventIds = {};
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_event_message_event_1.IncomingEventMessageEvent, (incomingEventMessageEvent) => {
+            if (incomingEventMessageEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const [, { id: incomingEventId }] = incomingEventMessageEvent.details.clientEventMessage;
+            if (incomingEventId in seenEventIds) {
+                incomingEventMessageEvent.preventDefault();
+                queueMicrotask(() => {
+                    memorelayClient.emitEvent(new duplicate_event_message_event_1.DuplicateEventMessageEvent({
+                        event: incomingEventMessageEvent.details.clientEventMessage[1],
+                    }, {
+                        parentEvent: incomingEventMessageEvent,
+                        targetEmitter: memorelayClient,
+                    }));
+                });
+                return;
+            }
+            seenEventIds[incomingEventId] = true;
+        }));
+    });
+}
+exports.dropDuplicateIncomingEventMessages = dropDuplicateIncomingEventMessages;
+
+
+/***/ }),
+
+/***/ 9279:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for re-casting outgoing EOSE messages as
+ * generic messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generalizeOutgoingEOSEMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const outgoing_eose_message_event_1 = __nccwpck_require__(8574);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for re-casting outgoing EOSE messages as generic messages.
+ * @param hub Event hub for inter-component communication.
+ * @event OutgoingGenericMessageEvent
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function generalizeOutgoingEOSEMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(outgoing_eose_message_event_1.OutgoingEOSEMessageEvent, (outgoingEOSEMessageEvent) => {
+            if (outgoingEOSEMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            outgoingEOSEMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
+                    genericMessage: outgoingEOSEMessageEvent.details.relayEOSEMessage,
+                }, {
+                    parentEvent: outgoingEOSEMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.generalizeOutgoingEOSEMessages = generalizeOutgoingEOSEMessages;
+
+
+/***/ }),
+
+/***/ 3074:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for re-casting outgoing EVENT messages as
+ * generic messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generalizeOutgoingEventMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const outgoing_event_message_event_1 = __nccwpck_require__(1241);
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for re-casting outgoing EVENT messages as generic messages.
+ * @param hub Event hub for inter-component communication.
+ * @event OutgoingGenericMessageEvent
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function generalizeOutgoingEventMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(outgoing_event_message_event_1.OutgoingEventMessageEvent, (outgoingEventMessageEvent) => {
+            if (outgoingEventMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            outgoingEventMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
+                    genericMessage: outgoingEventMessageEvent.details.relayEventMessage,
+                }, {
+                    parentEvent: outgoingEventMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.generalizeOutgoingEventMessages = generalizeOutgoingEventMessages;
+
+
+/***/ }),
+
+/***/ 4178:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for re-casting outgoing NOTICE messages
+ * as generic messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generalizeOutgoingNoticeMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const outgoing_notice_message_event_1 = __nccwpck_require__(8137);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for re-casting outgoing NOTICE messages as generic messages.
+ * @param hub Event hub for inter-component communication.
+ * @event OutgoingGenericMessageEvent
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function generalizeOutgoingNoticeMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(outgoing_notice_message_event_1.OutgoingNoticeMessageEvent, (outgoingNoticeMessageEvent) => {
+            if (outgoingNoticeMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            outgoingNoticeMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
+                    genericMessage: outgoingNoticeMessageEvent.details.relayNoticeMessage,
+                }, {
+                    parentEvent: outgoingNoticeMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.generalizeOutgoingNoticeMessages = generalizeOutgoingNoticeMessages;
+
+
+/***/ }),
+
+/***/ 3581:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugins for implementing NIP-01.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.basicProtocol = void 0;
+const increase_client_max_event_listeners_1 = __nccwpck_require__(521);
+const clear_handlers_1 = __nccwpck_require__(2209);
+const broadcast_incoming_event_messages_1 = __nccwpck_require__(3336);
+const generalize_outgoing_eose_messages_1 = __nccwpck_require__(9279);
+const generalize_outgoing_event_messages_1 = __nccwpck_require__(3074);
+const generalize_outgoing_notice_messages_1 = __nccwpck_require__(4178);
+const parse_incoming_json_messages_1 = __nccwpck_require__(7530);
+const drop_duplicate_incoming_event_messages_1 = __nccwpck_require__(863);
+const reject_unrecognized_incoming_messages_1 = __nccwpck_require__(5495);
+const send_stored_events_to_subscribers_1 = __nccwpck_require__(9783);
+const serialize_outgoing_json_messages_1 = __nccwpck_require__(9241);
+const subscribe_to_incoming_req_messages_1 = __nccwpck_require__(17);
+const validate_incoming_close_messages_1 = __nccwpck_require__(9245);
+const validate_incoming_event_messages_1 = __nccwpck_require__(3087);
+const validate_incoming_req_messages_1 = __nccwpck_require__(4579);
+const send_notice_on_client_error_1 = __nccwpck_require__(1464);
+const events_database_1 = __nccwpck_require__(9543);
+const store_incoming_events_to_database_1 = __nccwpck_require__(2232);
+/**
+ * Given an event emitter hub (presumed to be a Memorelay instance), attach all
+ * component functionality.
+ * @param hub Basic event emitter, often a Memorelay instance.
+ * @returns Handler for disconnection.
+ */
+function basicProtocol(hub) {
+    const eventsDatabase = new events_database_1.EventsDatabase();
+    const plugins = [
+        // Increase max event listeners for clients. This is a heuristic, as is
+        // Node's built-in limit of 10 listeners per event type on an EventEmitter.
+        // Programmatically increasing the number each time a listener is added
+        // would defeat the purpose of the heuristic-based memory leak detection.
+        (0, increase_client_max_event_listeners_1.increaseClientMaxEventListeners)(20),
+        // Parse incoming WebSocket 'message' buffers as generic Nostr messages.
+        parse_incoming_json_messages_1.parseIncomingJsonMessages,
+        // Validate and upgrade incoming EVENT, REQ and CLOSE messages.
+        validate_incoming_event_messages_1.validateIncomingEventMessages,
+        validate_incoming_req_messages_1.validateIncomingReqMessages,
+        validate_incoming_close_messages_1.validateIncomingCloseMessages,
+        // Reject any message type other than EVENT, REQ and CLOSE.
+        reject_unrecognized_incoming_messages_1.rejectUnrecognizedIncomingMessages,
+        // Send NOTICE in response to a client error such as a bad message.
+        send_notice_on_client_error_1.sendNoticeOnClientError,
+        // Drop incoming EVENT messages where the clientEvent has been seen before.
+        drop_duplicate_incoming_event_messages_1.dropDuplicateIncomingEventMessages,
+        // Broadcast incoming EVENT messages to all other connected clients.
+        broadcast_incoming_event_messages_1.broadcastIncomingEventMessages,
+        // Store incoming events to the database.
+        (0, store_incoming_events_to_database_1.storeIncomingEventsToDatabase)(eventsDatabase),
+        // Send stored events to REQ subscribers.
+        (0, send_stored_events_to_subscribers_1.sendStoredEventsToSubscribers)(eventsDatabase),
+        // Subscribe to incoming REQ messages.
+        subscribe_to_incoming_req_messages_1.subscribeToIncomingReqMessages,
+        // Convert outgoing EVENT, EOSE and NOTICE message events to
+        // OutgoingGenericMessageEvents.
+        generalize_outgoing_event_messages_1.generalizeOutgoingEventMessages,
+        generalize_outgoing_eose_messages_1.generalizeOutgoingEOSEMessages,
+        generalize_outgoing_notice_messages_1.generalizeOutgoingNoticeMessages,
+        // Serialize outgoing generic messages and send to the WebSocket.
+        serialize_outgoing_json_messages_1.serializeOutgoingJsonMessages,
+    ];
+    // Avoid Node's MaxListenersExceededWarning.
+    hub.maxEventListeners += plugins.length;
+    const handlers = plugins.map((plugin) => plugin(hub));
+    return {
+        disconnect: () => {
+            (0, clear_handlers_1.clearHandlers)(handlers);
+            hub.maxEventListeners -= plugins.length; // Restore maxListeners.
+        },
+    };
+}
+exports.basicProtocol = basicProtocol;
+
+
+/***/ }),
+
+/***/ 7530:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin for parsing incoming WebSocket message
+ * payloads as generic JSON client messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseIncomingJsonMessages = void 0;
+const incoming_generic_message_event_1 = __nccwpck_require__(9312);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const web_socket_message_event_1 = __nccwpck_require__(7614);
+const buffer_to_generic_message_1 = __nccwpck_require__(1962);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+/**
+ * Memorelay plugin for parsing incoming WebSocket 'message' payload buffers as
+ * JSON-encoded generic Nostr messages.
+ *
+ * A generic Nostr message is an array whose first element is a string
+ * indicating which kind of message it is.  Remaining array elements depend on
+ * the type of message and other factors.
+ * @param hub Event hub for inter-component communication.
+ * @event IncomingGenericMessageEvent When a payload buffer could be parsed.
+ * @event BadMessageError When a message payload buffer could not be parsed.
+ * @returns Handler for disconnection.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function parseIncomingJsonMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, handleClientCreated);
+    function handleClientCreated(memorelayClientCreatedEvent) {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(web_socket_message_event_1.WebSocketMessageEvent, (webSocketMessageEvent) => {
+            if (webSocketMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            webSocketMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                const { data } = webSocketMessageEvent.details;
+                const buffer = Array.isArray(data)
+                    ? Buffer.concat(data)
+                    : data;
+                const eventOptions = {
+                    parentEvent: webSocketMessageEvent,
+                    targetEmitter: memorelayClient,
+                };
+                try {
+                    const genericMessage = (0, buffer_to_generic_message_1.bufferToGenericMessage)(buffer);
+                    memorelayClient.emitEvent(new incoming_generic_message_event_1.IncomingGenericMessageEvent({ genericMessage }, eventOptions));
+                }
+                catch (error) {
+                    const badMessageError = error;
+                    memorelayClient.emitEvent(new bad_message_error_event_1.BadMessageErrorEvent({ badMessageError, badMessage: buffer }, eventOptions));
+                }
+            });
+        }));
+    }
+}
+exports.parseIncomingJsonMessages = parseIncomingJsonMessages;
+
+
+/***/ }),
+
+/***/ 5495:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin for rejecting incoming messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.rejectUnrecognizedIncomingMessages = void 0;
+const bad_message_error_1 = __nccwpck_require__(1328);
+const incoming_generic_message_event_1 = __nccwpck_require__(9312);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+/**
+ * Memorelay plugin which rejects any incoming message by emitting a
+ * BadMessageError.
+ *
+ * This plugin is intended to follow other plugins which identify message types
+ * and emit specific incoming events. Note: order is important. If this plugin
+ * is incorrectly connected before a plugin that intends to implement an event
+ * type, the later will already see defaultPrevented, and a BadMessageError will
+ * already be outbound.
+ * @param hub Event hub for inter-component communication.
+ * @event BadMessageError When an incoming generic message is unrecognized.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function rejectUnrecognizedIncomingMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_generic_message_event_1.IncomingGenericMessageEvent, (incomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            incomingGenericMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new bad_message_error_event_1.BadMessageErrorEvent({
+                    badMessageError: new bad_message_error_1.BadMessageError('unrecognized message type'),
+                    badMessage: incomingGenericMessageEvent.details.genericMessage,
+                }, {
+                    parentEvent: incomingGenericMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.rejectUnrecognizedIncomingMessages = rejectUnrecognizedIncomingMessages;
+
+
+/***/ }),
+
+/***/ 1464:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Plugin for sending a NOTICE message to a client in response to
+ * a BadMessageError emitted elsewhere.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendNoticeOnClientError = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+const outgoing_notice_message_event_1 = __nccwpck_require__(8137);
+/**
+ * Memorelay plugin which responds to ClientErrors (such as BadMessageErrors)
+ * emitted elsewhere by issuing a NOTICE message to the client which produced
+ * the error.
+ * @param hub Event hub for inter-component communication.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function sendNoticeOnClientError(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(bad_message_error_event_1.BadMessageErrorEvent, (badMessageErrorEvent) => {
+            if (badMessageErrorEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const { message } = badMessageErrorEvent.details.badMessageError;
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_notice_message_event_1.OutgoingNoticeMessageEvent({
+                    relayNoticeMessage: ['NOTICE', `ERROR: ${message}`],
+                }, {
+                    parentEvent: badMessageErrorEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.sendNoticeOnClientError = sendNoticeOnClientError;
+
+
+/***/ }),
+
+/***/ 9783:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for sending stored events to subscribers.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendStoredEventsToSubscribers = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const incoming_req_message_event_1 = __nccwpck_require__(38);
+const outgoing_event_message_event_1 = __nccwpck_require__(1241);
+const outgoing_eose_message_event_1 = __nccwpck_require__(8574);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for sending stored events to incoming subscribers. Note that
+ * this plugin does not handle later, live events. It only handles sending
+ * previously stored events.
+ * @param hub Event hub for inter-component communication.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function sendStoredEventsToSubscribers(eventsDatabase) {
+    return (hub) => {
+        return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+            (0, auto_disconnect_1.autoDisconnect)(memorelayClient, 
+            // Subscribe on incoming REQ event.
+            memorelayClient.onEvent(incoming_req_message_event_1.IncomingReqMessageEvent, (incomingReqMessageEvent) => {
+                if (incomingReqMessageEvent.originatorTag ===
+                    sendStoredEventsToSubscribers) {
+                    return; // Ignore self-emitted events.
+                }
+                if (incomingReqMessageEvent.defaultPrevented) {
+                    return; // Preempted by another handler.
+                }
+                incomingReqMessageEvent.preventDefault();
+                const [, subscriptionId, ...filters] = incomingReqMessageEvent.details.reqMessage;
+                const matchingEvents = eventsDatabase.matchFilters(filters);
+                for (const matchingEvent of matchingEvents) {
+                    queueMicrotask(() => {
+                        memorelayClient.emitEvent(new outgoing_event_message_event_1.OutgoingEventMessageEvent({
+                            relayEventMessage: [
+                                'EVENT',
+                                subscriptionId,
+                                matchingEvent,
+                            ],
+                        }, {
+                            parentEvent: incomingReqMessageEvent,
+                            targetEmitter: memorelayClient,
+                        }));
+                    });
+                }
+                queueMicrotask(() => {
+                    memorelayClient.emitEvent(new outgoing_eose_message_event_1.OutgoingEOSEMessageEvent({
+                        relayEOSEMessage: ['EOSE', subscriptionId],
+                    }, {
+                        parentEvent: incomingReqMessageEvent,
+                        targetEmitter: memorelayClient,
+                    }));
+                });
+                queueMicrotask(() => {
+                    memorelayClient.emitEvent(new incoming_req_message_event_1.IncomingReqMessageEvent(incomingReqMessageEvent.details, {
+                        originatorTag: sendStoredEventsToSubscribers,
+                        parentEvent: incomingReqMessageEvent,
+                        targetEmitter: memorelayClient,
+                    }));
+                });
+            }));
+        });
+    };
+}
+exports.sendStoredEventsToSubscribers = sendStoredEventsToSubscribers;
+
+
+/***/ }),
+
+/***/ 9241:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for serializing outgoing generic messages
+ * as JSON and sending to the WebSocket.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.serializeOutgoingJsonMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const object_to_json_buffer_1 = __nccwpck_require__(5925);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const web_socket_send_event_1 = __nccwpck_require__(655);
+/**
+ * Memorelay core plugin for serializing generic, outgoing Nostr messages as
+ * JSON and sending them to the WebSocket.
+ * @param hub Event hub for inter-component communication.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function serializeOutgoingJsonMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(outgoing_generic_message_event_1.OutgoingGenericMessageEvent, (outgoingGenericMessage) => {
+            if (outgoingGenericMessage.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            outgoingGenericMessage.preventDefault();
+            const { genericMessage } = outgoingGenericMessage.details;
+            const buffer = (0, object_to_json_buffer_1.objectToJsonBuffer)(genericMessage);
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new web_socket_send_event_1.WebSocketSendEvent({ buffer }, {
+                    parentEvent: outgoingGenericMessage,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.serializeOutgoingJsonMessages = serializeOutgoingJsonMessages;
+
+
+/***/ }),
+
+/***/ 2232:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin to store incoming events to the database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.storeIncomingEventsToDatabase = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const will_add_event_to_database_event_1 = __nccwpck_require__(5662);
+const did_add_event_to_database_event_1 = __nccwpck_require__(210);
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+/**
+ * Memorelay plugin for storing incoming events.
+ * @param eventsDatabase Shared database of events.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function storeIncomingEventsToDatabase(eventsDatabase) {
+    return (hub) => {
+        return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+            (0, auto_disconnect_1.autoDisconnect)(memorelayClient, 
+            // Upgrade incoming message event to a WillAddEventToDatabaseEvent.
+            memorelayClient.onEvent(incoming_event_message_event_1.IncomingEventMessageEvent, (incomingEventMessageEvent) => {
+                if (incomingEventMessageEvent.defaultPrevented) {
+                    return; // Preempted by another listener.
+                }
+                const event = incomingEventMessageEvent.details.clientEventMessage[1];
+                queueMicrotask(() => {
+                    if (!eventsDatabase.hasEvent(event.id)) {
+                        memorelayClient.emitEvent(new will_add_event_to_database_event_1.WillAddEventToDatabaseEvent({ event }, {
+                            parentEvent: incomingEventMessageEvent,
+                            targetEmitter: memorelayClient,
+                        }));
+                    }
+                });
+            }), 
+            // Add event to database.
+            memorelayClient.onEvent(will_add_event_to_database_event_1.WillAddEventToDatabaseEvent, (willAddEventToDatabaseEvent) => {
+                if (willAddEventToDatabaseEvent.defaultPrevented) {
+                    return; // Preempted by another listener.
+                }
+                willAddEventToDatabaseEvent.preventDefault();
+                const { event } = willAddEventToDatabaseEvent.details;
+                if (!eventsDatabase.hasEvent(event.id)) {
+                    eventsDatabase.addEvent(event);
+                    queueMicrotask(() => {
+                        memorelayClient.emitEvent(new did_add_event_to_database_event_1.DidAddEventToDatabaseEvent({ event }, {
+                            parentEvent: willAddEventToDatabaseEvent,
+                            targetEmitter: memorelayClient,
+                        }));
+                    });
+                }
+            }));
+        });
+    };
+}
+exports.storeIncomingEventsToDatabase = storeIncomingEventsToDatabase;
+
+
+/***/ }),
+
+/***/ 17:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for subscribing to REQ messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.subscribeToIncomingReqMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const incoming_req_message_event_1 = __nccwpck_require__(38);
+const nostr_tools_1 = __nccwpck_require__(259);
+const incoming_close_message_event_1 = __nccwpck_require__(7338);
+const broadcast_event_message_event_1 = __nccwpck_require__(5547);
+const memorelay_client_disconnect_event_1 = __nccwpck_require__(9463);
+const outgoing_event_message_event_1 = __nccwpck_require__(1241);
+const subscription_not_found_event_1 = __nccwpck_require__(3930);
+const disconnect_all_1 = __nccwpck_require__(5763);
+/**
+ * Memorelay core plugin for subscribing to REQ messages. Note that this plugin
+ * does not handle sending stored events. It only handles the subscriptions for
+ * new events.
+ * @param hub Event hub for inter-component communication.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function subscribeToIncomingReqMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        const subscriptions = new Map();
+        const handlers = [];
+        // Since every new client will add a listener on the hub, and there could
+        // be many clients, we increment the hub's maxEventListeners.
+        hub.maxEventListeners += 1;
+        // Then, on disconnect, in addition to clearing the handlers, we undo the
+        // addition to the maxEventListeners value.
+        function disconnect() {
+            (0, disconnect_all_1.disconnectAll)(handlers);
+            hub.maxEventListeners -= 1; // Restore previous maxEventListeners.
+        }
+        handlers.push(
+        // Subscribe on incoming REQ event.
+        memorelayClient.onEvent(incoming_req_message_event_1.IncomingReqMessageEvent, handleReqMessage), 
+        // Cancel subscription on CLOSE event.
+        memorelayClient.onEvent(incoming_close_message_event_1.IncomingCloseMessageEvent, handleCloseMessage), 
+        // Listen for broadcasted EVENTs from other connected clients.
+        hub.onEvent(broadcast_event_message_event_1.BroadcastEventMessageEvent, handleBroadcastEventMessage), 
+        // Clean up on disconnect.
+        memorelayClient.onEvent(memorelay_client_disconnect_event_1.MemorelayClientDisconnectEvent, disconnect));
+        function handleReqMessage(incomingReqMessageEvent) {
+            if (incomingReqMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            const [, subscriptionId, ...filters] = incomingReqMessageEvent.details.reqMessage;
+            subscriptions.set(subscriptionId, filters);
+        }
+        function handleCloseMessage(incomingCloseMessageEvent) {
+            if (incomingCloseMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            const [, subscriptionId] = incomingCloseMessageEvent.details
+                .closeMessage;
+            if (!subscriptions.has(subscriptionId)) {
+                queueMicrotask(() => {
+                    memorelayClient.emitEvent(new subscription_not_found_event_1.SubscriptionNotFoundEvent({ subscriptionId }, {
+                        parentEvent: incomingCloseMessageEvent,
+                        targetEmitter: memorelayClient,
+                    }));
+                });
+                return;
+            }
+            subscriptions.delete(subscriptionId);
+        }
+        function handleBroadcastEventMessage(broadcastEventMessageEvent) {
+            const broadcastDetails = broadcastEventMessageEvent.details;
+            if (broadcastDetails.memorelayClient === memorelayClient) {
+                return; // Nothing to do. This client originated this broadcast event.
+            }
+            const [, broadcastEvent] = broadcastDetails.clientEventMessage;
+            for (const [subscriptionId, filters] of subscriptions.entries()) {
+                if (!filters.length || (0, nostr_tools_1.matchFilters)(filters, broadcastEvent)) {
+                    queueMicrotask(() => {
+                        memorelayClient.emitEvent(new outgoing_event_message_event_1.OutgoingEventMessageEvent({
+                            relayEventMessage: [
+                                'EVENT',
+                                subscriptionId,
+                                broadcastEvent,
+                            ],
+                        }, {
+                            parentEvent: broadcastEventMessageEvent,
+                            targetEmitter: memorelayClient,
+                        }));
+                    });
+                }
+            }
+        }
+    });
+}
+exports.subscribeToIncomingReqMessages = subscribeToIncomingReqMessages;
+
+
+/***/ }),
+
+/***/ 9245:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for validating incoming generic Nostr
+ * messages of type 'CLOSE'.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateIncomingCloseMessages = void 0;
+const incoming_close_message_event_1 = __nccwpck_require__(7338);
+const incoming_generic_message_event_1 = __nccwpck_require__(9312);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const check_client_close_message_1 = __nccwpck_require__(406);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+/**
+ * Memorelay core plugin for validating incoming, generic Nostr messages of type
+ * 'CLOSE'. Incoming generic messages of any other type are ignored.
+ * @param hub Event hub for inter-component communication.
+ * @event IncomingCloseMessageEvent When a generic message is an CLOSE message.
+ * @event BadMessageError When a CLOSE message is malformed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function validateIncomingCloseMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_generic_message_event_1.IncomingGenericMessageEvent, (incomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            const { genericMessage } = incomingGenericMessageEvent.details;
+            if (genericMessage[0] !== 'CLOSE') {
+                return; // The incoming message is not a 'REQ' message.
+            }
+            incomingGenericMessageEvent.preventDefault();
+            const eventOptions = {
+                parentEvent: incomingGenericMessageEvent,
+                targetEmitter: memorelayClient,
+            };
+            queueMicrotask(() => {
+                try {
+                    const closeMessage = (0, check_client_close_message_1.checkClientCloseMessage)(genericMessage);
+                    memorelayClient.emitEvent(new incoming_close_message_event_1.IncomingCloseMessageEvent({ closeMessage }, eventOptions));
+                }
+                catch (error) {
+                    const badMessageError = error;
+                    memorelayClient.emitEvent(new bad_message_error_event_1.BadMessageErrorEvent({ badMessageError, badMessage: genericMessage }, eventOptions));
+                }
+            });
+        }));
+    });
+}
+exports.validateIncomingCloseMessages = validateIncomingCloseMessages;
+
+
+/***/ }),
+
+/***/ 3087:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for validating incoming generic Nostr
+ * messages of type 'EVENT'.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateIncomingEventMessages = void 0;
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+const incoming_generic_message_event_1 = __nccwpck_require__(9312);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const check_client_event_message_1 = __nccwpck_require__(9824);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+/**
+ * Memorelay core plugin for validating incoming, generic Nostr messages of type
+ * 'EVENT'. Incoming generic messages of any other type are ignored.
+ * @param hub Event hub for inter-component communication.
+ * @event IncomingEventMessageEvent When a generic message is an EVENT message.
+ * @event BadMessageError When an EVENT message is malformed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function validateIncomingEventMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_generic_message_event_1.IncomingGenericMessageEvent, (incomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            const { genericMessage } = incomingGenericMessageEvent.details;
+            if (genericMessage[0] !== 'EVENT') {
+                return; // The incoming message is not an 'EVENT'.
+            }
+            incomingGenericMessageEvent.preventDefault();
+            const eventOptions = {
+                parentEvent: incomingGenericMessageEvent,
+                targetEmitter: memorelayClient,
+            };
+            queueMicrotask(() => {
+                try {
+                    const eventMessage = (0, check_client_event_message_1.checkClientEventMessage)(genericMessage);
+                    memorelayClient.emitEvent(new incoming_event_message_event_1.IncomingEventMessageEvent({ clientEventMessage: eventMessage }, eventOptions));
+                }
+                catch (error) {
+                    const badMessageError = error;
+                    memorelayClient.emitEvent(new bad_message_error_event_1.BadMessageErrorEvent({ badMessageError, badMessage: genericMessage }, eventOptions));
+                }
+            });
+        }));
+    });
+}
+exports.validateIncomingEventMessages = validateIncomingEventMessages;
+
+
+/***/ }),
+
+/***/ 4579:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for validating incoming generic Nostr
+ * messages of type 'REQ'.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateIncomingReqMessages = void 0;
+const incoming_req_message_event_1 = __nccwpck_require__(38);
+const incoming_generic_message_event_1 = __nccwpck_require__(9312);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const check_client_req_message_1 = __nccwpck_require__(1929);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+/**
+ * Memorelay core plugin for validating incoming, generic Nostr messages of type
+ * 'REQ'. Incoming generic messages of any other type are ignored.
+ * @param hub Event hub for inter-component communication.
+ * @event IncomingReqMessageEvent When a generic message is an REQ message.
+ * @event BadMessageError When a REQ message is malformed.
+ * @see https://github.com/nostr-protocol/nips/blob/master/01.md
+ */
+function validateIncomingReqMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(incoming_generic_message_event_1.IncomingGenericMessageEvent, (incomingGenericMessageEvent) => {
+            if (incomingGenericMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            const { genericMessage } = incomingGenericMessageEvent.details;
+            if (genericMessage[0] !== 'REQ') {
+                return; // The incoming message is not a 'REQ' message.
+            }
+            incomingGenericMessageEvent.preventDefault();
+            const eventOptions = {
+                parentEvent: incomingGenericMessageEvent,
+                targetEmitter: memorelayClient,
+            };
+            queueMicrotask(() => {
+                try {
+                    const reqMessage = (0, check_client_req_message_1.checkClientReqMessage)(genericMessage);
+                    memorelayClient.emitEvent(new incoming_req_message_event_1.IncomingReqMessageEvent({ reqMessage }, eventOptions));
+                }
+                catch (error) {
+                    const badMessageError = error;
+                    memorelayClient.emitEvent(new bad_message_error_event_1.BadMessageErrorEvent({ badMessageError, badMessage: genericMessage }, eventOptions));
+                }
+            });
+        }));
+    });
+}
+exports.validateIncomingReqMessages = validateIncomingReqMessages;
+
+
+/***/ }),
+
+/***/ 3968:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Database for handling event deletions.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.EventDeletionDatabase = void 0;
+const nostr_tools_1 = __nccwpck_require__(259);
+/**
+ * Storage and indexing of events in the context of their possible deletion.
+ *
+ * A deletion event is a Nostr note with kind=5. The event may contain 'e' tags
+ * which indicate the intent to delete events with those ids.
+ * @see https://github.com/nostr-protocol/nips/blob/master/09.md
+ */
+class EventDeletionDatabase {
+    constructor() {
+        /**
+         * Set of event ids known to be successfully deleted. Any id in this set will
+         * not appear elsewhere in this database.
+         */
+        this.knownDeletedIdsSet = new Set();
+        /**
+         * Mapping from a non-deleted event id to its kind.
+         */
+        this.eventIdToKindMap = new Map();
+        /**
+         * Mapping from a non-deleted event id to its author's pubkey.
+         */
+        this.eventIdToAuthorPubkeyMap = new Map();
+        /**
+         * When we receive a kind=5 deletion event, its 'e' tags may point to event
+         * ids that we haven't yet seen. In that case, we can't know whether the
+         * deletion has the same author pubkey as the original. So here, for each
+         * mentioned event, we store the set of all pubkeys that has tried to delete
+         * it.
+         *
+         * Later, when we eventually see an event that has been claimed to have been
+         * deleted, we can check whether that event's pubkey is in the set of pubkeys
+         * that has tried to delete the event.
+         *
+         * Once a previously unknown event is seen for the first time, its entry in
+         * this map (if any) will be removed.
+         */
+        this.unknownEventIdToDeletingPubkeysMap = new Map();
+    }
+    /**
+     * Add a Nostr event to the database.
+     * @param event The event to add.
+     */
+    addEvent(event) {
+        const eventId = event.id;
+        if (this.hasEvent(eventId)) {
+            return; // Event is already known.
+        }
+        const kind = event.kind;
+        this.setEventKind(eventId, kind);
+        this.setEventPubkey(eventId, event.pubkey);
+        if (kind === nostr_tools_1.Kind.EventDeletion) {
+            this.recordDeletionEvent(event);
+        }
+        else {
+            this.checkDeletionAttempts(event);
+        }
+    }
+    /**
+     * @returns Number of known events.
+     */
+    get size() {
+        return this.knownDeletedIdsSet.size + this.eventIdToKindMap.size;
+    }
+    /**
+     * Record the deletion event.
+     * @param deletionEvent The deletion event to record.
+     */
+    recordDeletionEvent(deletionEvent) {
+        if (deletionEvent.kind !== nostr_tools_1.Kind.EventDeletion) {
+            throw new Error('event must be a deletion event');
+        }
+        const pubkey = deletionEvent.pubkey;
+        for (const tag of deletionEvent.tags) {
+            const tagType = tag[0];
+            if (tagType !== 'e') {
+                // TODO(jimbo): Support NIP-33 'a' tags.
+                continue;
+            }
+            this.recordDeletionAttempt(pubkey, tag[1]);
+        }
+    }
+    /**
+     * Check whether any prior deletion attempts apply to this non-deletion event.
+     * @param nonDeletionEvent
+     */
+    checkDeletionAttempts(nonDeletionEvent) {
+        if (nonDeletionEvent.kind === nostr_tools_1.Kind.EventDeletion) {
+            throw new Error('event must not be a deletion event');
+        }
+        const { id: eventId, pubkey } = nonDeletionEvent;
+        if (this.hasAttemptedDeletion(pubkey, eventId)) {
+            // A prior deletion attempt was made by the author, so this event is now
+            // known to be deleted.
+            this.recordSuccessfulDeletion(eventId);
+        }
+        else {
+            // All prior deletion attempts are known to have been invalid. Purge them.
+            this.clearDeletionAttempts(eventId);
+        }
+    }
+    /**
+     * Returns true if the pubkey has previously attempted to delete the indicated
+     * event.
+     * @param pubkey
+     * @param eventId
+     */
+    hasAttemptedDeletion(pubkey, eventId) {
+        var _a, _b;
+        return ((_b = (_a = this.unknownEventIdToDeletingPubkeysMap.get(eventId)) === null || _a === void 0 ? void 0 : _a.has(pubkey)) !== null && _b !== void 0 ? _b : false);
+    }
+    /**
+     * Return whether we've seen the event.
+     * @param eventId The id of the event.
+     * @returns Whether the event has been seen.
+     */
+    hasEvent(eventId) {
+        if (this.knownDeletedIdsSet.has(eventId)) {
+            return true;
+        }
+        return this.eventIdToKindMap.has(eventId);
+    }
+    /**
+     * Record the attempt of a pubkey to delete a given event.
+     * @param pubkey The deleting pubkey.
+     * @param eventId The target event id to delete.
+     */
+    recordDeletionAttempt(pubkey, eventId) {
+        if (this.isDeleted(eventId)) {
+            return; // Nothing to do, the event is already known to be deleted.
+        }
+        if (!this.hasEvent(eventId)) {
+            // This event is unknown to us, so all we can do is note that this pubkey
+            // tried to delete this eventId and check back later.
+            let deletingPubkeysSet = this.unknownEventIdToDeletingPubkeysMap.get(eventId);
+            if (!deletingPubkeysSet) {
+                deletingPubkeysSet = new Set();
+                this.unknownEventIdToDeletingPubkeysMap.set(eventId, deletingPubkeysSet);
+            }
+            deletingPubkeysSet.add(pubkey);
+            return;
+        }
+        if (this.getEventPubkey(eventId) === pubkey &&
+            this.getEventKind(eventId) !== nostr_tools_1.Kind.EventDeletion) {
+            this.recordSuccessfulDeletion(eventId);
+        }
+    }
+    /**
+     * Get the kind of an event, or undefined if unknown.
+     * @param eventId The id of the event.
+     */
+    getEventKind(eventId) {
+        return this.eventIdToKindMap.get(eventId);
+    }
+    /**
+     * Set the kind of an event.
+     * @param eventId The id of the event.
+     * @param kind The kind of the event.
+     */
+    setEventKind(eventId, kind) {
+        this.eventIdToKindMap.set(eventId, kind);
+    }
+    /**
+     * Get the author pubkey of an event, or undefined if unknown.
+     * @param eventId The id of the event.
+     */
+    getEventPubkey(eventId) {
+        return this.eventIdToAuthorPubkeyMap.get(eventId);
+    }
+    /**
+     * Set the pubkey of an event.
+     * @param eventId The id of the event.
+     * @param pubkey The author pubkey of the event.
+     */
+    setEventPubkey(eventId, pubkey) {
+        this.eventIdToAuthorPubkeyMap.set(eventId, pubkey);
+    }
+    /**
+     * Record a successful deletion and clean up.
+     * @param eventId Id of the event to mark deleted.
+     */
+    recordSuccessfulDeletion(eventId) {
+        this.knownDeletedIdsSet.add(eventId);
+        this.eventIdToAuthorPubkeyMap.delete(eventId);
+        this.eventIdToKindMap.delete(eventId);
+        this.clearDeletionAttempts(eventId);
+    }
+    /**
+     * Clear any previous attempts to delet the event specified.
+     * @param eventId Event that may have previously had deletion attempts.
+     */
+    clearDeletionAttempts(eventId) {
+        const deletingPubkeysSet = this.unknownEventIdToDeletingPubkeysMap.get(eventId);
+        if (deletingPubkeysSet) {
+            deletingPubkeysSet.clear();
+            this.unknownEventIdToDeletingPubkeysMap.delete(eventId);
+        }
+    }
+    /**
+     * Determine whether an event has been deleted.
+     * @param eventId
+     */
+    isDeleted(eventId) {
+        return this.knownDeletedIdsSet.has(eventId);
+    }
+}
+exports.EventDeletionDatabase = EventDeletionDatabase;
+
+
+/***/ }),
+
+/***/ 2702:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Add incoming events to the event deletion database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.addIncomingEventsToDatabase = void 0;
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+/**
+ * Add incoming events to the database.
+ * @param eventDeletionDatabase Event deletion database.
+ * @param memorelayClient Client that may be sending or receiving events.
+ * @returns Handler for disconnection.
+ */
+function addIncomingEventsToDatabase(eventDeletionDatabase, memorelayClient) {
+    return memorelayClient.onEvent(incoming_event_message_event_1.IncomingEventMessageEvent, (incomingEventMessageEvent) => {
+        if (incomingEventMessageEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        eventDeletionDatabase.addEvent(incomingEventMessageEvent.details.clientEventMessage[1]);
+    });
+}
+exports.addIncomingEventsToDatabase = addIncomingEventsToDatabase;
+
+
+/***/ }),
+
+/***/ 3423:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Filter incoming events so that known deleted events make it no
+ * further.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterIncomingEvents = void 0;
+const incoming_event_message_event_1 = __nccwpck_require__(3602);
+/**
+ * Filter incoming event messages so that known deleted events make it no
+ * further into the flow.
+ * @param eventDeletionDatabase Event deletion database.
+ * @param memorelayClient Client that may be sending or receiving events.
+ * @returns Handler for disconnection.
+ */
+function filterIncomingEvents(eventDeletionDatabase, memorelayClient) {
+    return memorelayClient.onEvent(incoming_event_message_event_1.IncomingEventMessageEvent, (incomingEventMessageEvent) => {
+        if (incomingEventMessageEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        const clientEventMessage = incomingEventMessageEvent.details
+            .clientEventMessage;
+        const incomingEvent = clientEventMessage[1];
+        if (eventDeletionDatabase.isDeleted(incomingEvent.id)) {
+            incomingEventMessageEvent.preventDefault();
+            // TODO(jimbo): Should this emit something?
+        }
+    });
+}
+exports.filterIncomingEvents = filterIncomingEvents;
+
+
+/***/ }),
+
+/***/ 6131:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Filter outgoing events so that deleted events are not emitted.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterOutgoingEvents = void 0;
+const outgoing_event_message_event_1 = __nccwpck_require__(1241);
+/**
+ * Filter outgoing event messages so that deleted events are not emitted.
+ * @param eventDeletionDatabase Event deletion database.
+ * @param memorelayClient Client that may be sending or receiving events.
+ * @returns Handler for disconnection.
+ */
+function filterOutgoingEvents(eventDeletionDatabase, memorelayClient) {
+    return memorelayClient.onEvent(outgoing_event_message_event_1.OutgoingEventMessageEvent, (outgoingEventMessageEvent) => {
+        if (outgoingEventMessageEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        const relayEventMessage = outgoingEventMessageEvent.details
+            .relayEventMessage;
+        const outgoingEvent = relayEventMessage[2];
+        if (eventDeletionDatabase.isDeleted(outgoingEvent.id)) {
+            outgoingEventMessageEvent.preventDefault();
+            // TODO(jimbo): Should this emit something?
+        }
+    });
+}
+exports.filterOutgoingEvents = filterOutgoingEvents;
+
+
+/***/ }),
+
+/***/ 3177:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Plugin to implement NIP-09 Event Deletion.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.eventDeletion = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const clear_handlers_1 = __nccwpck_require__(2209);
+const relay_information_document_event_1 = __nccwpck_require__(3884);
+const event_deletion_database_1 = __nccwpck_require__(3968);
+const add_incoming_events_to_database_1 = __nccwpck_require__(2702);
+const filter_incoming_events_1 = __nccwpck_require__(3423);
+const filter_outgoing_events_1 = __nccwpck_require__(6131);
+/**
+ * Attach handlers to implement NIP-09 Event Deletion.
+ * @param hub Event hub, often a Memorelay instance.
+ * @returns Handler for disconnection.
+ */
+function eventDeletion(hub) {
+    const eventDeletionDatabase = new event_deletion_database_1.EventDeletionDatabase();
+    const handlers = [];
+    const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
+    handlers.push(
+    // Signal support for NIP-09 in response to a NIP-11 relay info doc request.
+    hub.onEvent(relay_information_document_event_1.RelayInformationDocumentEvent, (relayInformationDocumentEvent) => {
+        const { relayInformationDocument } = relayInformationDocumentEvent.details;
+        if (!relayInformationDocument.supported_nips) {
+            relayInformationDocument.supported_nips = [];
+        }
+        relayInformationDocument.supported_nips.push(9);
+    }), 
+    // Attach additional handlers to each created client.
+    hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, (0, add_incoming_events_to_database_1.addIncomingEventsToDatabase)(eventDeletionDatabase, memorelayClient), (0, filter_incoming_events_1.filterIncomingEvents)(eventDeletionDatabase, memorelayClient), (0, filter_outgoing_events_1.filterOutgoingEvents)(eventDeletionDatabase, memorelayClient));
+    }));
+    return { disconnect };
+}
+exports.eventDeletion = eventDeletion;
+
+
+/***/ }),
+
+/***/ 3884:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Event indicating that a Nostr relay information document is
+ * about to be served.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RelayInformationDocumentEvent = exports.RELAY_INFORMATION_DOCUMENT_EVENT_TYPE = void 0;
+const relay_event_1 = __nccwpck_require__(9440);
+exports.RELAY_INFORMATION_DOCUMENT_EVENT_TYPE = 'relay-information-document';
+/**
+ * Event emitted by the relayInformationDocument() handler to allow system
+ * components and plugins to modify the outgoing relay information document
+ * before it is sent to the HTTP response.
+ */
+class RelayInformationDocumentEvent extends relay_event_1.RelayEvent {
+    constructor(details, options) {
+        super(exports.RELAY_INFORMATION_DOCUMENT_EVENT_TYPE, details, options);
+    }
+}
+RelayInformationDocumentEvent.type = exports.RELAY_INFORMATION_DOCUMENT_EVENT_TYPE;
+exports.RelayInformationDocumentEvent = RelayInformationDocumentEvent;
+
+
+/***/ }),
+
+/***/ 1916:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay plugin/handler for responding to requests for the
+ * information document.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.relayInformationDocument = void 0;
+const relay_information_document_event_1 = __nccwpck_require__(3884);
+const http_server_request_event_1 = __nccwpck_require__(2146);
+/**
+ * Memorelay plugin for responding to requests for the relay information
+ * document.
+ * @param hub Memorelay hub instance for which HTTP requests for relay
+ * information documents are to be handled.
+ * @event RelayInformationDocumentEvent For Memorelay plugins to make changes to
+ * the outgoing document.
+ * @see https://github.com/nostr-protocol/nips/blob/master/11.md
+ */
+function relayInformationDocument(hub) {
+    return hub.onEvent(http_server_request_event_1.HttpServerRequestEvent, (httpServerRequestEvent) => {
+        if (httpServerRequestEvent.defaultPrevented) {
+            return; // Preempted by another handler.
+        }
+        const { request, response } = httpServerRequestEvent.details;
+        if (request.headers.accept !== 'application/nostr+json') {
+            return; // Nothing to do, this request wasn't for an info document.
+        }
+        httpServerRequestEvent.preventDefault();
+        if (!request.method) {
+            response.setHeader('Content-Type', 'application/json');
+            response.writeHead(400, 'Bad Request');
+            response.write(JSON.stringify({ error: 'Bad Request: Method missing' }));
+            response.end();
+            return;
+        }
+        if (request.method !== 'HEAD' &&
+            request.method !== 'GET' &&
+            request.method !== 'OPTIONS') {
+            response.setHeader('Content-Type', 'application/json');
+            response.writeHead(501, 'Not Implemented');
+            response.write(JSON.stringify({ error: `Not Implemented: Method ${request.method}` }));
+            response.end();
+            return;
+        }
+        if (request.headers['access-control-request-headers']) {
+            // TODO(jimbo): Should the list of allowed headers be restricted?
+            response.setHeader('Access-Control-Allow-Headers', '*');
+        }
+        response.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        response.setHeader('Access-Control-Allow-Origin', '*');
+        if (request.method === 'OPTIONS') {
+            response.writeHead(200, 'OK');
+            response.end();
+            return;
+        }
+        queueMicrotask(() => {
+            const relayInformationDocument = {
+                supported_nips: [1, 11],
+            };
+            hub.emitEvent(new relay_information_document_event_1.RelayInformationDocumentEvent({ relayInformationDocument }, { parentEvent: httpServerRequestEvent, targetEmitter: hub }));
+            // Deduplicate and sort supported_nips.
+            relayInformationDocument.supported_nips = [
+                ...new Set(relayInformationDocument.supported_nips),
+            ].sort((a, b) => a - b);
+            response.setHeader('Content-Type', 'application/nostr+json');
+            response.writeHead(200, 'OK');
+            response.write(JSON.stringify(relayInformationDocument));
+            response.end();
+        });
+    });
+}
+exports.relayInformationDocument = relayInformationDocument;
+
+
+/***/ }),
+
+/***/ 8700:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies an OK message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingOKMessageEvent = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = 'outgoing-ok-message';
+/**
+ * Event emitted when an OK Command Result message is on its way out to the
+ * connected WebSocket. The default handler for this event will generalize this
+ * to a new OutgoingGenericMessageEvent.
+ */
+class OutgoingOKMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_OK_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingOKMessageEvent.type = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE;
+exports.OutgoingOKMessageEvent = OutgoingOKMessageEvent;
+
+
+/***/ }),
+
+/***/ 2215:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Generalize outgoing OK messages as generic.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generalizeOutgoingOKMessage = void 0;
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
+/**
+ * After an OutgoingOKMessage, emit an OutgoingGeneralMessageEvent.
+ * @param memorelayClient The client to plug into.
+ * @returns Handler.
+ * @emits OutgoingGeneralMessageEvent
+ */
+function generalizeOutgoingOKMessage(memorelayClient) {
+    return memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, (outgoingGenericMessageEvent) => {
+        if (outgoingGenericMessageEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        queueMicrotask(() => {
+            memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
+                genericMessage: outgoingGenericMessageEvent.details.okMessage,
+            }, {
+                parentEvent: outgoingGenericMessageEvent,
+                targetEmitter: memorelayClient,
+            }));
+        });
+    });
+}
+exports.generalizeOutgoingOKMessage = generalizeOutgoingOKMessage;
+
+
+/***/ }),
+
+/***/ 939:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Plugin to implement NIP-20 Command Results.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.commandResults = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+const clear_handlers_1 = __nccwpck_require__(2209);
+const relay_information_document_event_1 = __nccwpck_require__(3884);
+const generalize_outgoing_ok_messages_1 = __nccwpck_require__(2215);
+const send_ok_after_bad_event_messages_1 = __nccwpck_require__(176);
+const send_ok_after_database_add_1 = __nccwpck_require__(8608);
+const send_ok_after_duplicate_1 = __nccwpck_require__(4779);
+/**
+ * Given an event emitter hub (presumed to be a Memorelay instance), attach
+ * handlers to implement NIP-20.
+ * @param hub Event hub, often a Memorelay instance.
+ * @returns Handler for disconnection.
+ */
+function commandResults(hub) {
+    const handlers = [];
+    const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
+    handlers.push(
+    // Signal support for NIP-20 in response to a NIP-11 relay info doc request.
+    hub.onEvent(relay_information_document_event_1.RelayInformationDocumentEvent, (relayInformationDocumentEvent) => {
+        const { relayInformationDocument } = relayInformationDocumentEvent.details;
+        if (!relayInformationDocument.supported_nips) {
+            relayInformationDocument.supported_nips = [];
+        }
+        relayInformationDocument.supported_nips.push(20);
+    }), 
+    // Attach NIP-20 OK response handlers to each created client.
+    hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, (0, send_ok_after_database_add_1.sendOKAfterDatabaseAdd)(memorelayClient), (0, send_ok_after_duplicate_1.sendOKAfterDuplicate)(memorelayClient), (0, send_ok_after_bad_event_messages_1.sendOKAfterBadEvent)(memorelayClient), (0, generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessage)(memorelayClient));
+    }));
+    return { disconnect };
+}
+exports.commandResults = commandResults;
+
+
+/***/ }),
+
+/***/ 176:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Send an OK message after a bad incoming EVENT message.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterBadEvent = void 0;
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+const check_generic_message_1 = __nccwpck_require__(7345);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
+/**
+ * After a BadMessageErrorEvent where an EVENT object was malformed, send an
+ * OutgoingOKMessageEvent.
+ * @param memorelayClient The client to plug into.
+ * @returns Handler.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterBadEvent(memorelayClient) {
+    return memorelayClient.onEvent(bad_message_error_event_1.BadMessageErrorEvent, (badMessageErrorEvent) => {
+        if (badMessageErrorEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        const { badMessageError, badMessage } = badMessageErrorEvent.details;
+        try {
+            const genericMessage = (0, check_generic_message_1.checkGenericMessage)(badMessage);
+            if (genericMessage[0] !== 'EVENT') {
+                return; // The bad message wasn't an EVENT message.
+            }
+            badMessageErrorEvent.preventDefault();
+            const maybeEventObject = genericMessage[1];
+            const eventId = maybeEventObject &&
+                typeof maybeEventObject === 'object' &&
+                'id' in maybeEventObject &&
+                typeof maybeEventObject.id === 'string'
+                ? maybeEventObject.id
+                : 'undefined';
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({
+                    okMessage: [
+                        'OK',
+                        eventId,
+                        false,
+                        `invalid: ${badMessageError.message}`,
+                    ],
+                }, {
+                    parentEvent: badMessageErrorEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }
+        catch (err) {
+            // Nothing for us to do if the cause of the BadMessageError
+            // doesn't meet the qualifications of even a generic message.
+            return;
+        }
+    });
+}
+exports.sendOKAfterBadEvent = sendOKAfterBadEvent;
+
+
+/***/ }),
+
+/***/ 8608:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Send OK message after event is added to the database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterDatabaseAdd = void 0;
+const did_add_event_to_database_event_1 = __nccwpck_require__(210);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
+/**
+ * After a DidAddEventToDatabaseEvent, send an OutgoingOKMessageEvent.
+ * @param memorelayClient The client to plug into.
+ * @returns Handler.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterDatabaseAdd(memorelayClient) {
+    return memorelayClient.onEvent(did_add_event_to_database_event_1.DidAddEventToDatabaseEvent, (didAddEventToDatabaseEvent) => {
+        if (didAddEventToDatabaseEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        const { event } = didAddEventToDatabaseEvent.details;
+        queueMicrotask(() => {
+            memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, ''] }, {
+                parentEvent: didAddEventToDatabaseEvent,
+                targetEmitter: memorelayClient,
+            }));
+        });
+    });
+}
+exports.sendOKAfterDatabaseAdd = sendOKAfterDatabaseAdd;
+
+
+/***/ }),
+
+/***/ 4779:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Plugin to implement NIP-20 Command Results.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterDuplicate = void 0;
+const duplicate_event_message_event_1 = __nccwpck_require__(9991);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
+/**
+ * After a DuplicateEventMessageEvent, send an OutgoingOKMessageEvent.
+ * @param memorelayClient The client to plug into.
+ * @returns Handler.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterDuplicate(memorelayClient) {
+    return memorelayClient.onEvent(duplicate_event_message_event_1.DuplicateEventMessageEvent, (duplicateEventMessageEvent) => {
+        if (duplicateEventMessageEvent.defaultPrevented) {
+            return; // Preempted by another listener.
+        }
+        const { event } = duplicateEventMessageEvent.details;
+        queueMicrotask(() => {
+            memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, 'duplicate:'] }, {
+                parentEvent: duplicateEventMessageEvent,
+                targetEmitter: memorelayClient,
+            }));
+        });
+    });
+}
+exports.sendOKAfterDuplicate = sendOKAfterDuplicate;
 
 
 /***/ }),
@@ -33499,10 +36882,12 @@ var exports = __webpack_exports__;
  * @fileoverview Entry point for Memorelay server (bin file).
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const memorelay_server_1 = __nccwpck_require__(4997);
-const package_json_1 = __nccwpck_require__(3788);
 const winston_1 = __nccwpck_require__(4158);
 const commander_1 = __nccwpck_require__(4379);
+const http_1 = __nccwpck_require__(3685);
+const memorelay_1 = __nccwpck_require__(3409);
+const logging_plugin_1 = __nccwpck_require__(5772);
+const package_json_1 = __nccwpck_require__(3788);
 const packageJson = (0, package_json_1.readPackageJson)();
 if (!packageJson.name) {
     throw new Error('name field missing from package.json');
@@ -33553,28 +36938,29 @@ const logger = (0, winston_1.createLogger)({
     transports: [new winston_1.transports.Console({ level: logLevel })],
     format: winston_1.format.combine(...formatOptions),
 });
-const server = new memorelay_server_1.MemorelayServer(portNumber, logger);
+const memorelay = new memorelay_1.Memorelay();
+new logging_plugin_1.LoggingPlugin({ logger, memorelay }).connect();
+memorelay.connect();
+const httpServer = (0, http_1.createServer)(memorelay.handleRequest());
+httpServer.on('upgrade', memorelay.handleUpgrade());
 function reportErrorAndExit(error) {
     logger.log('error', error);
     process.exit(1);
 }
+httpServer.on('error', reportErrorAndExit);
 function shutdownAndExit(signalName) {
     logger.log('info', `${signalName} signal received, stopping...`);
-    server
-        .stop()
-        .then((success) => {
-        if (success) {
-            return process.exit(0);
-        }
-        logger.log('warning', 'Server did not stop cleanly');
-        process.exit(1);
-    })
-        .catch(reportErrorAndExit);
+    httpServer.closeAllConnections();
+    httpServer.close();
+    process.exit(0);
 }
 process.once('SIGBREAK', shutdownAndExit);
 process.once('SIGINT', shutdownAndExit);
 process.once('SIGTERM', shutdownAndExit);
-server.listen().catch(reportErrorAndExit);
+httpServer.listen({ port: portNumber }, () => {
+    const listeningPort = httpServer.address().port;
+    logger.log('info', `Memorelay listening on port ${listeningPort}`);
+});
 
 })();
 
