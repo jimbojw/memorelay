@@ -33032,7 +33032,7 @@ function relayInformationDocument(hub) {
         }
         queueMicrotask(() => {
             const relayInformationDocument = {
-                supported_nips: [1, 11],
+                supported_nips: [11],
             };
             hub.emitEvent(new relay_information_document_event_1.RelayInformationDocumentEvent({ relayInformationDocument }, { parentEvent: httpServerRequestEvent, targetEmitter: hub }));
             // Deduplicate and sort supported_nips.
@@ -33139,7 +33139,6 @@ exports.commandResults = void 0;
 const memorelay_client_created_event_1 = __nccwpck_require__(3965);
 const auto_disconnect_1 = __nccwpck_require__(7649);
 const clear_handlers_1 = __nccwpck_require__(2209);
-const relay_information_document_event_1 = __nccwpck_require__(3884);
 const generalize_outgoing_ok_messages_1 = __nccwpck_require__(2215);
 const send_ok_after_bad_event_messages_1 = __nccwpck_require__(176);
 const send_ok_after_database_add_1 = __nccwpck_require__(8608);
@@ -33154,14 +33153,6 @@ function commandResults(hub) {
     const handlers = [];
     const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
     handlers.push(
-    // Signal support for NIP-20 in response to a NIP-11 relay info doc request.
-    hub.onEvent(relay_information_document_event_1.RelayInformationDocumentEvent, (relayInformationDocumentEvent) => {
-        const { relayInformationDocument } = relayInformationDocumentEvent.details;
-        if (!relayInformationDocument.supported_nips) {
-            relayInformationDocument.supported_nips = [];
-        }
-        relayInformationDocument.supported_nips.push(20);
-    }), 
     // Attach NIP-20 OK response handlers to each created client.
     hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
         (0, auto_disconnect_1.autoDisconnect)(memorelayClient, (0, send_ok_after_database_add_1.sendOKAfterDatabaseAdd)(memorelayClient), (0, send_ok_after_duplicate_1.sendOKAfterDuplicate)(memorelayClient), (0, send_ok_after_bad_event_messages_1.sendOKAfterBadEvent)(memorelayClient), (0, generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessage)(memorelayClient));

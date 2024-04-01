@@ -1,3 +1,11 @@
+## [2.0.2](https://github.com/jimbojw/memorelay/compare/v2.0.1...v2.0.2) (2024-04-01)
+
+
+### Bug Fixes
+
+* Remove 1 from `supported_nips` list. ([1f07d6f](https://github.com/jimbojw/memorelay/commit/1f07d6f8ac5a5c9051ce4892eab288d1612f9987))
+* Remove 20 from `supported_nips` list. ([ee96bbb](https://github.com/jimbojw/memorelay/commit/ee96bbb2a1892e3da200d3d70d2e22e955122861))
+
 ## [2.0.1](https://github.com/jimbojw/memorelay/compare/v2.0.0...v2.0.1) (2023-07-13)
 
 

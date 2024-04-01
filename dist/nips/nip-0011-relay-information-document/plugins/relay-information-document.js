@@ -58,7 +58,7 @@ function relayInformationDocument(hub) {
         }
         queueMicrotask(() => {
             const relayInformationDocument = {
-                supported_nips: [1, 11],
+                supported_nips: [11],
             };
             hub.emitEvent(new relay_information_document_event_1.RelayInformationDocumentEvent({ relayInformationDocument }, { parentEvent: httpServerRequestEvent, targetEmitter: hub }));
             // Deduplicate and sort supported_nips.

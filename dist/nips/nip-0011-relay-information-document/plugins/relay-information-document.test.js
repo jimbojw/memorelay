@@ -39,7 +39,6 @@ describe('relayInformationDocument()', () => {
                     expect(mockResponse.statusCode).toBe(200);
                     const responseText = mockResponse._getData();
                     const doc = JSON.parse(responseText);
-                    expect(doc.supported_nips).toContain(1);
                     expect(doc.supported_nips).toContain(11);
                 }));
                 it('should incorporate other plugin changes to document', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -62,7 +61,6 @@ describe('relayInformationDocument()', () => {
                     expect(mockResponse.statusCode).toBe(200);
                     const responseText = mockResponse._getData();
                     const doc = JSON.parse(responseText);
-                    expect(doc.supported_nips).toContain(1);
                     expect(doc.supported_nips).toContain(9);
                     expect(doc.supported_nips).toContain(11);
                 }));
