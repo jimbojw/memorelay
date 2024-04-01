@@ -44,7 +44,6 @@ describe('relayInformationDocument()', () => {
           expect(mockResponse.statusCode).toBe(200);
           const responseText = mockResponse._getData() as string;
           const doc = JSON.parse(responseText) as RelayInformationDocument;
-          expect(doc.supported_nips).toContain(1);
           expect(doc.supported_nips).toContain(11);
         });
 
@@ -80,7 +79,6 @@ describe('relayInformationDocument()', () => {
           expect(mockResponse.statusCode).toBe(200);
           const responseText = mockResponse._getData() as string;
           const doc = JSON.parse(responseText) as RelayInformationDocument;
-          expect(doc.supported_nips).toContain(1);
           expect(doc.supported_nips).toContain(9);
           expect(doc.supported_nips).toContain(11);
         });

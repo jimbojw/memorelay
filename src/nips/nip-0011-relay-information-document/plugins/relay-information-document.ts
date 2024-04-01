@@ -76,7 +76,7 @@ export function relayInformationDocument(hub: MemorelayHub): Disconnectable {
 
       queueMicrotask(() => {
         const relayInformationDocument: RelayInformationDocument = {
-          supported_nips: [1, 11],
+          supported_nips: [11],
         };
 
         hub.emitEvent(

@@ -11,7 +11,7 @@ import { RelayInformationDocumentEvent } from '../../nip-0011-relay-information-
 
 describe('commandResults()', () => {
   describe('#RelayInformationDocumentEvent', () => {
-    it('should signal support for NIP-20', () => {
+    it('should NOT signal support for NIP-20', () => {
       const { hub } = setupTestHubAndClient(commandResults);
       const relayInformationDocumentEvent = new RelayInformationDocumentEvent({
         relayInformationDocument: {},
@@ -19,7 +19,7 @@ describe('commandResults()', () => {
       hub.emitEvent(relayInformationDocumentEvent);
       const { supported_nips } =
         relayInformationDocumentEvent.details.relayInformationDocument;
-      expect(supported_nips).toContain(20);
+      expect(supported_nips).not.toBeDefined();
     });
   });
 });
