@@ -9,6 +9,7 @@ import { bufferToGenericMessage } from './nips/nip-0001-basic-protocol/lib/buffe
 import { objectToJsonBuffer } from './nips/nip-0001-basic-protocol/lib/object-to-json-buffer';
 import { RelayEOSEMessage } from './nips/nip-0001-basic-protocol/types/relay-eose-message';
 import { RelayEventMessage } from './nips/nip-0001-basic-protocol/types/relay-event-message';
+import { RelayOKMessage } from './nips/nip-0001-basic-protocol/types/relay-ok-message';
 import { BinTestHarness } from './test/bin-test-harness';
 import { createSignedTestEvent } from './test/signed-test-event';
 
@@ -21,7 +22,15 @@ describe('bin.ts', () => {
 
     // Send a test event to store.
     const senderWebSocket = await harness.openWebSocket();
-    senderWebSocket.send(objectToJsonBuffer(['EVENT', testEvent]));
+    const okMessage = await new Promise((resolve) => {
+      senderWebSocket
+        .on('message', (buffer: Buffer) => {
+          resolve(bufferToGenericMessage(buffer) as RelayOKMessage);
+        })
+        .send(objectToJsonBuffer(['EVENT', testEvent]));
+    });
+
+    expect(okMessage).toEqual(['OK', testEvent.id, true, '']);
 
     // Request all events.
     const receiverWebSocket = await harness.openWebSocket();

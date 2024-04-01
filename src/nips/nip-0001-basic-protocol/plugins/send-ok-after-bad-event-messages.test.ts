@@ -6,16 +6,15 @@
  */
 
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
-import { BadMessageError } from '../../nip-0001-basic-protocol/errors/bad-message-error';
-import { BadMessageErrorEvent } from '../../nip-0001-basic-protocol/events/bad-message-error-event';
+import { BadMessageError } from '../errors/bad-message-error';
+import { BadMessageErrorEvent } from '../events/bad-message-error-event';
 import { OutgoingOKMessageEvent } from '../events/outgoing-ok-message-event';
 import { sendOKAfterBadEvent } from './send-ok-after-bad-event-messages';
 
 describe('sendOKAfterBadEvent()', () => {
   describe('#BadMessageErrorEvent', () => {
     it('should send an outgoing OK message event', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      sendOKAfterBadEvent(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(sendOKAfterBadEvent);
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingOKMessageEvent]>();
       memorelayClient.onEvent(OutgoingOKMessageEvent, mockHandlerFn);
@@ -46,8 +45,7 @@ describe('sendOKAfterBadEvent()', () => {
     });
 
     it('should not send when defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      sendOKAfterBadEvent(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(sendOKAfterBadEvent);
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingOKMessageEvent]>();
       memorelayClient.onEvent(OutgoingOKMessageEvent, mockHandlerFn);
@@ -65,8 +63,7 @@ describe('sendOKAfterBadEvent()', () => {
     });
 
     it('should send an outgoing OK even if EVENT lacks id', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      sendOKAfterBadEvent(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(sendOKAfterBadEvent);
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingOKMessageEvent]>();
       memorelayClient.onEvent(OutgoingOKMessageEvent, mockHandlerFn);
@@ -97,8 +94,7 @@ describe('sendOKAfterBadEvent()', () => {
     });
 
     it('should not send if not an EVENT message', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      sendOKAfterBadEvent(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(sendOKAfterBadEvent);
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingOKMessageEvent]>();
       memorelayClient.onEvent(OutgoingOKMessageEvent, mockHandlerFn);
@@ -117,8 +113,7 @@ describe('sendOKAfterBadEvent()', () => {
     });
 
     it('should not send if payload is not a generic message', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      sendOKAfterBadEvent(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(sendOKAfterBadEvent);
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingOKMessageEvent]>();
       memorelayClient.onEvent(OutgoingOKMessageEvent, mockHandlerFn);

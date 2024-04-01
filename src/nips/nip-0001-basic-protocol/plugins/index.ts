@@ -23,9 +23,13 @@ import { subscribeToIncomingReqMessages } from './subscribe-to-incoming-req-mess
 import { validateIncomingCloseMessages } from './validate-incoming-close-messages';
 import { validateIncomingEventMessages } from './validate-incoming-event-messages';
 import { validateIncomingReqMessages } from './validate-incoming-req-messages';
-import { sendNoticeOnClientError } from './send-notice-on-client-error';
 import { EventsDatabase } from '../lib/events-database';
 import { storeIncomingEventsToDatabase } from './store-incoming-events-to-database';
+import { generalizeOutgoingOKMessages } from './generalize-outgoing-ok-messages';
+import { sendOKAfterDuplicate } from './send-ok-after-duplicate';
+import { sendOKAfterBadEvent } from './send-ok-after-bad-event-messages';
+import { sendNoticeOnClientError } from './send-notice-on-client-error';
+import { sendOKAfterDatabaseAdd } from './send-ok-after-database-add';
 
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
@@ -54,11 +58,17 @@ export function basicProtocol(hub: MemorelayHub): Disconnectable {
     // Reject any message type other than EVENT, REQ and CLOSE.
     rejectUnrecognizedIncomingMessages,
 
-    // Send NOTICE in response to a client error such as a bad message.
+    // Send OK in response to a client error such as a bad message.
+    sendOKAfterBadEvent,
+
+    // Send NOTICE in response to a client error other than a bad EVENT.
     sendNoticeOnClientError,
 
     // Drop incoming EVENT messages where the clientEvent has been seen before.
     dropDuplicateIncomingEventMessages,
+
+    // Send OK to posting client after dropping duplicate EVENT message.
+    sendOKAfterDuplicate,
 
     // Broadcast incoming EVENT messages to all other connected clients.
     broadcastIncomingEventMessages,
@@ -66,17 +76,21 @@ export function basicProtocol(hub: MemorelayHub): Disconnectable {
     // Store incoming events to the database.
     storeIncomingEventsToDatabase(eventsDatabase),
 
+    // Send OK after adding an event to the database.
+    sendOKAfterDatabaseAdd,
+
     // Send stored events to REQ subscribers.
     sendStoredEventsToSubscribers(eventsDatabase),
 
     // Subscribe to incoming REQ messages.
     subscribeToIncomingReqMessages,
 
-    // Convert outgoing EVENT, EOSE and NOTICE message events to
+    // Convert outgoing EVENT, EOSE, NOTICE and OK message events to
     // OutgoingGenericMessageEvents.
     generalizeOutgoingEventMessages,
     generalizeOutgoingEOSEMessages,
     generalizeOutgoingNoticeMessages,
+    generalizeOutgoingOKMessages,
 
     // Serialize outgoing generic messages and send to the WebSocket.
     serializeOutgoingJsonMessages,
