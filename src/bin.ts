@@ -77,6 +77,8 @@ const logger = createLogger({
   format: format.combine(...formatOptions),
 });
 
+logger.log('debug', `Logging at log level: ${logLevel}`);
+
 const memorelay = new Memorelay();
 
 new LoggingPlugin({ logger, memorelay }).connect();

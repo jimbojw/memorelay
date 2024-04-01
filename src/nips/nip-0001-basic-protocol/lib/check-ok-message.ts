@@ -5,12 +5,12 @@
  * @fileoverview Check whether an incoming OK message is valid.
  */
 
-import { BadMessageError } from '../../nip-0001-basic-protocol/errors/bad-message-error';
+import { BadMessageError } from '../errors/bad-message-error';
 import { RelayOKMessage } from '../types/relay-ok-message';
 
 /**
- * Check whether a generic Nostr message meets the NIP-20 criteria for an OK
- * Command Results message.
+ * Check whether a generic Nostr message meets the criteria for an OK Command
+ * Results message.
  * @param genericMessage Generic message with 'OK' message type.
  * @returns The same incoming generic message, cast as a RelayOKMessage.
  * @throws BadMessageError if the OK message is malformed.

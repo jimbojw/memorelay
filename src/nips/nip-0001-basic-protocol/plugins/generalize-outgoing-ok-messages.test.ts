@@ -5,16 +5,17 @@
  * @fileoverview Tests for generalizeOutgoingOKMessages().
  */
 
+import { generalizeOutgoingOKMessages } from './generalize-outgoing-ok-messages';
 import { setupTestHubAndClient } from '../../../test/setup-test-hub-and-client';
-import { OutgoingGenericMessageEvent } from '../../nip-0001-basic-protocol/events/outgoing-generic-message-event';
+import { OutgoingGenericMessageEvent } from '../events/outgoing-generic-message-event';
 import { OutgoingOKMessageEvent } from '../events/outgoing-ok-message-event';
-import { generalizeOutgoingOKMessage } from './generalize-outgoing-ok-messages';
 
 describe('generalizeOutgoingOKMessages()', () => {
   describe('#OutgoingOKMessageEvent', () => {
     it('should send an outgoing generic message event', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      generalizeOutgoingOKMessage(memorelayClient);
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingOKMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingGenericMessageEvent]>();
       memorelayClient.onEvent(OutgoingGenericMessageEvent, mockHandlerFn);
@@ -39,9 +40,10 @@ describe('generalizeOutgoingOKMessages()', () => {
       );
     });
 
-    it('should not send when defaultPrevented', async () => {
-      const { memorelayClient } = setupTestHubAndClient();
-      generalizeOutgoingOKMessage(memorelayClient);
+    it('should not send when default prevented', async () => {
+      const { memorelayClient } = setupTestHubAndClient(
+        generalizeOutgoingOKMessages
+      );
 
       const mockHandlerFn = jest.fn<unknown, [OutgoingGenericMessageEvent]>();
       memorelayClient.onEvent(OutgoingGenericMessageEvent, mockHandlerFn);
