@@ -26,7 +26,14 @@ describe('bin.ts', () => {
         const testEvent = (0, signed_test_event_1.createSignedTestEvent)({ content: 'HELLO WORLD' });
         // Send a test event to store.
         const senderWebSocket = yield harness.openWebSocket();
-        senderWebSocket.send((0, object_to_json_buffer_1.objectToJsonBuffer)(['EVENT', testEvent]));
+        const okMessage = yield new Promise((resolve) => {
+            senderWebSocket
+                .on('message', (buffer) => {
+                resolve((0, buffer_to_generic_message_1.bufferToGenericMessage)(buffer));
+            })
+                .send((0, object_to_json_buffer_1.objectToJsonBuffer)(['EVENT', testEvent]));
+        });
+        expect(okMessage).toEqual(['OK', testEvent.id, true, '']);
         // Request all events.
         const receiverWebSocket = yield harness.openWebSocket();
         const eventMessage = yield new Promise((resolve) => {

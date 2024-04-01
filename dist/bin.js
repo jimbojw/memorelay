@@ -62,6 +62,7 @@ const logger = (0, winston_1.createLogger)({
     transports: [new winston_1.transports.Console({ level: logLevel })],
     format: winston_1.format.combine(...formatOptions),
 });
+logger.log('debug', `Logging at log level: ${logLevel}`);
 const memorelay = new memorelay_1.Memorelay();
 new logging_plugin_1.LoggingPlugin({ logger, memorelay }).connect();
 memorelay.connect();

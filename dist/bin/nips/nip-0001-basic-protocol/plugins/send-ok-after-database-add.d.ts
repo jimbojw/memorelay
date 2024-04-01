@@ -4,12 +4,11 @@
 /**
  * @fileoverview Send OK message after event is added to the database.
  */
-import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { Disconnectable } from '../../../core/types/disconnectable';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 /**
  * After a DidAddEventToDatabaseEvent, send an OutgoingOKMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
+ * @param hub Event hub for inter-component communication.
  * @emits OutgoingOKMessageEvent
  */
-export declare function sendOKAfterDatabaseAdd(memorelayClient: MemorelayClient): Disconnectable;
+export declare function sendOKAfterDatabaseAdd(hub: MemorelayHub): Disconnectable;

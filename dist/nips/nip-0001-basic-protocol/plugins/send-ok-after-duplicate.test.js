@@ -17,14 +17,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const setup_test_hub_and_client_1 = require("../../../test/setup-test-hub-and-client");
 const signed_test_event_1 = require("../../../test/signed-test-event");
-const duplicate_event_message_event_1 = require("../../nip-0001-basic-protocol/events/duplicate-event-message-event");
+const duplicate_event_message_event_1 = require("../events/duplicate-event-message-event");
 const outgoing_ok_message_event_1 = require("../events/outgoing-ok-message-event");
 const send_ok_after_duplicate_1 = require("./send-ok-after-duplicate");
 describe('sendOKAfterDuplicate()', () => {
     describe('#DuplicateEventMessageEvent', () => {
         it('should send an outgoing OK message event', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, send_ok_after_duplicate_1.sendOKAfterDuplicate)(memorelayClient);
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(send_ok_after_duplicate_1.sendOKAfterDuplicate);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, mockHandlerFn);
             const testEvent = (0, signed_test_event_1.createSignedTestEvent)({ content: 'TEST' });
@@ -46,8 +45,7 @@ describe('sendOKAfterDuplicate()', () => {
             ]);
         }));
         it('should not send when defaultPrevented', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, send_ok_after_duplicate_1.sendOKAfterDuplicate)(memorelayClient);
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(send_ok_after_duplicate_1.sendOKAfterDuplicate);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, mockHandlerFn);
             const testEvent = (0, signed_test_event_1.createSignedTestEvent)({ content: 'TEST' });

@@ -22,9 +22,13 @@ const subscribe_to_incoming_req_messages_1 = require("./subscribe-to-incoming-re
 const validate_incoming_close_messages_1 = require("./validate-incoming-close-messages");
 const validate_incoming_event_messages_1 = require("./validate-incoming-event-messages");
 const validate_incoming_req_messages_1 = require("./validate-incoming-req-messages");
-const send_notice_on_client_error_1 = require("./send-notice-on-client-error");
 const events_database_1 = require("../lib/events-database");
 const store_incoming_events_to_database_1 = require("./store-incoming-events-to-database");
+const generalize_outgoing_ok_messages_1 = require("./generalize-outgoing-ok-messages");
+const send_ok_after_duplicate_1 = require("./send-ok-after-duplicate");
+const send_ok_after_bad_event_messages_1 = require("./send-ok-after-bad-event-messages");
+const send_notice_on_client_error_1 = require("./send-notice-on-client-error");
+const send_ok_after_database_add_1 = require("./send-ok-after-database-add");
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
  * component functionality.
@@ -47,23 +51,30 @@ function basicProtocol(hub) {
         validate_incoming_close_messages_1.validateIncomingCloseMessages,
         // Reject any message type other than EVENT, REQ and CLOSE.
         reject_unrecognized_incoming_messages_1.rejectUnrecognizedIncomingMessages,
-        // Send NOTICE in response to a client error such as a bad message.
+        // Send OK in response to a client error such as a bad message.
+        send_ok_after_bad_event_messages_1.sendOKAfterBadEvent,
+        // Send NOTICE in response to a client error other than a bad EVENT.
         send_notice_on_client_error_1.sendNoticeOnClientError,
         // Drop incoming EVENT messages where the clientEvent has been seen before.
         drop_duplicate_incoming_event_messages_1.dropDuplicateIncomingEventMessages,
+        // Send OK to posting client after dropping duplicate EVENT message.
+        send_ok_after_duplicate_1.sendOKAfterDuplicate,
         // Broadcast incoming EVENT messages to all other connected clients.
         broadcast_incoming_event_messages_1.broadcastIncomingEventMessages,
         // Store incoming events to the database.
         (0, store_incoming_events_to_database_1.storeIncomingEventsToDatabase)(eventsDatabase),
+        // Send OK after adding an event to the database.
+        send_ok_after_database_add_1.sendOKAfterDatabaseAdd,
         // Send stored events to REQ subscribers.
         (0, send_stored_events_to_subscribers_1.sendStoredEventsToSubscribers)(eventsDatabase),
         // Subscribe to incoming REQ messages.
         subscribe_to_incoming_req_messages_1.subscribeToIncomingReqMessages,
-        // Convert outgoing EVENT, EOSE and NOTICE message events to
+        // Convert outgoing EVENT, EOSE, NOTICE and OK message events to
         // OutgoingGenericMessageEvents.
         generalize_outgoing_event_messages_1.generalizeOutgoingEventMessages,
         generalize_outgoing_eose_messages_1.generalizeOutgoingEOSEMessages,
         generalize_outgoing_notice_messages_1.generalizeOutgoingNoticeMessages,
+        generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessages,
         // Serialize outgoing generic messages and send to the WebSocket.
         serialize_outgoing_json_messages_1.serializeOutgoingJsonMessages,
     ];

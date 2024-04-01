@@ -17,14 +17,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const setup_test_hub_and_client_1 = require("../../../test/setup-test-hub-and-client");
 const signed_test_event_1 = require("../../../test/signed-test-event");
-const did_add_event_to_database_event_1 = require("../../nip-0001-basic-protocol/events/did-add-event-to-database-event");
+const did_add_event_to_database_event_1 = require("../events/did-add-event-to-database-event");
 const outgoing_ok_message_event_1 = require("../events/outgoing-ok-message-event");
 const send_ok_after_database_add_1 = require("./send-ok-after-database-add");
 describe('sendOKAfterDatabaseAdd()', () => {
     describe('#DidAddEventToDatabaseEvent', () => {
         it('should send an outgoing OK message event', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, send_ok_after_database_add_1.sendOKAfterDatabaseAdd)(memorelayClient);
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(send_ok_after_database_add_1.sendOKAfterDatabaseAdd);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, mockHandlerFn);
             const testEvent = (0, signed_test_event_1.createSignedTestEvent)({ content: 'TEST' });
@@ -40,8 +39,7 @@ describe('sendOKAfterDatabaseAdd()', () => {
             expect(outgoingOKMessageEvent.parentEvent).toBe(didAddEventToDatabaseEvent);
         }));
         it('should not send when defaultPrevented', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, send_ok_after_database_add_1.sendOKAfterDatabaseAdd)(memorelayClient);
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(send_ok_after_database_add_1.sendOKAfterDatabaseAdd);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, mockHandlerFn);
             const testEvent = (0, signed_test_event_1.createSignedTestEvent)({ content: 'TEST' });

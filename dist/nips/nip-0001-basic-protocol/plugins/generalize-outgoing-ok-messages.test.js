@@ -15,15 +15,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const setup_test_hub_and_client_1 = require("../../../test/setup-test-hub-and-client");
-const outgoing_generic_message_event_1 = require("../../nip-0001-basic-protocol/events/outgoing-generic-message-event");
-const outgoing_ok_message_event_1 = require("../events/outgoing-ok-message-event");
 const generalize_outgoing_ok_messages_1 = require("./generalize-outgoing-ok-messages");
+const setup_test_hub_and_client_1 = require("../../../test/setup-test-hub-and-client");
+const outgoing_generic_message_event_1 = require("../events/outgoing-generic-message-event");
+const outgoing_ok_message_event_1 = require("../events/outgoing-ok-message-event");
 describe('generalizeOutgoingOKMessages()', () => {
     describe('#OutgoingOKMessageEvent', () => {
         it('should send an outgoing generic message event', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessage)(memorelayClient);
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessages);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_generic_message_event_1.OutgoingGenericMessageEvent, mockHandlerFn);
             const outgoingOKMessageEvent = new outgoing_ok_message_event_1.OutgoingOKMessageEvent({
@@ -37,9 +36,8 @@ describe('generalizeOutgoingOKMessages()', () => {
             expect(outgoingGenericMessageEvent).toBeInstanceOf(outgoing_generic_message_event_1.OutgoingGenericMessageEvent);
             expect(outgoingGenericMessageEvent.parentEvent).toBe(outgoingOKMessageEvent);
         }));
-        it('should not send when defaultPrevented', () => __awaiter(void 0, void 0, void 0, function* () {
-            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)();
-            (0, generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessage)(memorelayClient);
+        it('should not send when default prevented', () => __awaiter(void 0, void 0, void 0, function* () {
+            const { memorelayClient } = (0, setup_test_hub_and_client_1.setupTestHubAndClient)(generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessages);
             const mockHandlerFn = jest.fn();
             memorelayClient.onEvent(outgoing_generic_message_event_1.OutgoingGenericMessageEvent, mockHandlerFn);
             const outgoingOKMessageEvent = new outgoing_ok_message_event_1.OutgoingOKMessageEvent({

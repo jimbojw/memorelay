@@ -7,10 +7,10 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkOKMessage = void 0;
-const bad_message_error_1 = require("../../nip-0001-basic-protocol/errors/bad-message-error");
+const bad_message_error_1 = require("../errors/bad-message-error");
 /**
- * Check whether a generic Nostr message meets the NIP-20 criteria for an OK
- * Command Results message.
+ * Check whether a generic Nostr message meets the criteria for an OK Command
+ * Results message.
  * @param genericMessage Generic message with 'OK' message type.
  * @returns The same incoming generic message, cast as a RelayOKMessage.
  * @throws BadMessageError if the OK message is malformed.

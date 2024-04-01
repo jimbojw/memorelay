@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/jimbojw/memorelay/compare/v2.0.2...v2.0.3) (2024-04-01)
+
+
+### Bug Fixes
+
+* Move previous NIP-20 code into NIP-01. ([6973b8f](https://github.com/jimbojw/memorelay/commit/6973b8ff89ec254e0978dca5d535bb4466b6f569))
+
 ## [2.0.2](https://github.com/jimbojw/memorelay/compare/v2.0.1...v2.0.2) (2024-04-01)
 
 

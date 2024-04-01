@@ -30383,7 +30383,6 @@ const create_clients_1 = __nccwpck_require__(3995);
 const plugins_1 = __nccwpck_require__(3581);
 const plugins_2 = __nccwpck_require__(3177);
 const relay_information_document_1 = __nccwpck_require__(1916);
-const plugins_3 = __nccwpck_require__(939);
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
  *
@@ -30412,8 +30411,6 @@ const plugins_3 = __nccwpck_require__(939);
 class Memorelay extends memorelay_hub_1.MemorelayHub {
     constructor(...plugins) {
         super(...plugins, ...[
-            // NIP-20 command results.
-            plugins_3.commandResults,
             // NIP-11 relay information document requests.
             relay_information_document_1.relayInformationDocument,
             // NIP-05 event deletion.
@@ -30839,6 +30836,37 @@ class OutgoingNoticeMessageEvent extends client_event_1.ClientEvent {
 }
 OutgoingNoticeMessageEvent.type = exports.OUTGOING_NOTICE_MESSAGE_EVENT_TYPE;
 exports.OutgoingNoticeMessageEvent = OutgoingNoticeMessageEvent;
+
+
+/***/ }),
+
+/***/ 8671:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Signifies an OK message on its way out to the client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OutgoingOKMessageEvent = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = void 0;
+const client_event_1 = __nccwpck_require__(6368);
+exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = 'outgoing-ok-message';
+/**
+ * Event emitted when an OK Command Result message is on its way out to the
+ * connected WebSocket. The default handler for this event will generalize this
+ * to a new OutgoingGenericMessageEvent.
+ */
+class OutgoingOKMessageEvent extends client_event_1.ClientEvent {
+    constructor(details, options) {
+        super(exports.OUTGOING_OK_MESSAGE_EVENT_TYPE, details, options);
+    }
+}
+OutgoingOKMessageEvent.type = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE;
+exports.OutgoingOKMessageEvent = OutgoingOKMessageEvent;
 
 
 /***/ }),
@@ -31807,6 +31835,53 @@ exports.generalizeOutgoingNoticeMessages = generalizeOutgoingNoticeMessages;
 
 /***/ }),
 
+/***/ 925:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Memorelay core plugin for re-casting outgoing OK messages
+ * as generic messages.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generalizeOutgoingOKMessages = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8671);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * Memorelay plugin for re-casting outgoing OK messages as generic messages.
+ * @param hub Event hub for inter-component communication.
+ * @event OutgoingGenericMessageEvent
+ */
+function generalizeOutgoingOKMessages(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, (outgoingOKMessageEvent) => {
+            if (outgoingOKMessageEvent.defaultPrevented) {
+                return; // Preempted by another handler.
+            }
+            outgoingOKMessageEvent.preventDefault();
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
+                    genericMessage: outgoingOKMessageEvent.details.okMessage,
+                }, {
+                    parentEvent: outgoingOKMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.generalizeOutgoingOKMessages = generalizeOutgoingOKMessages;
+
+
+/***/ }),
+
 /***/ 3581:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -31835,9 +31910,13 @@ const subscribe_to_incoming_req_messages_1 = __nccwpck_require__(17);
 const validate_incoming_close_messages_1 = __nccwpck_require__(9245);
 const validate_incoming_event_messages_1 = __nccwpck_require__(3087);
 const validate_incoming_req_messages_1 = __nccwpck_require__(4579);
-const send_notice_on_client_error_1 = __nccwpck_require__(1464);
 const events_database_1 = __nccwpck_require__(9543);
 const store_incoming_events_to_database_1 = __nccwpck_require__(2232);
+const generalize_outgoing_ok_messages_1 = __nccwpck_require__(925);
+const send_ok_after_duplicate_1 = __nccwpck_require__(3750);
+const send_ok_after_bad_event_messages_1 = __nccwpck_require__(4275);
+const send_notice_on_client_error_1 = __nccwpck_require__(1464);
+const send_ok_after_database_add_1 = __nccwpck_require__(8434);
 /**
  * Given an event emitter hub (presumed to be a Memorelay instance), attach all
  * component functionality.
@@ -31860,23 +31939,30 @@ function basicProtocol(hub) {
         validate_incoming_close_messages_1.validateIncomingCloseMessages,
         // Reject any message type other than EVENT, REQ and CLOSE.
         reject_unrecognized_incoming_messages_1.rejectUnrecognizedIncomingMessages,
-        // Send NOTICE in response to a client error such as a bad message.
+        // Send OK in response to a client error such as a bad message.
+        send_ok_after_bad_event_messages_1.sendOKAfterBadEvent,
+        // Send NOTICE in response to a client error other than a bad EVENT.
         send_notice_on_client_error_1.sendNoticeOnClientError,
         // Drop incoming EVENT messages where the clientEvent has been seen before.
         drop_duplicate_incoming_event_messages_1.dropDuplicateIncomingEventMessages,
+        // Send OK to posting client after dropping duplicate EVENT message.
+        send_ok_after_duplicate_1.sendOKAfterDuplicate,
         // Broadcast incoming EVENT messages to all other connected clients.
         broadcast_incoming_event_messages_1.broadcastIncomingEventMessages,
         // Store incoming events to the database.
         (0, store_incoming_events_to_database_1.storeIncomingEventsToDatabase)(eventsDatabase),
+        // Send OK after adding an event to the database.
+        send_ok_after_database_add_1.sendOKAfterDatabaseAdd,
         // Send stored events to REQ subscribers.
         (0, send_stored_events_to_subscribers_1.sendStoredEventsToSubscribers)(eventsDatabase),
         // Subscribe to incoming REQ messages.
         subscribe_to_incoming_req_messages_1.subscribeToIncomingReqMessages,
-        // Convert outgoing EVENT, EOSE and NOTICE message events to
+        // Convert outgoing EVENT, EOSE, NOTICE and OK message events to
         // OutgoingGenericMessageEvents.
         generalize_outgoing_event_messages_1.generalizeOutgoingEventMessages,
         generalize_outgoing_eose_messages_1.generalizeOutgoingEOSEMessages,
         generalize_outgoing_notice_messages_1.generalizeOutgoingNoticeMessages,
+        generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessages,
         // Serialize outgoing generic messages and send to the WebSocket.
         serialize_outgoing_json_messages_1.serializeOutgoingJsonMessages,
     ];
@@ -32062,6 +32148,166 @@ function sendNoticeOnClientError(hub) {
     });
 }
 exports.sendNoticeOnClientError = sendNoticeOnClientError;
+
+
+/***/ }),
+
+/***/ 4275:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Send an OK message after a bad incoming EVENT message.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterBadEvent = void 0;
+const bad_message_error_event_1 = __nccwpck_require__(1705);
+const check_generic_message_1 = __nccwpck_require__(7345);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8671);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * After a BadMessageErrorEvent where an EVENT object was malformed, send an
+ * OutgoingOKMessageEvent.
+ * @param hub Event hub for inter-component communication.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterBadEvent(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(bad_message_error_event_1.BadMessageErrorEvent, (badMessageErrorEvent) => {
+            if (badMessageErrorEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const { badMessageError, badMessage } = badMessageErrorEvent.details;
+            try {
+                const genericMessage = (0, check_generic_message_1.checkGenericMessage)(badMessage);
+                if (genericMessage[0] !== 'EVENT') {
+                    return; // The bad message wasn't an EVENT message.
+                }
+                badMessageErrorEvent.preventDefault();
+                const maybeEventObject = genericMessage[1];
+                const eventId = maybeEventObject &&
+                    typeof maybeEventObject === 'object' &&
+                    'id' in maybeEventObject &&
+                    typeof maybeEventObject.id === 'string'
+                    ? maybeEventObject.id
+                    : 'undefined';
+                queueMicrotask(() => {
+                    memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({
+                        okMessage: [
+                            'OK',
+                            eventId,
+                            false,
+                            `invalid: ${badMessageError.message}`,
+                        ],
+                    }, {
+                        parentEvent: badMessageErrorEvent,
+                        targetEmitter: memorelayClient,
+                    }));
+                });
+            }
+            catch (err) {
+                // Nothing for us to do if the cause of the BadMessageError
+                // doesn't meet the qualifications of even a generic message.
+                return;
+            }
+        }));
+    });
+}
+exports.sendOKAfterBadEvent = sendOKAfterBadEvent;
+
+
+/***/ }),
+
+/***/ 8434:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Send OK message after event is added to the database.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterDatabaseAdd = void 0;
+const did_add_event_to_database_event_1 = __nccwpck_require__(210);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8671);
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * After a DidAddEventToDatabaseEvent, send an OutgoingOKMessageEvent.
+ * @param hub Event hub for inter-component communication.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterDatabaseAdd(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(did_add_event_to_database_event_1.DidAddEventToDatabaseEvent, (didAddEventToDatabaseEvent) => {
+            if (didAddEventToDatabaseEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const { event } = didAddEventToDatabaseEvent.details;
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, ''] }, {
+                    parentEvent: didAddEventToDatabaseEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.sendOKAfterDatabaseAdd = sendOKAfterDatabaseAdd;
+
+
+/***/ }),
+
+/***/ 3750:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @fileoverview Send OK after duplicate event.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sendOKAfterDuplicate = void 0;
+const memorelay_client_created_event_1 = __nccwpck_require__(3965);
+const duplicate_event_message_event_1 = __nccwpck_require__(9991);
+const outgoing_ok_message_event_1 = __nccwpck_require__(8671);
+const auto_disconnect_1 = __nccwpck_require__(7649);
+/**
+ * After a DuplicateEventMessageEvent, send an OutgoingOKMessageEvent.
+ * @param hub Event hub for inter-component communication.
+ * @emits OutgoingOKMessageEvent
+ */
+function sendOKAfterDuplicate(hub) {
+    return hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, (memorelayClientCreatedEvent) => {
+        const { memorelayClient } = memorelayClientCreatedEvent.details;
+        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, memorelayClient.onEvent(duplicate_event_message_event_1.DuplicateEventMessageEvent, (duplicateEventMessageEvent) => {
+            if (duplicateEventMessageEvent.defaultPrevented) {
+                return; // Preempted by another listener.
+            }
+            const { event } = duplicateEventMessageEvent.details;
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, 'duplicate:'] }, {
+                    parentEvent: duplicateEventMessageEvent,
+                    targetEmitter: memorelayClient,
+                }));
+            });
+        }));
+    });
+}
+exports.sendOKAfterDuplicate = sendOKAfterDuplicate;
 
 
 /***/ }),
@@ -33047,267 +33293,6 @@ function relayInformationDocument(hub) {
     });
 }
 exports.relayInformationDocument = relayInformationDocument;
-
-
-/***/ }),
-
-/***/ 8700:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Signifies an OK message on its way out to the client.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OutgoingOKMessageEvent = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = void 0;
-const client_event_1 = __nccwpck_require__(6368);
-exports.OUTGOING_OK_MESSAGE_EVENT_TYPE = 'outgoing-ok-message';
-/**
- * Event emitted when an OK Command Result message is on its way out to the
- * connected WebSocket. The default handler for this event will generalize this
- * to a new OutgoingGenericMessageEvent.
- */
-class OutgoingOKMessageEvent extends client_event_1.ClientEvent {
-    constructor(details, options) {
-        super(exports.OUTGOING_OK_MESSAGE_EVENT_TYPE, details, options);
-    }
-}
-OutgoingOKMessageEvent.type = exports.OUTGOING_OK_MESSAGE_EVENT_TYPE;
-exports.OutgoingOKMessageEvent = OutgoingOKMessageEvent;
-
-
-/***/ }),
-
-/***/ 2215:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Generalize outgoing OK messages as generic.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generalizeOutgoingOKMessage = void 0;
-const outgoing_generic_message_event_1 = __nccwpck_require__(8779);
-const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
-/**
- * After an OutgoingOKMessage, emit an OutgoingGeneralMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
- * @emits OutgoingGeneralMessageEvent
- */
-function generalizeOutgoingOKMessage(memorelayClient) {
-    return memorelayClient.onEvent(outgoing_ok_message_event_1.OutgoingOKMessageEvent, (outgoingGenericMessageEvent) => {
-        if (outgoingGenericMessageEvent.defaultPrevented) {
-            return; // Preempted by another listener.
-        }
-        queueMicrotask(() => {
-            memorelayClient.emitEvent(new outgoing_generic_message_event_1.OutgoingGenericMessageEvent({
-                genericMessage: outgoingGenericMessageEvent.details.okMessage,
-            }, {
-                parentEvent: outgoingGenericMessageEvent,
-                targetEmitter: memorelayClient,
-            }));
-        });
-    });
-}
-exports.generalizeOutgoingOKMessage = generalizeOutgoingOKMessage;
-
-
-/***/ }),
-
-/***/ 939:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Plugin to implement NIP-20 Command Results.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.commandResults = void 0;
-const memorelay_client_created_event_1 = __nccwpck_require__(3965);
-const auto_disconnect_1 = __nccwpck_require__(7649);
-const clear_handlers_1 = __nccwpck_require__(2209);
-const generalize_outgoing_ok_messages_1 = __nccwpck_require__(2215);
-const send_ok_after_bad_event_messages_1 = __nccwpck_require__(176);
-const send_ok_after_database_add_1 = __nccwpck_require__(8608);
-const send_ok_after_duplicate_1 = __nccwpck_require__(4779);
-/**
- * Given an event emitter hub (presumed to be a Memorelay instance), attach
- * handlers to implement NIP-20.
- * @param hub Event hub, often a Memorelay instance.
- * @returns Handler for disconnection.
- */
-function commandResults(hub) {
-    const handlers = [];
-    const disconnect = (0, clear_handlers_1.clearHandlers)(handlers);
-    handlers.push(
-    // Attach NIP-20 OK response handlers to each created client.
-    hub.onEvent(memorelay_client_created_event_1.MemorelayClientCreatedEvent, ({ details: { memorelayClient } }) => {
-        (0, auto_disconnect_1.autoDisconnect)(memorelayClient, (0, send_ok_after_database_add_1.sendOKAfterDatabaseAdd)(memorelayClient), (0, send_ok_after_duplicate_1.sendOKAfterDuplicate)(memorelayClient), (0, send_ok_after_bad_event_messages_1.sendOKAfterBadEvent)(memorelayClient), (0, generalize_outgoing_ok_messages_1.generalizeOutgoingOKMessage)(memorelayClient));
-    }));
-    return { disconnect };
-}
-exports.commandResults = commandResults;
-
-
-/***/ }),
-
-/***/ 176:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Send an OK message after a bad incoming EVENT message.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendOKAfterBadEvent = void 0;
-const bad_message_error_event_1 = __nccwpck_require__(1705);
-const check_generic_message_1 = __nccwpck_require__(7345);
-const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
-/**
- * After a BadMessageErrorEvent where an EVENT object was malformed, send an
- * OutgoingOKMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
- * @emits OutgoingOKMessageEvent
- */
-function sendOKAfterBadEvent(memorelayClient) {
-    return memorelayClient.onEvent(bad_message_error_event_1.BadMessageErrorEvent, (badMessageErrorEvent) => {
-        if (badMessageErrorEvent.defaultPrevented) {
-            return; // Preempted by another listener.
-        }
-        const { badMessageError, badMessage } = badMessageErrorEvent.details;
-        try {
-            const genericMessage = (0, check_generic_message_1.checkGenericMessage)(badMessage);
-            if (genericMessage[0] !== 'EVENT') {
-                return; // The bad message wasn't an EVENT message.
-            }
-            badMessageErrorEvent.preventDefault();
-            const maybeEventObject = genericMessage[1];
-            const eventId = maybeEventObject &&
-                typeof maybeEventObject === 'object' &&
-                'id' in maybeEventObject &&
-                typeof maybeEventObject.id === 'string'
-                ? maybeEventObject.id
-                : 'undefined';
-            queueMicrotask(() => {
-                memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({
-                    okMessage: [
-                        'OK',
-                        eventId,
-                        false,
-                        `invalid: ${badMessageError.message}`,
-                    ],
-                }, {
-                    parentEvent: badMessageErrorEvent,
-                    targetEmitter: memorelayClient,
-                }));
-            });
-        }
-        catch (err) {
-            // Nothing for us to do if the cause of the BadMessageError
-            // doesn't meet the qualifications of even a generic message.
-            return;
-        }
-    });
-}
-exports.sendOKAfterBadEvent = sendOKAfterBadEvent;
-
-
-/***/ }),
-
-/***/ 8608:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Send OK message after event is added to the database.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendOKAfterDatabaseAdd = void 0;
-const did_add_event_to_database_event_1 = __nccwpck_require__(210);
-const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
-/**
- * After a DidAddEventToDatabaseEvent, send an OutgoingOKMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
- * @emits OutgoingOKMessageEvent
- */
-function sendOKAfterDatabaseAdd(memorelayClient) {
-    return memorelayClient.onEvent(did_add_event_to_database_event_1.DidAddEventToDatabaseEvent, (didAddEventToDatabaseEvent) => {
-        if (didAddEventToDatabaseEvent.defaultPrevented) {
-            return; // Preempted by another listener.
-        }
-        const { event } = didAddEventToDatabaseEvent.details;
-        queueMicrotask(() => {
-            memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, ''] }, {
-                parentEvent: didAddEventToDatabaseEvent,
-                targetEmitter: memorelayClient,
-            }));
-        });
-    });
-}
-exports.sendOKAfterDatabaseAdd = sendOKAfterDatabaseAdd;
-
-
-/***/ }),
-
-/***/ 4779:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-/**
- * @license SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @fileoverview Plugin to implement NIP-20 Command Results.
- */
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendOKAfterDuplicate = void 0;
-const duplicate_event_message_event_1 = __nccwpck_require__(9991);
-const outgoing_ok_message_event_1 = __nccwpck_require__(8700);
-/**
- * After a DuplicateEventMessageEvent, send an OutgoingOKMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
- * @emits OutgoingOKMessageEvent
- */
-function sendOKAfterDuplicate(memorelayClient) {
-    return memorelayClient.onEvent(duplicate_event_message_event_1.DuplicateEventMessageEvent, (duplicateEventMessageEvent) => {
-        if (duplicateEventMessageEvent.defaultPrevented) {
-            return; // Preempted by another listener.
-        }
-        const { event } = duplicateEventMessageEvent.details;
-        queueMicrotask(() => {
-            memorelayClient.emitEvent(new outgoing_ok_message_event_1.OutgoingOKMessageEvent({ okMessage: ['OK', event.id, true, 'duplicate:'] }, {
-                parentEvent: duplicateEventMessageEvent,
-                targetEmitter: memorelayClient,
-            }));
-        });
-    });
-}
-exports.sendOKAfterDuplicate = sendOKAfterDuplicate;
 
 
 /***/ }),
@@ -36929,6 +36914,7 @@ const logger = (0, winston_1.createLogger)({
     transports: [new winston_1.transports.Console({ level: logLevel })],
     format: winston_1.format.combine(...formatOptions),
 });
+logger.log('debug', `Logging at log level: ${logLevel}`);
 const memorelay = new memorelay_1.Memorelay();
 new logging_plugin_1.LoggingPlugin({ logger, memorelay }).connect();
 memorelay.connect();

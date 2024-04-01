@@ -4,13 +4,12 @@
 /**
  * @fileoverview Send an OK message after a bad incoming EVENT message.
  */
-import { MemorelayClient } from '../../../core/lib/memorelay-client';
 import { Disconnectable } from '../../../core/types/disconnectable';
+import { MemorelayHub } from '../../../core/lib/memorelay-hub';
 /**
  * After a BadMessageErrorEvent where an EVENT object was malformed, send an
  * OutgoingOKMessageEvent.
- * @param memorelayClient The client to plug into.
- * @returns Handler.
+ * @param hub Event hub for inter-component communication.
  * @emits OutgoingOKMessageEvent
  */
-export declare function sendOKAfterBadEvent(memorelayClient: MemorelayClient): Disconnectable;
+export declare function sendOKAfterBadEvent(hub: MemorelayHub): Disconnectable;

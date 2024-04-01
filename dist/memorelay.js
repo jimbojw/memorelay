@@ -12,7 +12,6 @@ const create_clients_1 = require("./core/plugins/create-clients");
 const plugins_1 = require("./nips/nip-0001-basic-protocol/plugins");
 const plugins_2 = require("./nips/nip-0009-event-deletion/plugins");
 const relay_information_document_1 = require("./nips/nip-0011-relay-information-document/plugins/relay-information-document");
-const plugins_3 = require("./nips/nip-0020-command-results/plugins");
 /**
  * Memorelay main class. Extends MemorelayHub and attaches default behavior.
  *
@@ -41,8 +40,6 @@ const plugins_3 = require("./nips/nip-0020-command-results/plugins");
 class Memorelay extends memorelay_hub_1.MemorelayHub {
     constructor(...plugins) {
         super(...plugins, ...[
-            // NIP-20 command results.
-            plugins_3.commandResults,
             // NIP-11 relay information document requests.
             relay_information_document_1.relayInformationDocument,
             // NIP-05 event deletion.
