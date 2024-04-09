@@ -11,6 +11,7 @@ import { Disconnectable } from '../../../core/types/disconnectable';
 import { EventDeletionDatabase } from '../lib/event-deletion-database';
 import { IncomingEventMessageEvent } from '../../nip-0001-basic-protocol/events/incoming-event-message-event';
 import { ClientEventMessage } from '../../nip-0001-basic-protocol/types/client-event-message';
+import { DidAddEventToDatabaseEvent } from '../../nip-0001-basic-protocol/events/did-add-event-to-database-event';
 
 /**
  * Filter incoming event messages so that known deleted events make it no
@@ -34,7 +35,15 @@ export function filterIncomingEvents(
       const incomingEvent = clientEventMessage[1];
       if (eventDeletionDatabase.isDeleted(incomingEvent.id)) {
         incomingEventMessageEvent.preventDefault();
-        // TODO(jimbo): Should this emit something?
+
+        // Since the incoming event is considered handled, we emit a synthetic
+        // DidAddEventToDatabaseEvent to trigger downstream outgoing OK event.
+        const didAddEventToDatabaseEvent = new DidAddEventToDatabaseEvent({
+          event: clientEventMessage[1],
+        });
+        queueMicrotask(() => {
+          memorelayClient.emitEvent(didAddEventToDatabaseEvent);
+        });
       }
     }
   );
