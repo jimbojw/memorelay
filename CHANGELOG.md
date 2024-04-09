@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/jimbojw/memorelay/compare/v2.0.3...v2.0.4) (2024-04-09)
+
+
+### Bug Fixes
+
+* Emit synthetic "did add" after receiving already deleted note. ([d0ab596](https://github.com/jimbojw/memorelay/commit/d0ab596431e9647d798703dd3612462664d0f0b4))
+
 ## [2.0.3](https://github.com/jimbojw/memorelay/compare/v2.0.2...v2.0.3) (2024-04-01)
 
 

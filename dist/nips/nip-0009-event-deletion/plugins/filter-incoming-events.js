@@ -9,6 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.filterIncomingEvents = void 0;
 const incoming_event_message_event_1 = require("../../nip-0001-basic-protocol/events/incoming-event-message-event");
+const did_add_event_to_database_event_1 = require("../../nip-0001-basic-protocol/events/did-add-event-to-database-event");
 /**
  * Filter incoming event messages so that known deleted events make it no
  * further into the flow.
@@ -26,7 +27,14 @@ function filterIncomingEvents(eventDeletionDatabase, memorelayClient) {
         const incomingEvent = clientEventMessage[1];
         if (eventDeletionDatabase.isDeleted(incomingEvent.id)) {
             incomingEventMessageEvent.preventDefault();
-            // TODO(jimbo): Should this emit something?
+            // Since the incoming event is considered handled, we emit a synthetic
+            // DidAddEventToDatabaseEvent to trigger downstream outgoing OK event.
+            const didAddEventToDatabaseEvent = new did_add_event_to_database_event_1.DidAddEventToDatabaseEvent({
+                event: clientEventMessage[1],
+            });
+            queueMicrotask(() => {
+                memorelayClient.emitEvent(didAddEventToDatabaseEvent);
+            });
         }
     });
 }
